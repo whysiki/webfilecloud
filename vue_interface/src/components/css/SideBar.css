@@ -1,0 +1,109 @@
+/* 顶部栏样式 */
+.top-bar {
+  display: flex;
+  /* justify-content: space-between; */
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 对所有子元素添加间距 */
+.top-bar > * {
+  margin: 0 20px; /* 0上下间距，10左右间距 */
+}
+
+/* 返回首页样式 */
+.return-home {
+  font-size: 34px;
+}
+
+.return-home i {
+  cursor: pointer;
+  color: #3498db;
+}
+
+.return-home i:hover {
+  color: #16723c;
+}
+
+/* 上传文件按钮样式 */
+.icon-button,
+.uploadFile,
+.deleteUser {
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.deleteUser {
+  background-color: #e74c3c;
+}
+
+.icon-button i,
+.uploadFile i,
+.deleteUser i {
+  font-size: 20px;
+}
+
+.icon-button:hover,
+.uploadFile:hover,
+.deleteUser:hover {
+  background-color: #16723c;
+}
+
+/*  */
+/*  */
+/*  */
+
+/* 上传文件的表单 */
+.form-uploadFile {
+  width: 90%;
+  /* margin-top: 20px; 取消注释并设置距离页面顶部的距离 */
+  margin: 0 auto; /* 添加这一行以使表单水平居中 */
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+}
+
+.form-uploadFile-group {
+  margin-bottom: 15px;
+}
+
+.form-uploadFile-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+.form-uploadFile-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.form-uploadFile-button:hover {
+  background-color: #0056b3;
+}
+
+.form-uploadFile-progress-bar {
+  margin-top: 3px;
+  width: 100%;
+  height: 20px;
+  color: #0056b3;
+  transition: width 1s ease-in-out;
+  border-style: solid;
+  background-color: #4caf50;
+  border-radius: 10px;
+}

@@ -1,0 +1,66 @@
+/* 登录表单样式 */
+.login-form {
+  width: 80%;
+  margin: 45px auto;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 表单组样式 */
+.login-form__group {
+  margin-bottom: 20px;
+}
+
+/* 表单标签样式 */
+.login-form__label {
+  font-weight: bold;
+  color: #16723c;
+}
+
+/* 输入框样式 */
+.login-form__input {
+  width: calc(100% - 20px); /* 让输入框与标签对齐 */
+  padding: 8px;
+  border: 2px solid #1a7be3;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.login-form__button-group {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+/* 按钮样式 */
+.login-form__button {
+  width: 120px;
+  height: 40px;
+  margin-right: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 登录按钮样式 */
+.login-form__button--login {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.login-form__button--login:hover {
+  background-color: #16723c;
+}
+
+/* 注册按钮样式 */
+.login-form__button--register {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+.login-form__button--register:hover {
+  background-color: #c0392b;
+}

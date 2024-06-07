@@ -1,0 +1,17 @@
+/.venv
+/__pycache__
+/alembic
+/download
+/other
+/test
+/uploads
+**/*.db
+/test.py
+/resetdb.py
+/learn
+/testfiles
+/postage.bat
+/myenv
+/close_proxy_all.sh
+/achive
+/tempCodeRunnerFile.py

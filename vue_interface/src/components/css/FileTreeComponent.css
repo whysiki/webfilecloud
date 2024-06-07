@@ -1,0 +1,44 @@
+.file-tree {
+  /* width: 80%; */
+  /* width: 100%; */
+  /* margin: 45px auto 0; */
+  /* padding: 20px; */
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 8px;
+  /* background-color: rgba(255, 255, 255, 0.5); */
+  align-items: center;
+}
+
+/* .file-tree.fa-folder-open {
+  color: #f4f6f8;
+} */
+
+.file-tree-item {
+  margin-bottom: 10px;
+}
+
+/* .file-tree-items { */
+/* display: flex; */
+/* flex-wrap: wrap; */
+/* } */
+
+.folder-title {
+  font-weight: bold;
+  background-color: rgba(0, 86, 179, 0.5);
+  border-radius: 10px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.folder-title:hover {
+  background-color: #16723c;
+}
+
+.folder-content {
+  margin-left: 20px;
+  padding: 10px;
+  border-left: 2px solid #1a7be3;
+}

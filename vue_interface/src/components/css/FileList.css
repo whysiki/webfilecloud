@@ -1,0 +1,161 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 文件列表样式 */
+.file-list {
+  width: 90%;
+  margin: 45px auto 0;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 用户信息样式 */
+.user-info {
+  text-align: center;
+  /* margin-top: 20px; */
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+h2 {
+  font-size: 24px;
+  color: #333;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-owner {
+  color: #1a7be3;
+  font-weight: bold;
+  background-color: rgba(0, 86, 179, 0.1);
+  padding: 5px 10px;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.file-count {
+  color: #16723c;
+  font-weight: bold;
+  background-color: rgba(22, 114, 60, 0.1);
+  padding: 5px 10px;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.user-info.fas {
+  color: #888;
+  font-size: 1.5em;
+  transition: color 0.3s ease;
+}
+
+.fa-user {
+  color: #1a7be3;
+}
+
+#user-info-fa-folder-open {
+  color: #1a7be3;
+}
+
+h2:hover .file-owner {
+  background-color: rgba(0, 86, 179, 0.3);
+}
+
+h2:hover .file-count {
+  background-color: rgba(22, 114, 60, 0.3);
+}
+
+h2:hover .fas {
+  color: #4cc2c2;
+}
+
+/* 用户信息样式 */
+
+/* 主按钮 */
+.file-list-button-container {
+  width: 100%;
+  display: flex;
+  /* justify-content: space-evenly; */
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 主按钮按钮样式 */
+.file-list-button {
+  width: 120px;
+  height: 40px;
+  color: rgb(255, 255, 255);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  align-items: center;
+  margin: 10px;
+  background-color: #3498db;
+}
+
+/* .file-list-button.expandAll, */
+/* .file-list-button.collapseAll { */
+/* background-color: #3498db; */
+/* } */
+
+/* 按钮悬停样式 */
+.file-list-button:hover {
+  background-color: #16723c;
+}
+
+.file-list-button.deleteAll {
+  background-color: #e74c3c;
+}
+
+.file-list-button.deleteAll:hover {
+  background-color: #c0392b;
+}
+
+/* 文件类型标题样式 */
+.fileTypeTitle {
+  /* font-weight: lighter;
+  text-align: center;
+  background-color: rgba(0, 86, 179, 0.5);
+  border-radius: 10px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  color: white;
+  margin-bottom: 20px; */
+  margin-bottom: 10px;
+  font-weight: bold;
+  background-color: rgba(0, 86, 179, 0.5);
+  border-radius: 10px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-align: center;
+}
+
+.fileTypeTitle:hover {
+  background-color: #16723c;
+}
+
+/* 文件项列表样式 */
+.fileType-file-items {
+  /* display: flex; */
+  /* flex-wrap: wrap; */
+  padding: 0;
+}
