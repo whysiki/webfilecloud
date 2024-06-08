@@ -3,25 +3,25 @@
   <div class="batch-actions" v-if="showBatchActions">
     <button @click="batchMove" class="batch-actions-button batch-actions-button-move">
       <i class="fas fa-arrows-alt"></i>
-      <span class="batch-actions-button-text">Move</span>
+      <span class="batch-actions-button-text">BatchMove</span>
     </button>
     <button
       @click="batchDownload"
       class="batch-actions-button batch-actions-button-download"
     >
       <i class="fas fa-download"></i>
-      <span class="batch-actions-button-text">Download</span>
+      <span class="batch-actions-button-text">BatchDownload</span>
     </button>
     <button @click="batchDelete" class="batch-actions-button batch-actions-button-delete">
       <i class="fas fa-trash-alt"></i>
-      <span class="batch-actions-button-text">Delete</span>
+      <span class="batch-actions-button-text">BatchDelete</span>
     </button>
     <button
       @click="clearSelectedFiles"
       class="batch-actions-button batch-actions-button-clear"
     >
       <i class="fas fa-times"></i>
-      <span class="batch-actions-button-text">Clear</span>
+      <span class="batch-actions-button-text">ClearSelect</span>
     </button>
     <progress
       max="100"

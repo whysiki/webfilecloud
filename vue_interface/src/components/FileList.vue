@@ -31,9 +31,6 @@
       </div>
     </div>
 
-    <!-- 批量操作组件 -->
-    <BatchActionsComponent />
-
     <!-- 文件类型视图 -->
     <div class="fileTypeView" v-if="viewMode === 'ShowByType' && !showSearch">
       <TypesComponent
@@ -60,6 +57,8 @@
     <!-- 弹出式警告组件 -->
     <AlertComponent ref="alertPopup" />
   </div>
+  <!-- 批量操作组件 -->
+  <BatchActionsComponent />
 </template>
 
 <script>

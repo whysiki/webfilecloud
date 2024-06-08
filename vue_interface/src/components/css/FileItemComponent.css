@@ -133,6 +133,9 @@
   cursor: pointer;
   position: relative;
   outline: none;
+  border-radius: 50%;
+  margin: 0; /* 添加这一行 */
+  padding: 0;
 }
 
 .selected-file:checked {
@@ -149,4 +152,5 @@
   height: 10px;
   background-color: white;
   transform: translate(-50%, -50%);
+  border-radius: 50%;
 }

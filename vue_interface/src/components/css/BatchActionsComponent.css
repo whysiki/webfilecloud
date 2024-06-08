@@ -71,24 +71,3 @@
   background-color: #3498db;
   border-radius: 10px;
 }
-
-/* 媒体查询 */
-@media (max-width: 600px) {
-  .batch-actions-button .button-text {
-    display: none; /* 隐藏按钮文本 */
-  }
-
-  .batch-actions {
-    flex-direction: column; /* 垂直排列 */
-  }
-
-  .batch-actions-button {
-    width: 40px; /* 只显示图标时按钮宽度 */
-    height: 40px;
-    padding: 0;
-  }
-
-  .batch-actions-button i {
-    margin-right: 0;
-  }
-}
