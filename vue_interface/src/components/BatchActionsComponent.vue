@@ -27,7 +27,7 @@
       max="100"
       :value="batchProgress"
       class="batch-actions-progress"
-      v-if="batchProgress > 0"
+      v-if="batchProgress > 0 && batchProgress < 100"
     >
       {{ batchProgress }}%
     </progress>
