@@ -122,3 +122,31 @@
   justify-content: space-between;
   align-items: center;
 }
+
+/* gx */
+.selected-file {
+  appearance: none;
+  background-color: #f2f2f2;
+  border: 1px solid #c6c6c6;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+
+.selected-file:checked {
+  background-color: #3498db;
+  border-color: #3498db;
+}
+
+.selected-file:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: white;
+  transform: translate(-50%, -50%);
+}

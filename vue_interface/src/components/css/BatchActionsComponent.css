@@ -1,0 +1,94 @@
+.batch-actions {
+  width: 90%;
+  margin: 10px auto 0;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.batch-actions-button {
+  flex: 1;
+  min-width: 120px; /* 设置最小宽度以适应图标和文本 */
+  height: 40px;
+  color: rgb(255, 255, 255);
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #3498db;
+  margin: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.batch-actions-button i {
+  margin-right: 5px;
+}
+
+.batch-actions-button:hover {
+  background-color: #1a7be3;
+}
+
+.batch-actions-button-move:hover {
+  background-color: #1a7be3;
+}
+
+.batch-actions-button-download:hover {
+  background-color: #16723c;
+}
+
+.batch-actions-button-delete {
+  background-color: #e74c3c;
+}
+
+.batch-actions-button-delete:hover {
+  background-color: #c0392b;
+}
+
+.batch-actions-progress {
+  width: 100%;
+  height: 20px;
+  border-radius: 10px;
+  margin-top: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+}
+
+.batch-actions-progress::-webkit-progress-bar {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.batch-actions-progress::-webkit-progress-value {
+  background-color: #3498db;
+  border-radius: 10px;
+}
+
+/* 媒体查询 */
+@media (max-width: 600px) {
+  .batch-actions-button .button-text {
+    display: none; /* 隐藏按钮文本 */
+  }
+
+  .batch-actions {
+    flex-direction: column; /* 垂直排列 */
+  }
+
+  .batch-actions-button {
+    width: 40px; /* 只显示图标时按钮宽度 */
+    height: 40px;
+    padding: 0;
+  }
+
+  .batch-actions-button i {
+    margin-right: 0;
+  }
+}

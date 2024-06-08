@@ -7,7 +7,7 @@
 /* 文件列表样式 */
 .file-list {
   width: 90%;
-  margin: 45px auto 0;
+  margin: 10px auto 0;
   padding: 20px;
   box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
   border-radius: 10px;
@@ -158,4 +158,57 @@ h2:hover .fas {
   /* display: flex; */
   /* flex-wrap: wrap; */
   padding: 0;
+}
+
+/* 下拉菜单容器样式 */
+.file-list-dropdown {
+  position: relative;
+}
+
+.file-list-button.showMode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-list-button.showMode i {
+  margin-right: 5px;
+}
+
+/* 下拉菜单样式 */
+.dropdown-menu {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 150px;
+}
+
+.dropdown-menu li {
+  font-size: small;
+  padding: 5px;
+  cursor: pointer;
+  color: #333;
+  text-align: center;
+  border-bottom: 2px solid #3498db; /* 添加底部边框线 */
+}
+
+.dropdown-menu li:last-child {
+  border-bottom: none; /* 最后一个菜单项去掉底部边框线 */
+}
+
+.dropdown-menu li:hover {
+  background-color: #3498db;
+  color: #fff;
+}
+
+/* 隐藏下拉菜单 */
+.dropdown-menu.hidden {
+  display: none;
 }

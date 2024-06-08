@@ -17,42 +17,40 @@
 .return-home {
   font-size: 34px;
 }
-
 .return-home i {
   cursor: pointer;
   color: #3498db;
 }
-
 .return-home i:hover {
   color: #16723c;
 }
 
-/* 上传文件按钮样式 */
-.icon-button,
-.uploadFile,
-.deleteUser {
+/* 顶部栏其他按钮样式 */
+.top-bar-icon-button {
   background-color: #3498db;
   color: #fff;
   border: none;
   border-radius: 50%;
   padding: 10px;
   cursor: pointer;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.deleteUser {
-  background-color: #e74c3c;
-}
-
-.icon-button i,
-.uploadFile i,
-.deleteUser i {
+.top-bar-icon-button i {
   font-size: 20px;
 }
 
-.icon-button:hover,
-.uploadFile:hover,
-.deleteUser:hover {
+.top-bar-icon-button:hover {
   background-color: #16723c;
+}
+
+.deleteAll,
+.deleteUser {
+  background-color: #e74c3c;
 }
 
 /*  */

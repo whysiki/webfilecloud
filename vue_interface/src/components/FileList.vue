@@ -13,22 +13,26 @@
     </div>
 
     <!-- 按钮组 -->
+    <!-- 按钮组 -->
     <div class="file-list-button-container">
       <button class="file-list-button collapseAll" @click="collapseAll">
         CollapseAll
       </button>
       <button class="file-list-button expandAll" @click="expandAll">ExpandAll</button>
-      <button
-        class="file-list-button classByType"
-        @click="classByType"
-        title="Click to change view mode"
-      >
-        {{ viewMode }}
-      </button>
-      <button class="file-list-button deleteAll" @click="confirmDeleteAllFiles">
-        DeleteAll
-      </button>
+      <div class="file-list-dropdown">
+        <button class="file-list-button showMode" @click="toggleDropdown">
+          <i class="fas fa-bars"></i>ViewMode
+        </button>
+        <ul class="dropdown-menu" v-if="dropdownOpen">
+          <li @click="changeViewMode('ShowByType')">Show By Type</li>
+          <li @click="changeViewMode('ShowByTree')">Show By Tree</li>
+          <li @click="changeViewMode('SortFiles')">Sort Files</li>
+        </ul>
+      </div>
     </div>
+
+    <!-- 批量操作组件 -->
+    <BatchActionsComponent />
 
     <!-- 文件类型视图 -->
     <div class="fileTypeView" v-if="viewMode === 'ShowByType' && !showSearch">
@@ -65,8 +69,9 @@ import FileTreeComponent from "./FileTreeComponent.vue"; // 导入 FileTreeCompo
 import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 import SearchComponent from "./SearchComponent.vue";
+import BatchActionsComponent from "./BatchActionsComponent.vue";
 
-import { provide, ref } from "vue";
+import { provide, ref } from "vue"; // 导入 provide 和 ref
 export default {
   components: {
     TypesComponent,
@@ -74,12 +79,11 @@ export default {
     NavigationBar,
     OrderComponent,
     SearchComponent,
+    BatchActionsComponent,
   },
   setup() {
     const files = ref([]); // 使用 ref 创建一个响应式的数据对象
-
     provide("files", files); // 使用 provide 提供 files
-
     return { files };
   },
   data() {
@@ -87,9 +91,10 @@ export default {
       // files: [], // 初始化 files 数组
       visibleFileTypes: [], // 初始化 visibleFileTypes 数组
       showClassByType: false,
-      // folderStates: {},
       viewMode: "ShowByType", // 初始化视图模式
       showSearch: false, // 初始化 showSearch 数据属性
+      dropdownOpen: false,
+      // viewMode: 'ShowByType'
     };
   },
   computed: {
@@ -111,12 +116,23 @@ export default {
     this.emitter.on("file-uploaded", this.fetchFiles);
     this.emitter.on("one-file-deleted", this.fetchFiles);
     this.emitter.on("one-file-moved", this.fetchFiles);
+    this.emitter.on("all-files-deleted", this.fetchFiles);
     this.emitter.on("toggle-search", (showSearch) => {
       this.showSearch = showSearch;
     });
+    this.emitter.on("batch-files-moved", this.fetchFiles);
+    this.emitter.on("batch-files-deleted", this.fetchFiles);
   },
   beforeUnmount() {
     this.emitter.off("file-uploaded", this.fetchFiles);
+    this.emitter.off("one-file-deleted", this.fetchFiles);
+    this.emitter.off("one-file-moved", this.fetchFiles);
+    this.emitter.off("all-files-deleted", this.fetchFiles);
+    this.emitter.off("toggle-search", (showSearch) => {
+      this.showSearch = showSearch;
+    });
+    this.emitter.off("batch-files-moved", this.fetchFiles);
+    this.emitter.off("batch-files-deleted", this.fetchFiles);
   },
   methods: {
     collapseAll() {
@@ -157,41 +173,18 @@ export default {
           },
         });
         this.files = response.data.files;
+        localStorage.setItem("currentFilesLength", this.files.length);
       } catch (error) {
         await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
       }
     },
 
-    async confirmDeleteAllFiles() {
-      // alert(Array.isArray(this.files));
-
-      if (this.files.length === 0) {
-        this.$refs.alertPopup.showAlert("No files to delete"); // 如果没有文件，显示没有文件的信息
-      } else {
-        const tag = await this.$refs.alertPopup.showAlert(
-          "Are you sure you want to delete all files?"
-        );
-        if (tag === "ok") {
-          await this.deleteAllFiles();
-        }
-      }
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
     },
-    async deleteAllFiles() {
-      try {
-        const token = localStorage.getItem("token"); // 从 localStorage 获取 token
-        // 发送 DELETE 请求到 /users/files/delete，请求头中包含 Authorization 字段
-        await axios.delete("/users/files/delete", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        this.$refs.alertPopup.showAlert("All files deleted successfully"); // 显示文件删除成功的信息
-        await this.fetchFiles(); // 删除文件后重新获取文件列表
-      } catch (error) {
-        //Error deleting files: Request failed with status code 500
-        await this.$refs.alertPopup.showAlert(`Error deleting files: ${error.message}`); // 如果出现错误，显示错误信息
-        await this.fetchFiles(); // 删除文件后重新获取文件列表
-      }
+    changeViewMode(mode) {
+      this.viewMode = mode;
+      this.dropdownOpen = false;
     },
   },
 };

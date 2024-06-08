@@ -5,17 +5,28 @@
         <i class="fas fa-home"></i>
       </router-link>
     </div>
-    <button class="icon-button search" @click="toggleSearch" title="Search">
+    <button class="top-bar-icon-button search" @click="toggleSearch" title="Search">
       <i class="fas fa-search"></i>
     </button>
     <button
       @click="toggleUploadFileForm"
-      class="icon-button uploadFile"
+      class="top-bar-icon-button uploadFile"
       title="Upload File"
     >
       <i class="fas fa-upload"></i>
     </button>
-    <button class="icon-button deleteUser" @click="confirmDeleteUser" title="Delete User">
+    <button
+      class="top-bar-icon-button deleteAll"
+      @click="confirmDeleteAllFiles"
+      title="Delete All Files"
+    >
+      <i class="fa-solid fa-trash"></i>
+    </button>
+    <button
+      class="top-bar-icon-button deleteUser"
+      @click="confirmDeleteUser"
+      title="Delete User"
+    >
       <i class="fa-solid fa-user-slash"></i>
     </button>
   </div>
@@ -45,8 +56,7 @@
 
 <script>
 import CryptoJS from "crypto-js";
-import axios from "../axios";
-
+import axios from "../axios"; // 导入 axios 实例
 export default {
   name: "SideBar",
   components: {},
@@ -226,6 +236,46 @@ export default {
     toggleSearch() {
       this.emitter.emit("toggle-search", !this.showSearch);
       this.showSearch = !this.showSearch;
+    },
+    async confirmDeleteAllFiles() {
+      //进制基数，这里为 10，表示将字符串作为十进制数解析。
+      const currentFilesLength = parseInt(localStorage.getItem("currentFilesLength"), 10);
+      console.log(currentFilesLength);
+      if (
+        currentFilesLength === 0 ||
+        currentFilesLength === null ||
+        currentFilesLength === undefined
+      ) {
+        this.$refs.alertPopup.showAlert("No files to delete");
+      } else {
+        const tag = await this.$refs.alertPopup.showAlert(
+          "Are you sure you want to delete all files?"
+        );
+        if (tag === "ok") {
+          await this.deleteAllFiles();
+        }
+      }
+    },
+    async deleteAllFiles() {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete("/users/files/delete", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        this.$refs.alertPopup.showAlert("All files deleted successfully"); // 显示文件删除成功的信息
+      } catch (error) {
+        if (error.response) {
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+        } else if (error.request) {
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
+        } else {
+          await this.$refs.alertPopup.showAlert("Error", error.message);
+        }
+      } finally {
+        this.emitter.emit("all-files-deleted");
+      }
     },
   },
 };

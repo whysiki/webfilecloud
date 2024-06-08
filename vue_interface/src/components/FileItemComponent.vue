@@ -1,9 +1,15 @@
 <!-- FileItemComponent.vue -->
 <template>
-  <div class="file-item" @click.prevent="toggleDetails" title="Click to expand details">
+  <div class="file-item" title="Click to expand details">
     <!-- @mouseover="showfileCardDetails = true" -->
     <!-- @mouseleave="showfileCardDetails = false" -->
-    <div class="file-header">
+    <input
+      type="checkbox"
+      v-model="selected"
+      @change="toggleSelect"
+      class="selected-file"
+    />
+    <div class="file-header" @click.prevent="toggleDetails">
       <div class="file-name">{{ file.filename }}</div>
       <div class="file-item-button-container">
         <button @click.prevent="confirmMovefile(file.id)" class="file-button">
@@ -53,12 +59,28 @@
 <script>
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
+import store from "../store";
+// import { toRefs } from "vue";
+// import { useStore } from "vuex";
+// import { ref } from "vue";
 export default {
   props: ["file"],
   data() {
     return {
       showfileCardDetails: false,
+      // selected: false,
     };
+  },
+  setup() {
+    const selected = false;
+    return { selected };
+  },
+  beforeUnmount() {
+    this.emitter.off("expand-all");
+    this.emitter.off("collapse-all");
+    if (store.state.selectedFiles.includes(this.file)) {
+      store.commit("removeSelectedFile", this.file);
+    }
   },
   mounted() {
     this.emitter.on("expand-all", () => {
@@ -69,6 +91,14 @@ export default {
     });
   },
   methods: {
+    toggleSelect() {
+      if (this.selected) {
+        store.commit("addSelectedFile", this.file);
+      } else {
+        store.commit("removeSelectedFile", this.file);
+      }
+      console.log(store.state.selectedFiles);
+    },
     toggleDetails() {
       this.showfileCardDetails = !this.showfileCardDetails;
     },
