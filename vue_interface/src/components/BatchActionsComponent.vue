@@ -23,6 +23,13 @@
       <i class="fas fa-times"></i>
       <span class="batch-actions-button-text">ClearSelect</span>
     </button>
+    <button
+      @click="selectAllFiles"
+      class="batch-actions-button batch-actions-button-select-all"
+    >
+      <i class="fas fa-check-square"></i>
+      <span class="batch-actions-button-text">SelectAll</span>
+    </button>
     <progress
       max="100"
       :value="batchProgress"
@@ -52,66 +59,80 @@ export default {
     },
   },
   methods: {
+    selectAllFiles() {
+      store.state.selectedFiles = [...store.state.files];
+      this.emitter.emit("select-all-files");
+    },
     clearSelectedFiles() {
       store.state.selectedFiles = [];
       this.emitter.emit("clear-selected-files");
     },
     async batchDelete() {
-      const total = store.state.selectedFiles.length;
-      let count = 0;
-      for (let file of store.state.selectedFiles) {
-        try {
-          const token = localStorage.getItem("token");
-          await axios.delete(`/files/delete?file_id=${file.id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          count++;
-          store.state.batchProgress = (count / total) * 100;
-        } catch (error) {
-          console.error(`Error deleting file: ${error.response.data.detail}`);
+      const tag = await this.$refs.alertPopup.showAlert(
+        "Are you sure you want to delete those files?"
+      );
+      if (tag === "ok") {
+        const total = store.state.selectedFiles.length;
+        let count = 0;
+        for (let file of store.state.selectedFiles) {
+          try {
+            const token = localStorage.getItem("token");
+            await axios.delete(`/files/delete?file_id=${file.id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            count++;
+            store.state.batchProgress = (count / total) * 100;
+          } catch (error) {
+            console.error(`Error deleting file: ${error.response.data.detail}`);
+          }
         }
+        await this.$refs.alertPopup.showAlert("Delete completed");
+        this.emitter.emit("batch-files-deleted");
       }
-      await this.$refs.alertPopup.showAlert("Delete completed");
-      this.emitter.emit("batch-files-deleted");
     },
     async batchDownload() {
-      const total = store.state.selectedFiles.length;
-      let count = 0;
-      for (let file of store.state.selectedFiles) {
-        try {
-          file.showdownloadProgressBar = true;
-          const token = localStorage.getItem("token");
-          file.cancelTokenSource = axiosModule.CancelToken.source();
-          const response = await axios.get(`/files/download?file_id=${file.id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/octet-stream",
-            },
-            responseType: "blob",
-            onDownloadProgress: (progressEvent) => {
-              file.downloadProgress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-            },
-            cancelToken: file.cancelTokenSource.token,
-          });
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", file.filename);
-          document.body.appendChild(link);
-          link.click();
-          count++;
-          store.state.batchProgress = (count / total) * 100;
-        } catch (error) {
-          await this.$refs.alertPopup.showAlert(
-            `Error downloading file: ${error.response.data.detail}`
-          );
+      const tag = await this.$refs.alertPopup.showAlert(
+        "Are you sure you want to download those files?"
+      );
+      if (tag === "ok") {
+        const total = store.state.selectedFiles.length;
+        let count = 0;
+        for (let file of store.state.selectedFiles) {
+          try {
+            file.showdownloadProgressBar = true;
+            const token = localStorage.getItem("token");
+            file.cancelTokenSource = axiosModule.CancelToken.source();
+            const response = await axios.get(`/files/download?file_id=${file.id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/octet-stream",
+              },
+              responseType: "blob",
+              onDownloadProgress: (progressEvent) => {
+                file.downloadProgress = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+              },
+              cancelToken: file.cancelTokenSource.token,
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", file.filename);
+            document.body.appendChild(link);
+            link.click();
+            count++;
+            store.state.batchProgress = (count / total) * 100;
+          } catch (error) {
+            await this.$refs.alertPopup.showAlert(
+              `Error downloading file: ${error.response.data.detail}`
+            );
+          }
         }
+        await this.$refs.alertPopup.showAlert("Download completed");
       }
-      await this.$refs.alertPopup.showAlert("Download completed");
     },
 
     async batchMove() {

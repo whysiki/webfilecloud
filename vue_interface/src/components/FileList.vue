@@ -69,7 +69,7 @@ import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 import SearchComponent from "./SearchComponent.vue";
 import BatchActionsComponent from "./BatchActionsComponent.vue";
-
+import store from "../store";
 import { provide, ref } from "vue"; // 导入 provide 和 ref
 export default {
   components: {
@@ -173,6 +173,7 @@ export default {
         });
         this.files = response.data.files;
         localStorage.setItem("currentFilesLength", this.files.length);
+        store.commit("setFiles", response.data.files);
       } catch (error) {
         await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
       }

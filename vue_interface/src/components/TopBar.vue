@@ -92,9 +92,11 @@ export default {
   },
   mounted() {
     this.emitter.on("update-current-nodes", this.updateInputUploadStrNodes);
+    window.addEventListener("scroll", this.handleScroll);
   },
   beforeUnmount() {
     this.emitter.off("update-current-nodes", this.updateInputUploadStrNodes);
+    window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
     updateInputUploadStrNodes(value) {
@@ -113,6 +115,11 @@ export default {
           console.log(error);
           this.inputUploadStrNodes = "";
         });
+    },
+    handleScroll() {
+      if (window.scrollY > 15) {
+        this.showUploadFileForm = false;
+      }
     },
     toggleUploadFileForm() {
       this.showUploadFileForm = !this.showUploadFileForm;

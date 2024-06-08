@@ -64,7 +64,11 @@
         />
       </div>
     </div>
-    <div v-show="file.showdownloadProgressBar" class="progress-bar-container">
+    <div
+      v-show="file.showdownloadProgressBar"
+      class="progress-bar-container"
+      v-if="file.downloadProgress > 0 && file.downloadProgress < 100"
+    >
       <progress
         max="100"
         :value="file.downloadProgress"
@@ -91,13 +95,7 @@ export default {
       fileContent: null,
     };
   },
-  beforeUnmount() {
-    this.emitter.off("expand-all");
-    this.emitter.off("collapse-all");
-    if (store.state.selectedFiles.includes(this.file)) {
-      store.commit("removeSelectedFile", this.file);
-    }
-  },
+
   computed: {
     isTextFile() {
       return [
@@ -136,6 +134,16 @@ export default {
     this.emitter.on("clear-selected-files", () => {
       this.selected = false;
     });
+    this.emitter.on("select-all-files", () => {
+      this.selected = true;
+    });
+  },
+  beforeUnmount() {
+    this.emitter.off("expand-all");
+    this.emitter.off("collapse-all");
+    if (store.state.selectedFiles.includes(this.file)) {
+      store.commit("removeSelectedFile", this.file);
+    }
   },
   watch: {
     file: {
