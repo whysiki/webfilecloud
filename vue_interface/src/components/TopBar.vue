@@ -281,7 +281,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 /*，使用 scoped 属性确保样式只在组件内部生效。 */
 @import "./css/TopBar.css";
 </style>

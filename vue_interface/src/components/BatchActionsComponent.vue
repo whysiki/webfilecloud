@@ -54,6 +54,7 @@ export default {
   methods: {
     clearSelectedFiles() {
       store.state.selectedFiles = [];
+      this.emitter.emit("clear-selected-files");
     },
     async batchDelete() {
       const total = store.state.selectedFiles.length;

@@ -1,6 +1,8 @@
 <template>
   <!-- 搜索视图 -->
   <SearchComponent :files="files" v-if="showSearch" />
+  <!-- 批量操作组件 -->
+  <BatchActionsComponent />
   <div class="file-list" v-if="!showSearch">
     <!-- 文件信息 -->
     <div class="user-info">
@@ -57,8 +59,6 @@
     <!-- 弹出式警告组件 -->
     <AlertComponent ref="alertPopup" />
   </div>
-  <!-- 批量操作组件 -->
-  <BatchActionsComponent />
 </template>
 
 <script>

@@ -68,13 +68,32 @@ export default {
   data() {
     return {
       showfileCardDetails: false,
-      // selected: false,
+      selected: false,
     };
   },
-  setup() {
-    const selected = false;
-    return { selected };
-  },
+  // setup() {
+  // const selected = false;
+  // return { selected };
+  // },
+  // computed: {
+  //   selected() {
+  //     if (!store.state.selectedFiles.includes(this.file)) {
+  //       return false;
+  //       // } else {
+  //       //   return false;
+  //       // }
+  //     } else {
+  //       return true;
+  //     }
+  //   },
+  // },
+  // mounted() {
+  //   if (store.state.selectedFiles.includes(this.file)) {
+  //     this.selected = true;
+  //   } else {
+  //     this.selected = false;
+  //   }
+  // },
   beforeUnmount() {
     this.emitter.off("expand-all");
     this.emitter.off("collapse-all");
@@ -88,6 +107,9 @@ export default {
     });
     this.emitter.on("collapse-all", () => {
       this.showfileCardDetails = false;
+    });
+    this.emitter.on("clear-selected-files", () => {
+      this.selected = false;
     });
   },
   methods: {

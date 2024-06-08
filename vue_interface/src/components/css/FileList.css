@@ -6,13 +6,18 @@
 
 /* 文件列表样式 */
 .file-list {
-  /* padding-top: 40px; */
-  width: 90%;
-  margin: 10px auto 0;
+  /* margin-top: 40px; */
+  width: 95%;
+
+  margin: 10px auto;
+  /* margin-top: 65px; */
   padding: 20px;
+  margin-bottom: 40px;
   box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.5);
+  /* background-color: #1a7be3; */
+  background-color: rgba(0, 86, 179, 0.3);
+  padding-bottom: 60px;
 }
 
 /* 用户信息样式 */
@@ -140,7 +145,7 @@ h2:hover .fas {
   margin-bottom: 20px; */
   margin-bottom: 10px;
   font-weight: bold;
-  background-color: rgba(0, 86, 179, 0.5);
+  background-color: rgba(0, 86, 179, 0.8);
   border-radius: 10px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
   padding: 10px;
@@ -212,4 +217,22 @@ h2:hover .fas {
 /* 隐藏下拉菜单 */
 .dropdown-menu.hidden {
   display: none;
+}
+
+@media (max-width: 600px) {
+  /* .file-list-button { */
+  /* width: 100%; */
+  /* } */
+  /* 主按钮按钮样式 */
+  .file-list-button {
+    width: 95px;
+    margin: 5px;
+    text-align: center;
+    /* 文本水平居中 */
+    align-items: center;
+  }
+  .file-list-button-container {
+    justify-content: center;
+    /* flex-wrap: nowrap; */
+  }
 }

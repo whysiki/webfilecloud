@@ -15,7 +15,7 @@
 .file-name {
   font-weight: bold;
   color: #1a7be3;
-  overflow: hidden; /* 隐藏超出元素宽度的内容 */
+  /* overflow: hidden; 隐藏超出元素宽度的内容 */
   text-overflow: ellipsis; /* 显示省略号来表示被裁剪的文本 */
   max-width: 200px; /* 限制元素的最大宽度 */
 }
@@ -153,4 +153,18 @@
   background-color: white;
   transform: translate(-50%, -50%);
   border-radius: 50%;
+}
+
+/* @media (max-width: 768px) {
+  .download-button,
+  .move-button,
+  .delete-button {
+    display: none;
+  }
+} */
+
+@media (max-width: 600px) {
+  .file-button {
+    display: none;
+  }
 }
