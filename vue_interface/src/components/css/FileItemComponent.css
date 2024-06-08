@@ -168,3 +168,62 @@
     display: none;
   }
 }
+
+.file-preview-container {
+  margin-top: 10px;
+}
+
+.file-preview {
+  width: 100%;
+  max-width: 600px;
+  padding: 10px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  display: block;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.file-preview:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 15px rgba(176, 43, 43, 0.2);
+}
+
+textarea.file-preview {
+  height: 300px;
+  resize: none;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: auto;
+}
+
+.video-preview {
+  max-height: 400px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.image-preview {
+  max-height: 400px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* 媒体查询 */
+@media (max-width: 600px) {
+  .file-preview {
+    width: 100%;
+    padding: 10px;
+  }
+
+  textarea.file-preview {
+    height: 200px;
+  }
+
+  .video-preview,
+  .image-preview {
+    max-height: 300px;
+  }
+}

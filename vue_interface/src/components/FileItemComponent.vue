@@ -42,6 +42,27 @@
       <p>Upload time: {{ file.file_create_time }}</p>
       <p>File size: {{ formatSize(file.file_size) }}</p>
       <p>File path: {{ parseNodes(file.file_nodes) }}</p>
+
+      <div class="file-preview-container">
+        <textarea
+          v-if="isTextFile && fileContent"
+          :value="fileContent"
+          readonly
+          class="file-preview"
+        ></textarea>
+        <video
+          v-else-if="isVideoFile && fileImageUrl"
+          :src="fileImageUrl"
+          controls
+          class="file-preview video-preview"
+        ></video>
+        <img
+          :src="fileImageUrl"
+          alt="Image preview"
+          class="file-preview image-preview"
+          v-else-if="isImageFile && fileImageUrl"
+        />
+      </div>
     </div>
     <div v-show="file.showdownloadProgressBar" class="progress-bar-container">
       <progress
@@ -60,46 +81,50 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
-// import { toRefs } from "vue";
-// import { useStore } from "vuex";
-// import { ref } from "vue";
 export default {
   props: ["file"],
   data() {
     return {
       showfileCardDetails: false,
       selected: false,
+      fileImageUrl: null,
+      fileContent: null,
     };
   },
-  // setup() {
-  // const selected = false;
-  // return { selected };
-  // },
-  // computed: {
-  //   selected() {
-  //     if (!store.state.selectedFiles.includes(this.file)) {
-  //       return false;
-  //       // } else {
-  //       //   return false;
-  //       // }
-  //     } else {
-  //       return true;
-  //     }
-  //   },
-  // },
-  // mounted() {
-  //   if (store.state.selectedFiles.includes(this.file)) {
-  //     this.selected = true;
-  //   } else {
-  //     this.selected = false;
-  //   }
-  // },
   beforeUnmount() {
     this.emitter.off("expand-all");
     this.emitter.off("collapse-all");
     if (store.state.selectedFiles.includes(this.file)) {
       store.commit("removeSelectedFile", this.file);
     }
+  },
+  computed: {
+    isTextFile() {
+      return [
+        "txt",
+        "md",
+        "json",
+        "js",
+        "html",
+        "css",
+        "py",
+        "java",
+        "c",
+        "cpp",
+        "h",
+        "hpp",
+        "sql",
+        "sh",
+        "conf",
+        "bat",
+      ].includes(this.file.file_type);
+    },
+    isVideoFile() {
+      return ["mp4", "webm", "ogg", "mkv"].includes(this.file.file_type);
+    },
+    isImageFile() {
+      return ["jpg", "png", "jpeg"].includes(this.file.file_type);
+    },
   },
   mounted() {
     this.emitter.on("expand-all", () => {
@@ -111,6 +136,56 @@ export default {
     this.emitter.on("clear-selected-files", () => {
       this.selected = false;
     });
+  },
+  watch: {
+    file: {
+      immediate: true,
+      handler(newFile) {
+        if (newFile) {
+          if (newFile.file_size > 1024 * 1024 * 10) {
+            this.fileContent = null;
+            this.fileImageUrl = null;
+          } else if (
+            newFile.file_type === "txt" ||
+            newFile.file_type === "md" ||
+            newFile.file_type === "json" ||
+            newFile.file_type === "js" ||
+            newFile.file_type === "html" ||
+            newFile.file_type === "css" ||
+            newFile.file_type === "py" ||
+            newFile.file_type === "java" ||
+            newFile.file_type === "c" ||
+            newFile.file_type === "cpp" ||
+            newFile.file_type === "h" ||
+            newFile.file_type === "hpp" ||
+            newFile.file_type === "sql" ||
+            newFile.file_type === "sh" ||
+            newFile.file_type === "conf" ||
+            newFile.file_type === "bat"
+          ) {
+            this.getFileContent(newFile).then((content) => {
+              this.fileContent = content;
+            });
+          } else if (
+            newFile.file_type === "jpg" ||
+            newFile.file_type === "png" ||
+            newFile.file_type === "mp4" ||
+            newFile.file_type === "webm" ||
+            newFile.file_type === "ogg" ||
+            newFile.file_type === "jpeg" ||
+            newFile.file_type === "pdf" ||
+            newFile.file_type === "mkv"
+          ) {
+            this.createImageUrl(newFile).then((url) => {
+              this.fileImageUrl = url;
+            });
+          }
+        } else {
+          this.fileContent = null;
+          this.fileImageUrl = null;
+        }
+      },
+    },
   },
   methods: {
     toggleSelect() {
@@ -250,6 +325,52 @@ export default {
         } else {
           await this.$refs.alertPopup.showAlert("No response from server");
         }
+      }
+    },
+
+    async createImageUrl(file) {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`/files/download?file_id=${file.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/octet-stream",
+          },
+          responseType: "blob",
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        // console.log(url);
+        return url;
+      } catch (error) {
+        await this.$refs.alertPopup.showAlert(
+          `Error creating image URL: ${error.message}`
+        );
+        return null;
+      }
+    },
+
+    async readAsText(blob, encoding = "UTF-8") {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(blob, encoding);
+      });
+    },
+    async getFileContent(file) {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`/files/download?file_id=${file.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/octet-stream",
+          },
+          responseType: "blob",
+        });
+        const content = await this.readAsText(response.data);
+        return content;
+      } catch {
+        return null;
       }
     },
   },
