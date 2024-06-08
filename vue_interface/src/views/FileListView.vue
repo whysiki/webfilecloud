@@ -1,7 +1,6 @@
 <template>
   <TopBar />
   <FileList v-if="true" />
-  <!-- <SearchComponent /> -->
 </template>
 
 <script>
@@ -18,4 +17,4 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style screen></style>
