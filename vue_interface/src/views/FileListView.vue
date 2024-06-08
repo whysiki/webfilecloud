@@ -1,20 +1,70 @@
 <template>
   <TopBar />
-  <FileList v-if="true" />
+  <FileList />
+  <button class="scroll-to-top" @click="scrollToTop" v-show="showScrollButton">↑</button>
 </template>
 
 <script>
 import TopBar from "../components/TopBar.vue";
 import FileList from "../components/FileList.vue";
-// import SearchComponent from "../components/SearchComponent.vue";
 export default {
   name: "FileListView",
   components: {
     TopBar,
     FileList,
-    // SearchComponent,
+  },
+  data() {
+    return {
+      showScrollButton: false,
+    };
+  },
+  mounted() {
+    window.addEventListener("scroll", this.checkScroll);
+  },
+  beforeUnmount() {
+    window.removeEventListener("scroll", this.checkScroll);
+  },
+  methods: {
+    checkScroll() {
+      this.showScrollButton = window.scrollY > 50;
+    },
+    scrollToTop() {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
   },
 };
 </script>
 
-<style screen></style>
+<style screen>
+.scroll-to-top {
+  position: fixed;
+  bottom: 70px;
+  right: 20px;
+  background-color: #16723c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s;
+}
+
+.scroll-to-top:hover {
+  opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .scroll-to-top {
+    right: 5px;
+    padding: 5px;
+    font-size: 15px;
+    width: 42px;
+    height: 42px;
+  }
+}
+</style>
