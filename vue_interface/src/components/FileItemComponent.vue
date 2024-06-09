@@ -85,6 +85,8 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
+// import { WritableStream } from "web-streams-polyfill/ponyfill";
+// import { createWriteStream } from "streamsaver";
 // import { Filesystem, Directory } from "@capacitor/filesystem";
 export default {
   props: ["file"],
@@ -220,40 +222,190 @@ export default {
     parseNodes(file_nodes) {
       return file_nodes.length > 0 ? "/" + file_nodes.join("/") : "/";
     },
+    // async downloadFile(file) {
+    //   try {
+    //     file.showdownloadProgressBar = true;
+    //     const token = localStorage.getItem("token");
+    //     file.cancelTokenSource = axiosModule.CancelToken.source();
+    //     const response = await axios.get(`/files/download?file_id=${file.id}`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/octet-stream",
+    //       },
+    //       responseType: "blob",
+    //       //file.file_size
+    //       // onDownloadProgress: (progressEvent) => {
+    //       //   file.downloadProgress = Math.round(
+    //       //     (progressEvent.loaded * 100) / progressEvent.total
+    //       //   );
+    //       // },
+    //       onDownloadProgress: (progressEvent) => {
+    //         // 使用 file.file_size 作为 total
+    //         file.downloadProgress = Math.round(
+    //           (progressEvent.loaded * 100) / file.file_size
+    //         );
+    //       },
+    //       cancelToken: file.cancelTokenSource.token,
+    //     });
+
+    //     const url = window.URL.createObjectURL(new Blob([response.data]));
+    //     const link = document.createElement("a");
+    //     link.href = url;
+    //     link.setAttribute("download", file.filename);
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     // console.log(url); //blob:http://localhost:8080/8f1b39bc-b89a-4945-bdca-c9095ca068f8
+    //     document.body.removeChild(link);
+    //     window.URL.revokeObjectURL(url);
+
+    //     // await Filesystem.writeFile({
+    //     // path: file.filename,
+    //     // data: new Blob([response.data]),
+    //     // directory: Directory.Documents,
+    //     // });
+    //   } catch (error) {
+    //     if (axiosModule.isCancel(error)) {
+    //       await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);
+    //     } else {
+    //       await this.$refs.alertPopup.showAlert(
+    //         `Error downloading file: ${error.message}`
+    //       );
+    //     }
+    //   } finally {
+    //     file.showdownloadProgressBar = false;
+    //   }
+    // },
+    // async downloadFile(file) {
+    //   try {
+    //     file.showdownloadProgressBar = true;
+    //     const token = localStorage.getItem("token");
+    //     file.cancelTokenSource = axiosModule.CancelToken.source();
+    //     const response = await axios.get(`/files/download/stream?file_id=${file.id}`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //       responseType: "stream",
+    //       onDownloadProgress: (progressEvent) => {
+    //         file.downloadProgress = Math.round(
+    //           (progressEvent.loaded * 100) / file.file_size
+    //         );
+    //       },
+    //       cancelToken: file.cancelTokenSource.token,
+    //     });
+
+    //     const fileStream = createWriteStream(file.filename);
+    //     const writer = fileStream.getWriter();
+
+    //     const pump = (reader, controller) => {
+    //       return reader.read().then(({ value, done }) => {
+    //         if (done) {
+    //           controller.close();
+    //         } else {
+    //           controller.enqueue(value);
+    //           return pump(reader, controller);
+    //         }
+    //       });
+    //     };
+
+    //     const readableStream = new ReadableStream({
+    //       start(controller) {
+    //         const reader = response.data.body.getReader();
+    //         return pump(reader, controller);
+    //       },
+    //     });
+
+    //     if (window.WritableStream && readableStream.pipeTo) {
+    //       return readableStream
+    //         .pipeTo(fileStream)
+    //         .then(() => console.log("done writing"));
+    //     }
+
+    //     const reader = readableStream.getReader();
+    //     pump(reader, writer);
+    //   } catch (error) {
+    //     if (axiosModule.isCancel(error)) {
+    //       await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);
+    //     } else {
+    //       await this.$refs.alertPopup.showAlert(
+    //         `Error downloading file: ${error.message}`
+    //       );
+    //     }
+    //   } finally {
+    //     file.showdownloadProgressBar = false;
+    //   }
+    // },
+    // async downloadFile(file) {
+    //   try {
+    //     file.showdownloadProgressBar = true;
+    //     const token = localStorage.getItem("token");
+    //     const response = await fetch(`/files/download/stream?file_id=${file.id}`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
+
+    //     if (!response.ok) {
+    //       throw new Error(`HTTP error! status: ${response.status}`);
+    //     }
+
+    //     const reader = response.body.getReader();
+    //     const contentLength = +response.headers.get("Content-Length");
+    //     let receivedLength = 0;
+
+    //     const fileStream = createWriteStream(file.filename);
+    //     const writer = fileStream.getWriter();
+
+    //     while (true) {
+    //       const { done, value } = await reader.read();
+
+    //       if (done) {
+    //         break;
+    //       }
+
+    //       writer.write(value);
+    //       receivedLength += value.length;
+    //       file.downloadProgress = Math.round((receivedLength * 100) / contentLength);
+    //     }
+
+    //     writer.close();
+    //     console.log("done writing");
+    //   } catch (error) {
+    //     if (error.name === "AbortError") {
+    //       await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);
+    //     } else {
+    //       await this.$refs.alertPopup.showAlert(
+    //         `Error downloading file: ${error.message}`
+    //       );
+    //     }
+    //   } finally {
+    //     file.showdownloadProgressBar = false;
+    //   }
+    // },
     async downloadFile(file) {
       try {
         file.showdownloadProgressBar = true;
         const token = localStorage.getItem("token");
         file.cancelTokenSource = axiosModule.CancelToken.source();
-        const response = await axios.get(`/files/download?file_id=${file.id}`, {
+        const response = await axios.get(`/files/download/stream?file_id=${file.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/octet-stream",
           },
           responseType: "blob",
           onDownloadProgress: (progressEvent) => {
             file.downloadProgress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
+              (progressEvent.loaded * 100) / file.file_size
             );
           },
           cancelToken: file.cancelTokenSource.token,
         });
-
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;
         link.setAttribute("download", file.filename);
         document.body.appendChild(link);
         link.click();
-        // console.log(url); //blob:http://localhost:8080/8f1b39bc-b89a-4945-bdca-c9095ca068f8
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-
-        // await Filesystem.writeFile({
-        // path: file.filename,
-        // data: new Blob([response.data]),
-        // directory: Directory.Documents,
-        // });
       } catch (error) {
         if (axiosModule.isCancel(error)) {
           await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);
@@ -266,6 +418,7 @@ export default {
         file.showdownloadProgressBar = false;
       }
     },
+
     cancelDownload(file) {
       if (file.cancelTokenSource) {
         file.cancelTokenSource.cancel("User cancelled the download");
