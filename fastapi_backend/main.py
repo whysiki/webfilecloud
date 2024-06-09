@@ -26,6 +26,7 @@ from app import app  # 应用实例
 import json
 import numpy
 import utility
+from pathlib import Path
 
 
 # 注册用户
@@ -637,7 +638,7 @@ async def file_info(
 
 # 移动文件位置
 @app.post("/file/modifynodes", response_model=schemas.FileOut)
-def modify_file_nodes(
+async def modify_file_nodes(
     file_id: str,
     file_nodes: Optional[str] = None,
     Authorization: Optional[str] = Header(None),
@@ -699,8 +700,51 @@ def modify_file_nodes(
 
 
 # 下载文件
+# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
+# async def download_file(
+#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+# ):
+#     user = crud.get_user_by_id(db, user_id)
+#     file = crud.get_file_by_id(db, file_id)
+#     if not file:
+#         raise HTTPException(status_code=404, detail="File not found")
+#     if file.file_owner_name != user.username or file.filename != file_name:
+#         raise HTTPException(status_code=403, detail="Permission denied")
+#     return FileResponse(
+#         file.file_path, filename=file.filename, media_type="application/octet-stream"
+#     )
+
+
+# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
+# async def download_file(
+#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+# ):
+#     user = crud.get_user_by_id(db, user_id)
+#     file = crud.get_file_by_id(db, file_id)
+#     if not file:
+#         raise HTTPException(status_code=404, detail="File not found")
+#     if file.file_owner_name != user.username or file.filename != file_name:
+#         raise HTTPException(status_code=403, detail="Permission denied")
+
+#     file_path = Path(file.file_path)
+#     file_size = file_path.stat().st_size
+
+#     async def iterfile():  # 创建一个异步生成器
+#         async with aiofiles.open(file_path, mode="rb") as file:
+#             chunk = await file.read(1024)
+#             while chunk:
+#                 yield chunk
+#                 chunk = await file.read(1024)
+
+#     response = StreamingResponse(iterfile(), media_type="application/octet-stream")
+#     response.headers["Content-Disposition"] = f"attachment; filename={file.filename}"
+#     response.headers["Content-Length"] = str(file_size)
+
+#     return response
+
+
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
-def download_file(
+async def download_file(
     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
 ):
     user = crud.get_user_by_id(db, user_id)
@@ -709,6 +753,13 @@ def download_file(
         raise HTTPException(status_code=404, detail="File not found")
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
+
+    file_path = Path(file.file_path)
+    file_size = file_path.stat().st_size
+
     return FileResponse(
-        file.file_path, filename=file.filename, media_type="application/octet-stream"
+        file.file_path,
+        filename=file.filename,
+        media_type="application/octet-stream",
+        headers={"Content-Length": str(file_size)},
     )
