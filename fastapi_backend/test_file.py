@@ -40,7 +40,6 @@ if not root_password:
 
 
 base_url = f"http://localhost:{startport}"
-# base_url = f"http://47.115.43.139:{startport}"
 testfile_folder = "../testfile_folder"
 
 console = Console()
@@ -268,7 +267,7 @@ async def Breakpoint_resume_download_test(client, token):
         original_bytes: bytes = f.read()
 
     original_bytes_size = os.path.getsize(test_upload_file)
-    
+
     assert len(original_bytes) == original_bytes_size
 
     print(original_bytes_size)
@@ -298,14 +297,14 @@ async def Breakpoint_resume_download_test(client, token):
 
     ranges_list = re.findall(r"bytes=(\d+-\d+)", ranges)
 
-    async def download_part(client, headers, file_id, r: str=None) -> bytes:
+    async def download_part(client, headers, file_id, r: str = None) -> bytes:
         url = f"{base_url}/files/download/stream"
         params = {"file_id": file_id}
         if r:
             headers["Range"] = r
         response = await client.get(url, headers=headers, params=params)
         print(response.headers)
-        return  response.content
+        return response.content
 
     # tasks = []
 
@@ -327,8 +326,8 @@ async def Breakpoint_resume_download_test(client, token):
         get_byte_list.append(b)
 
     # get_byte_list = await asyncio.gather(*tasks)
-    all_get_bytes : bytes= bytearray(b"".join(get_byte_list))
-    
+    all_get_bytes: bytes = bytearray(b"".join(get_byte_list))
+
     # ugizp = gzip.decompress(all_get_bytes)
 
     print("获取比特大小: ", len_get)
@@ -336,14 +335,14 @@ async def Breakpoint_resume_download_test(client, token):
     # print("解压后大小：",len(ugizp))
 
     assert len_get == original_bytes_size, "分片测试失败"
-    
+
     print("分片测试通过")
-    
-    responseb = await download_part(client,headers.copy(),file_id=file_id)
-    
+
+    responseb = await download_part(client, headers.copy(), file_id=file_id)
+
     assert len(responseb) == original_bytes_size, "整体测试1失败"
-    
-    assert original_bytes == all_get_bytes , "整体测试2失败"
+
+    assert original_bytes == all_get_bytes, "整体测试2失败"
 
     # print(original_bytes_size)
 
@@ -399,9 +398,9 @@ async def main():
             response = await upload_file_with_nodes(client, token, test_file, node1)
             # print()
             d_url = response.json()["file_download_link"]
-            
+
             print(f"{base_url}{d_url}")
-            
+
             # file_id = response.json()["id"]
             # nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
             # node2 = random.choice(nodess)
