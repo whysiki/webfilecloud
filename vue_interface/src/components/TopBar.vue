@@ -56,7 +56,7 @@
 </template>
 
 <script>
-import CryptoJS from "crypto-js";
+// import CryptoJS from "crypto-js";
 import axios from "../axios"; // 导入 axios 实例
 export default {
   name: "SideBar",
@@ -187,14 +187,15 @@ export default {
       const reader = new FileReader();
       reader.readAsArrayBuffer(file);
       reader.onload = async () => {
-        const username = localStorage.getItem("username");
-        const arrayBuffer = reader.result;
-        const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
-        const fileHash = CryptoJS.SHA256(wordArray).toString();
-        const usernameHash = CryptoJS.SHA1(username).toString();
-        const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
-        const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
-        const fileId = fileHash + usernameHash + file_nodes_hash;
+        // const username = localStorage.getItem("username");
+        // const arrayBuffer = reader.result;
+        // const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+        // const fileHash = CryptoJS.SHA256(wordArray).toString();
+        // const usernameHash = CryptoJS.SHA1(username).toString();
+        // const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
+        // const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
+        // const fileId = fileHash + usernameHash + file_nodes_hash;
+        const fileId = "";
         const formData = new FormData();
         formData.append("file", file);
         try {

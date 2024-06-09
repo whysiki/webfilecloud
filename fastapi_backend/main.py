@@ -203,17 +203,17 @@ async def upload_file(
     )
 
     if existing_file:
-        # return schemas.FileOut(
-        # id=existing_file.id,
-        # filename=existing_file.filename,
-        # file_size=existing_file.file_size,
-        # message="File already exists",
-        # file_create_time=existing_file.file_create_time,
-        # file_type=existing_file.file_type,
-        # file_owner_name=existing_file.file_owner_name,
-        # file_nodes=existing_file.file_nodes,
-        # )
-        raise HTTPException(status_code=400, detail="File already exists")
+        return schemas.FileOut(
+        id=existing_file.id,
+        filename=existing_file.filename,
+        file_size=existing_file.file_size,
+        message="File already exists",
+        file_create_time=existing_file.file_create_time,
+        file_type=existing_file.file_type,
+        file_owner_name=existing_file.file_owner_name,
+        file_nodes=existing_file.file_nodes,
+        )
+        # raise HTTPException(status_code=400, detail="File already exists")
 
     filename = file.filename
 
@@ -383,6 +383,69 @@ async def read_file(
 
 
 
+# @app.get("/files/download/stream")
+# async def read_file_stream(
+#     request: Request,
+#     file_id: str,
+#     Authorization: Optional[str] = Header(None),
+#     db: Session = Depends(get_db),
+# ):
+#     access_token = auth.get_access_token_from_Authorization(Authorization)
+#     username: str = get_current_username(access_token)
+#     user = crud.get_user_by_username(db, username)
+#     file = crud.get_file_by_id(db, file_id=file_id)
+
+#     if file.file_owner_name != user.username:
+#         raise HTTPException(status_code=403, detail="Permission denied")
+
+#     if not crud.is_fileid_in_user_files(db, user, file.id):
+#         raise HTTPException(
+#             status_code=404, detail="File not found in user's file list"
+#         )
+
+#     if not os.path.exists(file.file_path):
+#         raise HTTPException(status_code=404, detail="File path not found")
+#     file_size = os.path.getsize(file.file_path)
+#     range_header = request.headers.get("Range")
+#     if range_header:
+#         start, end = range_header.replace("bytes=", "").split("-")
+#         start = int(start)
+#         end = int(end) if end else file_size - 1
+#     else:
+#         start = 0
+#         end = file_size - 1
+
+#     async def file_iterator():
+#         async with aiofiles.open(file.file_path, mode="rb") as f:
+#             await f.seek(start)
+#             chunk_size = 1024  # adjust chunk size as needed
+#             while True:
+#                 chunk = await f.read(chunk_size)
+#                 if not chunk:
+#                     break
+#                 yield chunk
+
+#     return StreamingResponse(
+#         file_iterator(), status_code=206 if range_header else 200, headers={
+#             "Content-Length": str(end - start + 1),
+#             "Content-Range": f"bytes {start}-{end}/{file_size}",
+#             "Accept-Ranges": "bytes"
+#         }
+#     )
+
+
+async def file_iterator(file_path: str, start: int, end: int):
+    async with aiofiles.open(file_path, mode="rb") as f:
+        await f.seek(start)
+        chunk_size = 1024  # 调整 chunk 大小
+        while True:
+            chunk = await f.read(chunk_size)
+            if not chunk or await f.tell() > end:
+                break
+            yield chunk
+
+
+
 @app.get("/files/download/stream")
 async def read_file_stream(
     request: Request,
@@ -414,24 +477,18 @@ async def read_file_stream(
     else:
         start = 0
         end = file_size - 1
-
-    async def file_iterator():
-        async with aiofiles.open(file.file_path, mode="rb") as f:
-            await f.seek(start)
-            chunk_size = 1024  # adjust chunk size as needed
-            while True:
-                chunk = await f.read(chunk_size)
-                if not chunk:
-                    break
-                yield chunk
+        
+        
+    logger.debug(f"{start}-{end}")
 
     return StreamingResponse(
-        file_iterator(), status_code=206 if range_header else 200, headers={
+        file_iterator(file.file_path, start, end), status_code=206 if range_header else 200, headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
             "Accept-Ranges": "bytes"
         }
     )
+
 
 
 # 获取用户文件列表

@@ -14,6 +14,10 @@ import time
 import random
 import subprocess
 import shutil
+import re
+from tqdm import tqdm
+import gzip
+from io import BytesIO
 
 # import psutil
 # from achive.path_tools import forcey_delete_path
@@ -36,6 +40,7 @@ if not root_password:
 
 
 base_url = f"http://localhost:{startport}"
+# base_url = f"http://47.115.43.139:{startport}"
 testfile_folder = "../testfile_folder"
 
 console = Console()
@@ -245,6 +250,107 @@ async def modyfy_file_nodes(client, token, file_id, nodes):
     # assert response.json()["file_nodes"] == nodes, "modify nodes failed"
 
 
+# @handle_error
+async def Breakpoint_resume_download_test(client, token):
+
+    # 测试文件生成
+    test_upload_file = f"{testfile_folder}/testbinary,b"
+
+    def generate_random_binary_file(file_path, size_in_bytes):
+        with open(file_path, "wb") as f:
+            data = os.urandom(size_in_bytes)
+            f.write(data)
+
+    # if os.path.exists(test_upload_file):
+    # os.remove(test_upload_file)
+    generate_random_binary_file(test_upload_file, 1024 * 1024 * 4)
+
+    with open(test_upload_file, "rb") as f:
+
+        original_bytes: bytes = f.read()
+
+    original_bytes_size = os.path.getsize(test_upload_file)
+
+    print(original_bytes_size)
+
+    # 上传
+    responsejson = await upload_file(client, token, test_upload_file)
+
+    # 获取id
+    file_id = responsejson["id"]
+
+    print(file_id)
+
+    # 下载
+    headers = {"Authorization": f"Bearer {token}"}
+    ranges = """
+    Range: bytes=0-419430
+    Range: bytes=419431-838860
+    Range: bytes=838861-1258290
+    Range: bytes=1258291-1677720
+    Range: bytes=1677721-2097150
+    Range: bytes=2097151-2516580
+    Range: bytes=2516581-2936010
+    Range: bytes=2936011-3355440
+    Range: bytes=3355441-3774870
+    Range: bytes=3774871-4194303
+    """.strip()
+
+    ranges_list = re.findall(r"bytes=(\d+-\d+)", ranges)
+
+    async def download_part(client, headers, file_id, r: str) -> bytes:
+        url = f"{base_url}/files/download/stream"
+        params = {"file_id": file_id}
+        # headers["Range"] = f"bytes={start}-{end}"
+        headers["Range"] = r
+        # headers["Accept-Encoding"] = "identity"
+        # {"Accept-Encoding": "identity"} 是一个请求头的字典，
+        # 它告诉服务器你希望接收未经过压缩的原始数据。
+        response = await client.get(url, headers=headers, params=params)
+
+        print(response.headers)
+        # gzip_content = response.content
+        # compressed_stream = BytesIO(gzip_content)
+        # decompressed_stream = gzip.GzipFile(fileobj=compressed_stream, mode="rb")
+        # uncompressed_content = decompressed_stream.read()
+        # httpx.get(url).res
+        # return uncompressed_content
+        return  response.content
+        # return gzip.decompress(response.content)
+
+    # tasks = []
+
+    get_byte_list = []
+
+    len_get = 0
+
+    for r in tqdm(ranges_list):
+        # start, end = map(int, r.split("-"))
+        # tasks.append(download_part(client, headers.copy(), file_id, start, end))
+        print()
+        print(r)
+        # start, end = map(int, r.split("-"))
+        # print(start,end)
+        b = await download_part(client, headers.copy(), file_id, r)
+        print("len:", len(b))
+        # assert len(b) == (end-start + 1)
+        len_get += len(b)
+        get_byte_list.append(b)
+
+    # get_byte_list = await asyncio.gather(*tasks)
+    all_get_bytes : bytes= bytearray(b"".join(get_byte_list))
+    
+    ugizp = gzip.decompress(all_get_bytes)
+
+    print("获取比特大小: ", len_get)
+    print("原始比特大小: ", original_bytes_size)
+    print("解压后大小：",len(ugizp))
+
+    # assert all_get_bytes == original_bytes, "断点续传下载失败"
+
+    # print(original_bytes_size)
+
+
 async def main():
     async with httpx.AsyncClient(timeout=200) as client:
         # user_t = dict(username=str(uuid4()), password=str(uuid4()))
@@ -256,7 +362,7 @@ async def main():
                 await f.write(f"{str(uuid4())}" * 10)
         await register_user(client, user_t)
         token = await login_user(client, user_t)
-        if 1:
+        if False:  ###初步测试
             await get_current_user(client, token, user_t)
             await delete_user(client, token, user_t)
             await register_user(client, user_t)
@@ -276,7 +382,7 @@ async def main():
             print(files_id_name)
             if os.path.exists(os.path.basename(test_file)):
                 os.remove(os.path.basename(test_file))
-        if 1:
+        if False:
             for i in range(30):
                 test_file = f"{testfile_folder}/{str(uuid4())}.txt"
                 if not os.path.exists(test_file):
@@ -291,52 +397,55 @@ async def main():
                 if os.path.exists(os.path.basename(test_file)):
                     os.remove(os.path.basename(test_file))
             await delete_user_files(client, token)
-
-        if 1:
+        if False:
             node1 = ["11", "22"]
             response = await upload_file_with_nodes(client, token, test_file, node1)
             file_id = response.json()["id"]
             nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
             node2 = random.choice(nodess)
             await modyfy_file_nodes(client, token, file_id, node2)
+        if True:
+            await Breakpoint_resume_download_test(client, token)
         await delete_user(client, token, user_t)
 
 
 async def test_multiple(n):
     tasks = [asyncio.create_task(main()) for i in range(n)]
     await asyncio.gather(*tasks)
-    async with httpx.AsyncClient(timeout=200) as client:
-        await reset_db(client, root_user, root_password)
-
-
-def delete_test_folder(folder_to_delete):
-    if os.path.exists(folder_to_delete):
-        folder_to_delete = os.path.abspath(folder_to_delete)
-    for i in range(5):
-        if os.path.exists(folder_to_delete):
-            shutil.rmtree(folder_to_delete, ignore_errors=True)
-            for r, _, fs in os.walk(folder_to_delete):
-                for f in fs:
-                    f_path = Path(r) / Path(f)
-                    try:
-                        os.remove(f_path)
-                        # print(f"Deleted file: {f_path}")
-                    except Exception as e:
-                        # forcey_delete_path(f_path)
-                        pass
-                        # console.print(f"Error deleting file {f_path}: {e}",style="red")
-        if i != 0:
-            pass
-            # if os.name == "nt":
-            # subprocess.run(["rmdir","/S","/Q",folder_to_delete],shell=True)
-            # else:
-            # subprocess.run(["rm","-rf",folder_to_delete],shell=True)
-            # time.sleep(5)
+    if False:
+        async with httpx.AsyncClient(timeout=200) as client:
+            await reset_db(client, root_user, root_password)
 
 
 # DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;DROP TABLE whyshi.files CASCADE;
 # DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;
 #  SELECT * FROM whyshi.files;SELECT * FROM whyshi.users;SELECT * FROM whyshi.association;
 if __name__ == "__main__":
+
     asyncio.run(test_multiple(1))
+
+    def delete_test_folder(folder_to_delete):
+        if os.path.exists(folder_to_delete):
+            folder_to_delete = os.path.abspath(folder_to_delete)
+        for i in range(5):
+            if os.path.exists(folder_to_delete):
+                shutil.rmtree(folder_to_delete, ignore_errors=True)
+                for r, _, fs in os.walk(folder_to_delete):
+                    for f in fs:
+                        f_path = Path(r) / Path(f)
+                        try:
+                            os.remove(f_path)
+                            # print(f"Deleted file: {f_path}")
+                        except Exception as e:
+                            # forcey_delete_path(f_path)
+                            pass
+                            # console.print(f"Error deleting file {f_path}: {e}",style="red")
+            if i != 0:
+                pass
+                # if os.name == "nt":
+                # subprocess.run(["rmdir","/S","/Q",folder_to_delete],shell=True)
+                # else:
+                # subprocess.run(["rm","-rf",folder_to_delete],shell=True)
+                # time.sleep(5)
+
     delete_test_folder(testfile_folder)
