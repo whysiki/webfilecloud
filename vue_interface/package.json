@@ -8,6 +8,10 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "argon2": "^0.40.3",
     "axios": "^1.7.2",

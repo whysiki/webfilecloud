@@ -85,6 +85,7 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
+// import { Filesystem, Directory } from "@capacitor/filesystem";
 export default {
   props: ["file"],
   data() {
@@ -202,7 +203,7 @@ export default {
       } else {
         store.commit("removeSelectedFile", this.file);
       }
-      console.log(store.state.selectedFiles);
+      //console.log(store.state.selectedFiles);
     },
     toggleDetails() {
       this.showfileCardDetails = !this.showfileCardDetails;
@@ -237,12 +238,22 @@ export default {
           },
           cancelToken: file.cancelTokenSource.token,
         });
+
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;
         link.setAttribute("download", file.filename);
         document.body.appendChild(link);
         link.click();
+        // console.log(url); //blob:http://localhost:8080/8f1b39bc-b89a-4945-bdca-c9095ca068f8
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        // await Filesystem.writeFile({
+        // path: file.filename,
+        // data: new Blob([response.data]),
+        // directory: Directory.Documents,
+        // });
       } catch (error) {
         if (axiosModule.isCancel(error)) {
           await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);

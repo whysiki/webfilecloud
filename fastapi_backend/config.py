@@ -27,6 +27,14 @@ class Config:
 
     os.makedirs(UPLOAD_PATH, exist_ok=True)
 
+    # cros-origins
+
+    CROS_ORIGINS: list = ["*"]
+
+    # GIZE RESOPONSE MIN_SIEZ
+
+    GZIP_MINIMUM_SIZE: int = 500
+
     assert (
         UPLOAD_PATH
         and SECRET_KEY

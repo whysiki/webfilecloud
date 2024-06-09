@@ -48,7 +48,7 @@
 import axios from "../axios";
 import store from "../store";
 import axiosModule from "axios";
-
+// import { Filesystem, Directory } from "@capacitor/filesystem";
 export default {
   computed: {
     showBatchActions() {
@@ -97,6 +97,15 @@ export default {
         "Are you sure you want to download those files?"
       );
       if (tag === "ok") {
+        // let filePath = await this.$refs.popInputRef
+        //   .popInput("file path")
+        //   .then((inputValue) => {
+        //     return inputValue;
+        //   })
+        //   .catch(async (error) => {
+        //     await this.$refs.alertPopup.showAlert(error);
+        //     return null;
+        //   });
         const total = store.state.selectedFiles.length;
         let count = 0;
         for (let file of store.state.selectedFiles) {
@@ -123,6 +132,14 @@ export default {
             link.setAttribute("download", file.filename);
             document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            // await Filesystem.writeFile({
+            //   // path: `${filePath}/${file.filename}`,
+            //   path: file.filename,
+            //   data: new Blob([response.data]),
+            //   directory: Directory.Documents,
+            // });
             count++;
             store.state.batchProgress = (count / total) * 100;
           } catch (error) {

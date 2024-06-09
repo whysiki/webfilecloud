@@ -1,9 +1,15 @@
 # encoding: utf-8
 
 from fastapi import FastAPI
+from config import Config
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
-app = FastAPI()
+
+
+origins = Config.CROS_ORIGINS
+
+minimum_size = Config.GZIP_MINIMUM_SIZE
 
 # origins = [
 #     "http://localhost:3000",  # 允许本地开发服务器的跨域请求
@@ -11,7 +17,9 @@ app = FastAPI()
 #     "http://localhost:8000",  # 允许本地开发服务器的跨域请求
 #     "http://your-production-url.com",  # 允许生产服务器的跨域请求
 # ]
-origins = ["*"]
+
+
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,3 +28,5 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=minimum_size)

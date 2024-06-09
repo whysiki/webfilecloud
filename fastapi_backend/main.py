@@ -26,6 +26,7 @@ import json
 import numpy
 import utility
 
+
 # 注册用户
 @app.post("/users/register", response_model=schemas.UserOut)
 async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
@@ -220,7 +221,9 @@ async def upload_file(
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
-    file_path = utility.get_new_path(os.path.join(Config.UPLOAD_PATH, username, file_type, filename))
+    file_path = utility.get_new_path(
+        os.path.join(Config.UPLOAD_PATH, username, file_type, filename)
+    )
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     async with aiofiles.open(file_path, "wb") as buffer:
@@ -406,6 +409,7 @@ async def list_files(
 
     return dict(files=file_list)
 
+
 # 删除一个文件
 @app.delete("/files/delete", response_model=schemas.FileOut)
 async def delete_file(
@@ -519,14 +523,10 @@ def modify_file_nodes(
     file_nodes: Optional[str] = None,
     Authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
-    
 ):
     if not file_nodes:
-        
-        raise HTTPException(status_code=405,detail="Invalid nodes")
-    
+        raise HTTPException(status_code=405, detail="Invalid nodes")
     else:
-        
         # logger.debug(f"{file_nodes}")
 
         file_nodes_array = json.loads(file_nodes)
@@ -541,31 +541,31 @@ def modify_file_nodes(
             )
             file_nodes_array = []
             break
-    
+
     access_token = auth.get_access_token_from_Authorization(Authorization)
-    
+
     username = get_current_username(access_token)
-    
-    file = crud.get_file_by_id(db,file_id)
-    
+
+    file = crud.get_file_by_id(db, file_id)
+
     if file.file_owner_name != username:
         # print()
         logger.debug({logger.debug(file.file_owner_name)} / {username})
-        raise HTTPException(status_code=401,detail="Access denied")
+        raise HTTPException(status_code=401, detail="Access denied")
     else:
         # if file.file_nodes == file_nodes_array:
         file.file_nodes = file_nodes_array
-    
+
     db.commit()
-    
+
     if file.file_nodes != file_nodes_array:
-        
-        raise HTTPException(status_code=403,detail="Modify nodes failes")
-    
+
+        raise HTTPException(status_code=403, detail="Modify nodes failes")
+
     else:
-        
+
         logger.debug(f"upload: {file_nodes} , new nodes {file.file_nodes}")
-    
+
     return schemas.FileOut(
         id=file.id,
         filename=file.filename,
