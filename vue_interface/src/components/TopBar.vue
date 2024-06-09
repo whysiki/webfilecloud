@@ -206,6 +206,10 @@ export default {
           const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
           const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
           fileId = fileHash + usernameHash + file_nodes_hash;
+        } else {
+          await this.$refs.alertPopup.showAlert(
+            `File ${file.name} is too large to upload. The digest check existence will not be computed`
+          );
         }
         const formData = new FormData();
         formData.append("file", file);
