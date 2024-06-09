@@ -35,6 +35,15 @@
         >
           Delete
         </button>
+        <a
+          :href="downloadLink"
+          download
+          class="download-button"
+          id="download-button-single-file"
+          @click.stop
+        >
+          <i class="fas fa-download"></i>
+        </a>
       </div>
     </div>
     <div v-if="showfileCardDetails" class="file-card-details">
@@ -101,6 +110,9 @@ export default {
   },
 
   computed: {
+    downloadLink() {
+      return store.state.baseUrl + this.file.file_download_link;
+    },
     listStyle() {
       if (store.state.viewMode === "card") {
         //统一卡片大小

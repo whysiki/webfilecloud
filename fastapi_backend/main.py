@@ -221,6 +221,8 @@ async def upload_file(
             file_type=existing_file.file_type,
             file_owner_name=existing_file.file_owner_name,
             file_nodes=existing_file.file_nodes,
+            # /file/download/{user_id}/{file_name}
+            file_download_link=f"/file/download/{user.id}/{existing_file.id}/{existing_file.filename}",
         )
         # raise HTTPException(status_code=400, detail="File already exists")
 
@@ -281,6 +283,7 @@ async def upload_file(
         file_type=new_file.file_type,
         file_owner_name=new_file.file_owner_name,
         file_nodes=new_file.file_nodes,
+        file_download_link=f"/file/download/{user.id}/{new_file.id}/{new_file.filename}",
     )
 
 
@@ -520,6 +523,7 @@ async def list_files(
             file_type=file.file_type,
             file_owner_name=file.file_owner_name,
             file_nodes=file.file_nodes,
+            file_download_link=f"/file/download/{user.id}/{file.id}/{file.filename}",
         )
         for file in user.files
     )
@@ -695,13 +699,15 @@ def modify_file_nodes(
 
 
 # 下载文件
-@app.get("/file/download/{user_id}/{file_name}")
-def download_file(user_id: str, file_name: str, db: Session = Depends(get_db)):
+@app.get("/file/download/{user_id}/{file_id}/{file_name}")
+def download_file(
+    user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+):
     user = crud.get_user_by_id(db, user_id)
-    file = crud.get_file_by_filename(db, file_name)
+    file = crud.get_file_by_id(db, file_id)
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
-    if file.file_owner_name != user.username:
+    if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
     return FileResponse(
         file.file_path, filename=file.filename, media_type="application/octet-stream"

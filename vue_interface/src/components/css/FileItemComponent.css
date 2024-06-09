@@ -229,3 +229,16 @@ textarea.file-preview {
     max-height: 300px;
   }
 }
+
+.download-button {
+  display: inline-block;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 50%;
+}
+
+.download-button:hover {
+  background-color: #0056b3;
+}

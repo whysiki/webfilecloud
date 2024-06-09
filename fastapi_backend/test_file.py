@@ -397,13 +397,18 @@ async def main():
                 if os.path.exists(os.path.basename(test_file)):
                     os.remove(os.path.basename(test_file))
             await delete_user_files(client, token)
-        if False:
+        if True:
             node1 = ["11", "22"]
             response = await upload_file_with_nodes(client, token, test_file, node1)
-            file_id = response.json()["id"]
-            nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
-            node2 = random.choice(nodess)
-            await modyfy_file_nodes(client, token, file_id, node2)
+            # print()
+            d_url = response.json()["file_download_link"]
+            
+            print(f"{base_url}{d_url}")
+            
+            # file_id = response.json()["id"]
+            # nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
+            # node2 = random.choice(nodess)
+            # await modyfy_file_nodes(client, token, file_id, node2)
         if False:
             await Breakpoint_resume_download_test(client, token)
         await delete_user(client, token, user_t)

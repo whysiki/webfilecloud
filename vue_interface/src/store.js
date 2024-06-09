@@ -7,6 +7,7 @@ export default createStore({
     batchProgress: 0,
     viewMode: "list",
     treePathList: [],
+    baseUrl: "http://47.115.43.139:8000",
   },
   mutations: {
     setFiles(state, files) {
