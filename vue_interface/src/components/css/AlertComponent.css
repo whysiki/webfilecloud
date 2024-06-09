@@ -82,3 +82,9 @@
     transform: scale(1);
   }
 }
+
+@media (max-width: 600px) {
+  .alert-button.handleHome {
+    display: none;
+  }
+}
