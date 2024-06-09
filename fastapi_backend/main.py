@@ -197,13 +197,6 @@ async def upload_file(
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
 
-    # chunk_size = 1024 * 1024  # 1MB
-    # file_content = await file.read()
-    # chunks = [file_content[i:i+chunk_size] for i in range(0, len(file_content), chunk_size)]
-    # file_hash = ''.join(hashlib.sha256(chunk).hexdigest() for chunk in chunks)
-    # file_hash = hashlib.sha256(file_hash.encode()).hexdigest()
-
-    # file_id = file_hash + hashlib.sha1(username.encode()).hexdigest() + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
 
     # 检查文件是否已存在
     existing_file = (
@@ -222,15 +215,12 @@ async def upload_file(
             file_type=existing_file.file_type,
             file_owner_name=existing_file.file_owner_name,
             file_nodes=existing_file.file_nodes,
-            # /file/download/{user_id}/{file_name}
             file_download_link=f"/file/download/{user.id}/{existing_file.id}/{existing_file.filename}",
         )
-        # raise HTTPException(status_code=400, detail="File already exists")
 
     filename = file.filename
 
     filename = os.path.basename(filename)  # 获取基本路径
-    # file_path = f"{Config.UPLOAD_PATH}/{username}/{filename}"
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
@@ -240,16 +230,6 @@ async def upload_file(
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     async with aiofiles.open(file_path, "wb") as buffer:
-        # if not isinstance(file_content, bytes):
-        #     raise HTTPException(status_code=500, detail="File content is not bytes")
-        # file_content_encrypted = get_encrypted_data(
-        #     username, user.password, file_content
-        # )
-        # if not isinstance(file_content_encrypted, bytes):
-        #     raise HTTPException(
-        #         status_code=500, detail="File upload failed, an unknown error"
-        #     )
-        # await buffer.write(file_content_encrypted)
         await buffer.write(file_content)
 
     file_size = str(os.path.getsize(file_path))
@@ -582,50 +562,6 @@ async def modify_file_nodes(
         # file_path=file.file_path,
         file_nodes=file.file_nodes,
     )
-
-
-# 下载文件
-# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
-# async def download_file(
-#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
-# ):
-#     user = crud.get_user_by_id(db, user_id)
-#     file = crud.get_file_by_id(db, file_id)
-#     if not file:
-#         raise HTTPException(status_code=404, detail="File not found")
-#     if file.file_owner_name != user.username or file.filename != file_name:
-#         raise HTTPException(status_code=403, detail="Permission denied")
-#     return FileResponse(
-#         file.file_path, filename=file.filename, media_type="application/octet-stream"
-#     )
-
-
-# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
-# async def download_file(
-#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
-# ):
-#     user = crud.get_user_by_id(db, user_id)
-#     file = crud.get_file_by_id(db, file_id)
-#     if not file:
-#         raise HTTPException(status_code=404, detail="File not found")
-#     if file.file_owner_name != user.username or file.filename != file_name:
-#         raise HTTPException(status_code=403, detail="Permission denied")
-
-#     file_path = Path(file.file_path)
-#     file_size = file_path.stat().st_size
-
-#     async def iterfile():  # 创建一个异步生成器
-#         async with aiofiles.open(file_path, mode="rb") as file:
-#             chunk = await file.read(1024)
-#             while chunk:
-#                 yield chunk
-#                 chunk = await file.read(1024)
-
-#     response = StreamingResponse(iterfile(), media_type="application/octet-stream")
-#     response.headers["Content-Disposition"] = f"attachment; filename={file.filename}"
-#     response.headers["Content-Length"] = str(file_size)
-
-#     return response
 
 
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
