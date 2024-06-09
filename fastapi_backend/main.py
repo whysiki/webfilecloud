@@ -195,7 +195,7 @@ async def upload_file(
         + hashlib.sha1(username.encode()).hexdigest()
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
-    
+
     # chunk_size = 1024 * 1024  # 1MB
     # file_content = await file.read()
     # chunks = [file_content[i:i+chunk_size] for i in range(0, len(file_content), chunk_size)]
@@ -203,7 +203,7 @@ async def upload_file(
     # file_hash = hashlib.sha256(file_hash.encode()).hexdigest()
 
     # file_id = file_hash + hashlib.sha1(username.encode()).hexdigest() + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
-    
+
     # 检查文件是否已存在
     existing_file = (
         db.query(models.File)
@@ -213,14 +213,14 @@ async def upload_file(
 
     if existing_file:
         return schemas.FileOut(
-        id=existing_file.id,
-        filename=existing_file.filename,
-        file_size=existing_file.file_size,
-        message="File already exists",
-        file_create_time=existing_file.file_create_time,
-        file_type=existing_file.file_type,
-        file_owner_name=existing_file.file_owner_name,
-        file_nodes=existing_file.file_nodes,
+            id=existing_file.id,
+            filename=existing_file.filename,
+            file_size=existing_file.file_size,
+            message="File already exists",
+            file_create_time=existing_file.file_create_time,
+            file_type=existing_file.file_type,
+            file_owner_name=existing_file.file_owner_name,
+            file_nodes=existing_file.file_nodes,
         )
         # raise HTTPException(status_code=400, detail="File already exists")
 
@@ -391,7 +391,6 @@ async def read_file(
 #     return StreamingResponse(data, media_type="application/octet-stream")
 
 
-
 # @app.get("/files/download/stream")
 # async def read_file_stream(
 #     request: Request,
@@ -454,7 +453,6 @@ async def file_iterator(file_path: str, start: int, end: int):
             yield chunk
 
 
-
 @app.get("/files/download/stream")
 async def read_file_stream(
     request: Request,
@@ -486,18 +484,18 @@ async def read_file_stream(
     else:
         start = 0
         end = file_size - 1
-        
-        
+
     logger.debug(f"{start}-{end}")
 
     return StreamingResponse(
-        file_iterator(file.file_path, start, end), status_code=206 if range_header else 200, headers={
+        file_iterator(file.file_path, start, end),
+        status_code=206 if range_header else 200,
+        headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Accept-Ranges": "bytes"
-        }
+            "Accept-Ranges": "bytes",
+        },
     )
-
 
 
 # 获取用户文件列表
@@ -633,9 +631,7 @@ async def file_info(
     )
 
 
-# 获取移动文件位置
-
-
+# 移动文件位置
 @app.post("/file/modifynodes", response_model=schemas.FileOut)
 def modify_file_nodes(
     file_id: str,
@@ -695,4 +691,21 @@ def modify_file_nodes(
         file_owner_name=file.file_owner_name,
         # file_path=file.file_path,
         file_nodes=file.file_nodes,
+    )
+
+
+# 下载文件
+@app.get("/file/download/{file_id}/{filename}")
+def download_file(file_id: str, filename: str, db: Session = Depends(get_db)):
+    file = crud.get_file_by_id(db, file_id)
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if file.filename != filename:
+        raise HTTPException(status_code=404, detail="File not found")
+    if not os.path.exists(file.file_path):
+        raise HTTPException(status_code=404, detail="File path not found")
+    return FileResponse(
+        file.file_path,
+        media_type="application/octet-stream",
+        filename=os.path.basename(file.file_path),
     )

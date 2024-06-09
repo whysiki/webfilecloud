@@ -5,6 +5,7 @@ from config import Config
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
+# from prometheus_client import make_asgi_app
 
 
 origins = Config.CROS_ORIGINS
@@ -30,3 +31,8 @@ app.add_middleware(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=minimum_size)
+
+
+# Add prometheus asgi middleware to route /metrics requests
+# metrics_app = make_asgi_app()
+# app.mount("/metrics", metrics_app)
