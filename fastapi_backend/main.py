@@ -695,17 +695,14 @@ def modify_file_nodes(
 
 
 # 下载文件
-@app.get("/file/download/{file_id}/{filename}")
-def download_file(file_id: str, filename: str, db: Session = Depends(get_db)):
-    file = crud.get_file_by_id(db, file_id)
+@app.get("/file/download/{user_id}/{file_name}")
+def download_file(user_id: str, file_name: str, db: Session = Depends(get_db)):
+    user = crud.get_user_by_id(db, user_id)
+    file = crud.get_file_by_filename(db, file_name)
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
-    if file.filename != filename:
-        raise HTTPException(status_code=404, detail="File not found")
-    if not os.path.exists(file.file_path):
-        raise HTTPException(status_code=404, detail="File path not found")
+    if file.file_owner_name != user.username:
+        raise HTTPException(status_code=403, detail="Permission denied")
     return FileResponse(
-        file.file_path,
-        media_type="application/octet-stream",
-        filename=os.path.basename(file.file_path),
+        file.file_path, filename=file.filename, media_type="application/octet-stream"
     )

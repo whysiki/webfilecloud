@@ -23,7 +23,7 @@ def handle_db_errors(func):
             raise HTTPException(status_code=500, detail=f"Database error occurred")
         except Exception as e:
             logger.error(f"Unexpected error in {func.__name__}: {str(e)}")
-            raise HTTPException(status_code=404, detail=f"{str(e)}")#,type；{type(e)}
+            raise HTTPException(status_code=404, detail=f"{str(e)}")  # ,type；{type(e)}
 
     return wrapper
 
@@ -43,6 +43,16 @@ def get_file_by_id(db: Session, file_id: str) -> File:
     if not f:
         raise HTTPException(status_code=404, detail="File not found")
     return f
+
+
+# 获取文件对象通过文件名
+@handle_db_errors
+def get_file_by_filename(db: Session, filename: str) -> File:
+    f = db.query(File).filter(File.filename == filename).first()
+    if not f:
+        raise HTTPException(status_code=404, detail="File not found")
+    return f
+
 
 # 添加用户到数据库
 @handle_db_errors
@@ -64,8 +74,10 @@ def delete_file_from_db(db: Session, file: File) -> None:
         username = file.file_owner_name
         user = get_user_by_username(db, username)
         if file in user.files:
-            f = db.query(association_table).filter(association_table.c.file_id == file.id)
-            if f :
+            f = db.query(association_table).filter(
+                association_table.c.file_id == file.id
+            )
+            if f:
                 f.delete()
                 db.commit()
             if file in user.files:
@@ -178,10 +190,12 @@ def is_fileid_in_user_files(db: Session, user: User, file_id: str) -> bool:
 
 @handle_db_errors
 def is_user_files_empty(db: Session, user: User) -> bool:
-    f = db.query(association_table).filter(
-        association_table.c.user_id == user.id
-    ).first()
-    if f :
+    f = (
+        db.query(association_table)
+        .filter(association_table.c.user_id == user.id)
+        .first()
+    )
+    if f:
         logger.warning("not empty user files")
         # logger.debug()
     return False if f else True
@@ -196,10 +210,5 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
     return user
 
 
-
 # @handle_db_errors
 # def modify_file_nodes(db:Session,file:File, action:str, data):
-    
-    
-    
-    
