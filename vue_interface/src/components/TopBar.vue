@@ -253,7 +253,9 @@ export default {
             );
           }
         } finally {
-          this.showProgressBar = false;
+          if (completedFiles === totalFiles) {
+            this.showProgressBar = false;
+          }
         }
       };
     },
