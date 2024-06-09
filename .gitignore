@@ -26,3 +26,4 @@ vue_interface/src/store.js
 /fastapi_backend/deploy.bat
 /vue_interface/.vscode
 /branch.bat
+/vue_interface/src/axios.js
