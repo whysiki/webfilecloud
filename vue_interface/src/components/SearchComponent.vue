@@ -4,7 +4,7 @@
       type="text"
       v-model="searchQuery"
       class="search-input"
-      placeholder="Search files..."
+      placeholder="Search files... enter a file name"
     />
     <div v-if="searchResults.length > 0" class="search-results">
       <div v-for="file in searchResults" :key="file.id">
