@@ -71,6 +71,7 @@ export default {
       inputUploadStrNodes: "",
       showSearch: false,
       // oldCurrentNodes: [],
+      completedFiles: 0,
     };
   },
   computed: {
@@ -183,18 +184,10 @@ export default {
     //   };
     // },
 
-    async uploadSingleFile(file, completedFiles, totalFiles) {
+    async uploadSingleFile(file, totalFiles) {
       const reader = new FileReader();
       reader.readAsArrayBuffer(file);
       reader.onload = async () => {
-        // const username = localStorage.getItem("username");
-        // const arrayBuffer = reader.result;
-        // const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
-        // const fileHash = CryptoJS.SHA256(wordArray).toString();
-        // const usernameHash = CryptoJS.SHA1(username).toString();
-        // const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
-        // const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
-        // const fileId = fileHash + usernameHash + file_nodes_hash;
         let fileId = "";
         if (file.size <= 1024 * 1024 * 100) {
           // 100MB
@@ -229,42 +222,48 @@ export default {
                   (progressEvent.loaded * 100) / progressEvent.total
                 );
                 this.uploadProgress = Math.round(
-                  ((completedFiles + fileProgress / 100) * 100) / totalFiles
+                  ((this.completedFiles + fileProgress / 100) * 100) / totalFiles
                 );
               },
             }
           );
+          this.completedFiles += 1;
           await this.$refs.alertPopup.showAlert(
-            `File ${file.name} uploaded successfully in ${this.currentUploadStrPath}`
+            `File ${file.name} uploaded successfully in ${this.currentUploadStrPath}`,
+            1000
           );
           this.emitter.emit("file-uploaded");
         } catch (error) {
+          this.completedFiles += 1;
           if (error.response) {
             await this.$refs.alertPopup.showAlert(
-              `Error uploading file ${file.name}: ${error.response.data.detail}`
+              `Error uploading file ${file.name}: ${error.response.data.detail}`,
+              2000
             );
           } else if (error.request) {
             await this.$refs.alertPopup.showAlert(
-              `Error uploading file ${file.name}: No response from server`
+              `Error uploading file ${file.name}: No response from server`,
+              2000
             );
           } else {
             await this.$refs.alertPopup.showAlert(
-              `Error uploading file ${file.name}: ${error.message}`
+              `Error uploading file ${file.name}: ${error.message}`,
+              2000
             );
           }
         } finally {
-          if (completedFiles === totalFiles) {
+          if (this.completedFiles === totalFiles) {
             this.showProgressBar = false;
+            this.completedFiles = 0;
+            await this.$refs.alertPopup.showAlert("All files uploaded successfully");
           }
         }
       };
     },
     async uploadFiles() {
-      let completedFiles = 0;
       const totalFiles = this.files.length;
       const uploadPromises = this.files.map((file) => {
-        completedFiles++;
-        return this.uploadSingleFile(file, completedFiles, totalFiles); // Add 'return' here
+        return this.uploadSingleFile(file, totalFiles); // Add 'return' here
       });
       await Promise.all(uploadPromises);
     },

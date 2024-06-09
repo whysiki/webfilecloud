@@ -18,12 +18,20 @@ export default {
       isshowAlert: false,
       alertMessage: "",
       resolvePromise: null,
+      autoCloseTimeout: null,
     };
   },
   methods: {
-    showAlert(message) {
+    showAlert(message, autoCloseTime) {
       this.alertMessage = message;
       this.isshowAlert = true;
+
+      this.autoCloseTimeout = setTimeout(
+        () => {
+          this.handleCancel();
+        },
+        autoCloseTime && typeof autoCloseTime === "number" ? autoCloseTime : 10000
+      );
 
       // 返回一个 Promise，用于处理用户的选择
       return new Promise((resolve) => {
