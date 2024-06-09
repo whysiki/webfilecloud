@@ -215,13 +215,12 @@ export default {
         }
       }
     },
-    async cancelAllRequests() {
+    cancelAllRequests() {
       this.cancelTokens.forEach((source) => {
         source.cancel("Operation canceled by the user.");
       });
       this.cancelTokens = [];
       store.state.batchProgress = 0;
-      // await this.$refs.alertPopup.showAlert("All requests canceled");
       this.emitter.emit("cancel-all-requests");
     },
   },

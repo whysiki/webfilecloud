@@ -358,7 +358,6 @@ export default {
           responseType: "blob",
         });
         const url = window.URL.createObjectURL(new Blob([response.data]));
-        // console.log(url);
         return url;
       } catch (error) {
         await this.$refs.alertPopup.showAlert(
