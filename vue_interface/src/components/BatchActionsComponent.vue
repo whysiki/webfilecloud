@@ -1,6 +1,12 @@
 <!-- BatchActionsComponent.vue -->
 <template>
   <div class="batch-actions" v-if="showBatchActions">
+    <progress
+      max="100"
+      :value="batchProgress"
+      class="batch-actions-progress"
+      v-if="batchProgress > 0 && batchProgress < 100"
+    ></progress>
     <button @click="batchMove" class="batch-actions-button batch-actions-button-move">
       <i class="fas fa-arrows-alt"></i>
       <span class="batch-actions-button-text">BatchMove</span>
@@ -30,26 +36,28 @@
       <i class="fas fa-check-square"></i>
       <span class="batch-actions-button-text">SelectAll</span>
     </button>
-    <progress
-      max="100"
-      :value="batchProgress"
-      class="batch-actions-progress"
-      v-if="batchProgress > 0 && batchProgress < 100"
+    <button
+      @click="cancelAllRequests"
+      class="batch-actions-button batch-actions-button-cancel"
+      v-if="(batchProgress > 0 && batchProgress < 100) || cancelTokens.length > 0"
     >
-      {{ batchProgress }}%
-    </progress>
+      <i class="fa-solid fa-ban"></i>
+      <span class="batch-actions-button-text">CancelAll</span>
+    </button>
   </div>
-
   <PopInputComponent ref="popInputRef" />
   <AlertComponent ref="alertPopup" />
 </template>
-
 <script>
 import axios from "../axios";
 import store from "../store";
 import axiosModule from "axios";
-// import { Filesystem, Directory } from "@capacitor/filesystem";
 export default {
+  data() {
+    return {
+      cancelTokens: [],
+    };
+  },
   computed: {
     showBatchActions() {
       return store.state.selectedFiles.length > 0;
@@ -74,20 +82,26 @@ export default {
       if (tag === "ok") {
         const total = store.state.selectedFiles.length;
         let count = 0;
-        for (let file of store.state.selectedFiles) {
+        const deletePromises = store.state.selectedFiles.map(async (file) => {
           try {
+            const source = axiosModule.CancelToken.source();
+            this.cancelTokens.push(source);
             const token = localStorage.getItem("token");
             await axios.delete(`/files/delete?file_id=${file.id}`, {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
+              cancelToken: source.token,
             });
             count++;
             store.state.batchProgress = (count / total) * 100;
           } catch (error) {
-            console.error(`Error deleting file: ${error.response.data.detail}`);
+            console.error(
+              `Error deleting file: ${error.response?.data?.detail || error.message}`
+            );
           }
-        }
+        });
+        await Promise.all(deletePromises);
         await this.$refs.alertPopup.showAlert("Delete completed");
         this.emitter.emit("batch-files-deleted");
       }
@@ -97,35 +111,39 @@ export default {
         "Are you sure you want to download those files?"
       );
       if (tag === "ok") {
-        // let filePath = await this.$refs.popInputRef
-        //   .popInput("file path")
-        //   .then((inputValue) => {
-        //     return inputValue;
-        //   })
-        //   .catch(async (error) => {
-        //     await this.$refs.alertPopup.showAlert(error);
-        //     return null;
-        //   });
         const total = store.state.selectedFiles.length;
         let count = 0;
-        for (let file of store.state.selectedFiles) {
+        const downloadPromises = store.state.selectedFiles.map(async (file) => {
           try {
-            file.showdownloadProgressBar = true;
+            const source = axiosModule.CancelToken.source();
+            this.cancelTokens.push(source);
+            //
+            // file.cancelTokenSource = axiosModule.CancelToken.source();
+            // this.cancelTokens.push(file.cancelTokenSource);
+            // if (file.cancelTokenSource) {
+            // this.cancelTokens.push(file.cancelTokenSource);
+            // } else {
+            // file.cancelTokenSource = axiosModule.CancelToken.source();
+            // this.cancelTokens.push(file.cancelTokenSource);
+            // }
             const token = localStorage.getItem("token");
-            file.cancelTokenSource = axiosModule.CancelToken.source();
-            const response = await axios.get(`/files/download?file_id=${file.id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/octet-stream",
-              },
-              responseType: "blob",
-              onDownloadProgress: (progressEvent) => {
-                file.downloadProgress = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-                );
-              },
-              cancelToken: file.cancelTokenSource.token,
-            });
+            file.showdownloadProgressBar = true;
+            const response = await axios.get(
+              `/files/download/stream?file_id=${file.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                responseType: "blob",
+                onDownloadProgress: (progressEvent) => {
+                  file.downloadProgress = Math.round(
+                    (progressEvent.loaded * 100) / file.file_size
+                  );
+                },
+                // cancelToken: file.cancelTokenSource.token,
+                cancelToken: source.token,
+              }
+            );
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement("a");
             link.href = url;
@@ -134,27 +152,23 @@ export default {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            // await Filesystem.writeFile({
-            //   // path: `${filePath}/${file.filename}`,
-            //   path: file.filename,
-            //   data: new Blob([response.data]),
-            //   directory: Directory.Documents,
-            // });
             count++;
             store.state.batchProgress = (count / total) * 100;
           } catch (error) {
             await this.$refs.alertPopup.showAlert(
-              `Error downloading file: ${error.response.data.detail}`
+              `Error downloading file: ${error.response?.data?.detail || error.message}`
             );
+          } finally {
+            file.showdownloadProgressBar = false;
           }
-        }
+        });
+        await Promise.all(downloadPromises);
         await this.$refs.alertPopup.showAlert("Download completed");
       }
     },
-
     async batchMove() {
       const tag = await this.$refs.alertPopup.showAlert(
-        "Are you sure you want to move this file?(enter '/' to move to root directory)"
+        "Are you sure you want to move this file? (enter '/' to move to root directory)"
       );
       if (tag === "ok") {
         const newNodes = await this.$refs.popInputRef
@@ -170,8 +184,10 @@ export default {
           const newNodesArrayStr = JSON.stringify(newNodesArray);
           const total = store.state.selectedFiles.length;
           let count = 0;
-          for (let file of store.state.selectedFiles) {
+          const movePromises = store.state.selectedFiles.map(async (file) => {
             try {
+              const source = axiosModule.CancelToken.source();
+              this.cancelTokens.push(source);
               const token = localStorage.getItem("token");
               await axios.post(
                 `/file/modifynodes?file_nodes=${newNodesArrayStr}&file_id=${file.id}`,
@@ -180,20 +196,33 @@ export default {
                   headers: {
                     Authorization: `Bearer ${token}`,
                   },
+                  cancelToken: source.token,
                 }
               );
               count++;
               store.state.batchProgress = (count / total) * 100;
             } catch (error) {
-              console.error(`Error moving file: ${error.response.data.detail}`);
+              console.error(
+                `Error moving file: ${error.response?.data?.detail || error.message}`
+              );
             }
-          }
+          });
+          await Promise.all(movePromises);
           await this.$refs.alertPopup.showAlert("Move completed");
           this.emitter.emit("batch-files-moved");
+        } else {
+          await this.$refs.alertPopup.showAlert("New file path is invalid");
         }
-      } else {
-        await this.$refs.alertPopup.showAlert("New file path is invalid");
       }
+    },
+    async cancelAllRequests() {
+      this.cancelTokens.forEach((source) => {
+        source.cancel("Operation canceled by the user.");
+      });
+      this.cancelTokens = [];
+      store.state.batchProgress = 0;
+      // await this.$refs.alertPopup.showAlert("All requests canceled");
+      this.emitter.emit("cancel-all-requests");
     },
   },
 };
