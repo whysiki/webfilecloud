@@ -340,11 +340,11 @@ async def Breakpoint_resume_download_test(client, token):
     # get_byte_list = await asyncio.gather(*tasks)
     all_get_bytes : bytes= bytearray(b"".join(get_byte_list))
     
-    ugizp = gzip.decompress(all_get_bytes)
+    # ugizp = gzip.decompress(all_get_bytes)
 
     print("获取比特大小: ", len_get)
     print("原始比特大小: ", original_bytes_size)
-    print("解压后大小：",len(ugizp))
+    # print("解压后大小：",len(ugizp))
 
     # assert all_get_bytes == original_bytes, "断点续传下载失败"
 
