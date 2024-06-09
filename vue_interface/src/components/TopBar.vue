@@ -30,13 +30,14 @@
       <i class="fa-solid fa-user-slash"></i>
     </button>
   </div>
-  <form v-if="showUploadFileForm" @submit.prevent="uploadFile" class="form-uploadFile">
+  <form v-if="showUploadFileForm" @submit.prevent="uploadFiles" class="form-uploadFile">
     <div class="form-uploadFile-group">
       <input
         type="file"
-        @change="handleFileUpload"
+        @change="handleFilesUpload"
         required
         class="form-uploadFile-input"
+        multiple
       />
     </div>
     <button type="submit" class="form-uploadFile-button">Upload File</button>
@@ -62,6 +63,7 @@ export default {
   components: {},
   data() {
     return {
+      files: [], // 初始化 files 数据属性
       file: null, // 初始化 file 数据属性
       showUploadFileForm: false, // 初始化 UploadFile 数据属性
       uploadProgress: 0, // 初始化 uploadProgress 数据属性
@@ -99,6 +101,9 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
+    handleFilesUpload(event) {
+      this.files = Array.from(event.target.files); // 将用户选择的文件赋值给 this.files
+    },
     updateInputUploadStrNodes(value) {
       this.inputUploadStrNodes = value;
     },
@@ -128,9 +133,59 @@ export default {
       // 定义 handleFileUpload 方法
       this.file = event.target.files[0]; // 将用户选择的文件赋值给 this.file
     },
-    async uploadFile() {
+    // async uploadFile() {
+    //   const reader = new FileReader();
+    //   reader.readAsArrayBuffer(this.file);
+    //   reader.onload = async () => {
+    //     const username = localStorage.getItem("username");
+    //     const arrayBuffer = reader.result;
+    //     const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+    //     const fileHash = CryptoJS.SHA256(wordArray).toString();
+    //     const usernameHash = CryptoJS.SHA1(username).toString();
+    //     const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
+    //     const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
+    //     const fileId = fileHash + usernameHash + file_nodes_hash;
+    //     const formData = new FormData();
+    //     formData.append("file", this.file);
+    //     try {
+    //       this.showProgressBar = true;
+    //       const token = localStorage.getItem("token");
+    //       await axios.post(
+    //         `/files/upload?file_id=${fileId}&file_nodes=${this.currentUploadStrNodes}`,
+    //         formData,
+    //         {
+    //           headers: {
+    //             Authorization: `Bearer ${token}`,
+    //             "Content-Type": "multipart/form-data",
+    //           },
+    //           onUploadProgress: (progressEvent) => {
+    //             this.uploadProgress = Math.round(
+    //               (progressEvent.loaded * 100) / progressEvent.total
+    //             );
+    //           },
+    //         }
+    //       );
+    //       await this.$refs.alertPopup.showAlert(
+    //         `File uploaded successfully in ${this.currentUploadStrPath}`
+    //       );
+    //       this.emitter.emit("file-uploaded");
+    //     } catch (error) {
+    //       if (error.response) {
+    //         await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+    //       } else if (error.request) {
+    //         await this.$refs.alertPopup.showAlert("Error: No response from server");
+    //       } else {
+    //         await this.$refs.alertPopup.showAlert("Error", error.message);
+    //       }
+    //     } finally {
+    //       this.showProgressBar = false;
+    //     }
+    //   };
+    // },
+
+    async uploadSingleFile(file, completedFiles, totalFiles) {
       const reader = new FileReader();
-      reader.readAsArrayBuffer(this.file);
+      reader.readAsArrayBuffer(file);
       reader.onload = async () => {
         const username = localStorage.getItem("username");
         const arrayBuffer = reader.result;
@@ -141,7 +196,7 @@ export default {
         const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
         const fileId = fileHash + usernameHash + file_nodes_hash;
         const formData = new FormData();
-        formData.append("file", this.file);
+        formData.append("file", file);
         try {
           this.showProgressBar = true;
           const token = localStorage.getItem("token");
@@ -154,29 +209,48 @@ export default {
                 "Content-Type": "multipart/form-data",
               },
               onUploadProgress: (progressEvent) => {
-                this.uploadProgress = Math.round(
+                const fileProgress = Math.round(
                   (progressEvent.loaded * 100) / progressEvent.total
+                );
+                this.uploadProgress = Math.round(
+                  ((completedFiles + fileProgress / 100) * 100) / totalFiles
                 );
               },
             }
           );
           await this.$refs.alertPopup.showAlert(
-            `File uploaded successfully in ${this.currentUploadStrPath}`
+            `File ${file.name} uploaded successfully in ${this.currentUploadStrPath}`
           );
           this.emitter.emit("file-uploaded");
         } catch (error) {
           if (error.response) {
-            await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+            await this.$refs.alertPopup.showAlert(
+              `Error uploading file ${file.name}: ${error.response.data.detail}`
+            );
           } else if (error.request) {
-            await this.$refs.alertPopup.showAlert("Error: No response from server");
+            await this.$refs.alertPopup.showAlert(
+              `Error uploading file ${file.name}: No response from server`
+            );
           } else {
-            await this.$refs.alertPopup.showAlert("Error", error.message);
+            await this.$refs.alertPopup.showAlert(
+              `Error uploading file ${file.name}: ${error.message}`
+            );
           }
         } finally {
           this.showProgressBar = false;
         }
       };
     },
+    async uploadFiles() {
+      let completedFiles = 0;
+      const totalFiles = this.files.length;
+      const uploadPromises = this.files.map((file) => {
+        completedFiles++;
+        return this.uploadSingleFile(file, completedFiles, totalFiles); // Add 'return' here
+      });
+      await Promise.all(uploadPromises);
+    },
+
     async confirmDeleteUser() {
       const tag = await this.$refs.alertPopup.showAlert(
         "Are you sure you want to delete your account? " //Your need to enter your password after clicking OK.

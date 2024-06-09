@@ -162,37 +162,11 @@ export default {
           if (newFile.file_size > 1024 * 1024 * 10) {
             this.fileContent = null;
             this.fileImageUrl = null;
-          } else if (
-            newFile.file_type === "txt" ||
-            newFile.file_type === "md" ||
-            newFile.file_type === "json" ||
-            newFile.file_type === "js" ||
-            newFile.file_type === "html" ||
-            newFile.file_type === "css" ||
-            newFile.file_type === "py" ||
-            newFile.file_type === "java" ||
-            newFile.file_type === "c" ||
-            newFile.file_type === "cpp" ||
-            newFile.file_type === "h" ||
-            newFile.file_type === "hpp" ||
-            newFile.file_type === "sql" ||
-            newFile.file_type === "sh" ||
-            newFile.file_type === "conf" ||
-            newFile.file_type === "bat"
-          ) {
+          } else if (this.isTextFile) {
             this.getFileContent(newFile).then((content) => {
               this.fileContent = content;
             });
-          } else if (
-            newFile.file_type === "jpg" ||
-            newFile.file_type === "png" ||
-            newFile.file_type === "mp4" ||
-            newFile.file_type === "webm" ||
-            newFile.file_type === "ogg" ||
-            newFile.file_type === "jpeg" ||
-            newFile.file_type === "pdf" ||
-            newFile.file_type === "mkv"
-          ) {
+          } else if (this.isImageFile || this.isVideoFile) {
             this.createImageUrl(newFile).then((url) => {
               this.fileImageUrl = url;
             });
@@ -211,7 +185,6 @@ export default {
       } else {
         store.commit("removeSelectedFile", this.file);
       }
-      //console.log(store.state.selectedFiles);
     },
     toggleDetails() {
       this.showfileCardDetails = !this.showfileCardDetails;
@@ -324,7 +297,6 @@ export default {
     async moveFile(file_id, newNodesArrayStr) {
       try {
         const token = localStorage.getItem("token");
-        // console.log(file_id, newNodesArrayStr);
         await axios.post(
           `/file/modifynodes?file_nodes=${newNodesArrayStr}&file_id=${file_id}`,
           {},
