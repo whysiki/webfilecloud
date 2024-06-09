@@ -196,7 +196,7 @@ export default {
         // const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
         // const fileId = fileHash + usernameHash + file_nodes_hash;
         let fileId = "";
-        if (file.size <= 104857600) {
+        if (file.size <= 1024 * 1024 * 100) {
           // 100MB
           const username = localStorage.getItem("username");
           const arrayBuffer = reader.result;

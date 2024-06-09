@@ -195,6 +195,15 @@ async def upload_file(
         + hashlib.sha1(username.encode()).hexdigest()
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
+    
+    # chunk_size = 1024 * 1024  # 1MB
+    # file_content = await file.read()
+    # chunks = [file_content[i:i+chunk_size] for i in range(0, len(file_content), chunk_size)]
+    # file_hash = ''.join(hashlib.sha256(chunk).hexdigest() for chunk in chunks)
+    # file_hash = hashlib.sha256(file_hash.encode()).hexdigest()
+
+    # file_id = file_hash + hashlib.sha1(username.encode()).hexdigest() + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
+    
     # 检查文件是否已存在
     existing_file = (
         db.query(models.File)
