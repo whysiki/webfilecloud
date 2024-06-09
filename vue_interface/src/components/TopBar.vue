@@ -255,7 +255,10 @@ export default {
           if (this.completedFiles === totalFiles) {
             this.showProgressBar = false;
             this.completedFiles = 0;
-            await this.$refs.alertPopup.showAlert("All files uploaded successfully");
+            await this.$refs.alertPopup.showAlert(
+              "All files uploaded successfully",
+              1000
+            );
           }
         }
       };

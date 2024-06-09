@@ -159,11 +159,8 @@ h2:hover .fas {
   background-color: #16723c;
 }
 
-/* 文件项列表样式 */
-.fileType-file-items {
-  /* display: flex; */
-  /* flex-wrap: wrap; */
-  padding: 0;
+.fileType-file-items > * {
+  margin: 5px;
 }
 
 /* 下拉菜单容器样式 */
@@ -183,6 +180,7 @@ h2:hover .fas {
 
 /* 下拉菜单样式 */
 .dropdown-menu {
+  z-index: 9999;
   position: absolute;
   top: 50px;
   left: 0;
@@ -234,5 +232,11 @@ h2:hover .fas {
   .file-list-button-container {
     justify-content: center;
     /* flex-wrap: nowrap; */
+  }
+  /* 文件项列表样式 */
+  .fileType-file-items {
+    display: inline;
+    flex-wrap: nowrap;
+    padding: 0;
   }
 }

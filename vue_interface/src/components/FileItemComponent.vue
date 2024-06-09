@@ -1,6 +1,6 @@
 <!-- FileItemComponent.vue -->
 <template>
-  <div class="file-item" title="Click to expand details">
+  <div class="file-item" title="Click to expand details" :style="listStyle">
     <!-- @mouseover="showfileCardDetails = true" -->
     <!-- @mouseleave="showfileCardDetails = false" -->
     <input
@@ -11,7 +11,7 @@
     />
     <div class="file-header" @click.prevent="toggleDetails">
       <div class="file-name">{{ file.filename }}</div>
-      <div class="file-item-button-container">
+      <div class="file-item-button-container" v-if="!isCardView">
         <button @click.prevent="confirmMovefile(file.id)" class="file-button">
           Move
         </button>
@@ -96,10 +96,36 @@ export default {
       selected: false,
       fileImageUrl: null,
       fileContent: null,
+      // viewMode: "card",
     };
   },
 
   computed: {
+    listStyle() {
+      if (store.state.viewMode === "card") {
+        //统一卡片大小
+        return {
+          width: "280px",
+          margin: "5px",
+
+          // height: "300px",
+          // margin: "10px",
+          // padding: "10px",
+          // border: "1px solid #ccc",
+          // borderRadius: "5px",
+          // boxShadow: "0 0 5px #ccc",
+          // overflow: "hidden",
+        };
+      } else {
+        return {};
+      }
+    },
+    viewMode() {
+      return store.state.viewMode;
+    },
+    isCardView() {
+      return this.viewMode === "card";
+    },
     isTextFile() {
       return [
         "txt",

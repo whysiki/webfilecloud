@@ -30,8 +30,10 @@
       </button>
     </div>
 
-    <div v-for="file in sortedFiles" :key="file.id">
-      <FileItemComponent :file="file" />
+    <div :style="listStyle">
+      <div v-for="file in sortedFiles" :key="file.id">
+        <FileItemComponent :file="file" />
+      </div>
     </div>
   </div>
 </template>
@@ -39,10 +41,34 @@
 <script>
 import { inject, ref, computed } from "vue";
 import FileItemComponent from "./FileItemComponent.vue";
+import store from "../store";
 
 export default {
   components: {
     FileItemComponent,
+  },
+  computed: {
+    listStyle() {
+      if (store.state.viewMode === "card") {
+        return {
+          display: "flex",
+          flexWrap: "wrap",
+          padding: 0,
+        };
+      } else if (store.state.viewMode === "list") {
+        return {
+          display: "inline",
+          "flex-wrap": "nowrap",
+          padding: 0,
+        };
+      } else {
+        return {
+          display: "inline",
+          "flex-wrap": "nowrap",
+          padding: 0,
+        };
+      }
+    },
   },
   setup() {
     const files = inject("files");

@@ -1,12 +1,7 @@
 <template>
   <div class="file-tree">
     <div v-for="(value, key) in fileTree" :key="key" class="file-tree-item">
-      <div v-if="Array.isArray(value)" class="file-tree-items">
-        <div v-for="file in value" :key="file.id">
-          <FileItemComponent :file="file" />
-        </div>
-      </div>
-      <div v-else>
+      <div v-if="!Array.isArray(value)">
         <!-- <div @click="toggleFolder(key)" class="folder-title">{{ key }}</div> -->
         <div @click="toggleFolder(key)" class="folder-title">
           <i :class="folderStates[key] ? 'fas fa-folder-open' : 'fas fa-folder'"></i>
@@ -16,13 +11,18 @@
           <FileTreeComponent :fileTreeSub="value" :parentPath="[...parentPath, key]" />
         </div>
       </div>
+      <div v-else class="file-tree-items" :style="listStyle">
+        <div v-for="file in value" :key="file.id">
+          <FileItemComponent :file="file" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import FileItemComponent from "./FileItemComponent.vue";
-
+import store from "../store";
 export default {
   components: {
     FileItemComponent,
@@ -44,7 +44,7 @@ export default {
   data() {
     return {
       folderStates: {},
-      currentNodes: [], // for tracking the current nodes
+      // currentNodes: [], // for tracking the current nodes
     };
   },
   mounted() {
@@ -66,6 +66,16 @@ export default {
         return this.buildFileTree(this.files);
       }
     },
+    listStyle() {
+      if (store.state.viewMode === "card") {
+        return {
+          display: "flex",
+          "flex-wrap": "wrap",
+        };
+      } else {
+        return {};
+      }
+    },
   },
   methods: {
     expandAll() {
@@ -83,31 +93,16 @@ export default {
       // 获取完整的路径
       const fullPath = [...this.parentPath, folderName];
 
-      // 如果文件夹被展开，将其添加到 currentNodes 中
+      let currentNodes = fullPath;
       if (this.folderStates[folderName]) {
-        this.currentNodes.push(fullPath);
+        currentNodes = [...this.parentPath, folderName];
       } else {
-        // 如果文件夹被关闭，将其从 currentNodes 中移除
-        const index = this.currentNodes.findIndex(
-          (path) =>
-            Array.isArray(path) && path.map(String).join("/") === fullPath.join("/")
-        );
-        if (index > -1) {
-          this.currentNodes.splice(index, 1);
-        }
-        // 如果有父文件夹，将父文件夹的路径添加到 currentNodes 中
-        if (this.parentPath.length > 0) {
-          const parentPath = this.parentPath[this.parentPath.length - 1];
-          if (!this.currentNodes.includes(parentPath)) {
-            this.currentNodes.push(parentPath);
-          }
-        }
+        currentNodes = fullPath.length > 1 ? fullPath.slice(0, fullPath.length - 1) : [];
       }
-      // 将 currentNodes 保存到 localStorage 中
-      // localStorage.setItem("currentNodes", JSON.stringify(this.currentNodes.flat()));
 
-      // console.log(localStorage.getItem("currentNodes"));
-      this.emitter.emit("update-current-nodes", JSON.stringify(this.currentNodes.flat()));
+      this.emitter.emit("update-current-nodes", JSON.stringify(currentNodes.flat()));
+
+      // console.log(currentNodes.flat().join("/"));
     },
     buildFileTree(files) {
       const root = {};

@@ -29,6 +29,9 @@
           <li @click="changeViewMode('ShowByType')">Show By Type</li>
           <li @click="changeViewMode('ShowByTree')">Show By Tree</li>
           <li @click="changeViewMode('SortFiles')">Sort Files</li>
+          <li @click="changeFileViewMode('card')">Card View</li>
+          <li @click="changeFileViewMode('list')">List View</li>
+          <!-- <li @click="changeFileViewMode('tree')">Tree View</li> -->
         </ul>
       </div>
     </div>
@@ -48,7 +51,10 @@
     <!-- 文件树视图 -->
     <div class="fileTreeView" v-if="viewMode === 'ShowByTree' && !showSearch">
       <NavigationBar />
+
+      <!-- <div :style="FileTreeComponentStyle"> -->
       <FileTreeComponent :files="files" />
+      <!-- </div> -->
     </div>
 
     <!-- 排序视图 -->
@@ -107,6 +113,16 @@ export default {
     fileTypes() {
       return [...new Set(this.files.map((file) => file.file_type))];
     },
+    // FileTreeComponentStyle() {
+    // if (store.state.viewMode == "card") {
+    // return {
+    // display: "flex",
+    // "flex-wrap": "wrap",
+    // };
+    // } else {
+    // return {};
+    // }
+    // },
   },
   async created() {
     await this.fetchFiles();
@@ -134,6 +150,9 @@ export default {
     this.emitter.off("batch-files-deleted", this.fetchFiles);
   },
   methods: {
+    changeFileViewMode(mode) {
+      store.commit("changeViewMode", mode);
+    },
     collapseAll() {
       this.visibleFileTypes = [];
       this.emitter.emit("collapse-all");
@@ -174,6 +193,13 @@ export default {
         this.files = response.data.files;
         localStorage.setItem("currentFilesLength", this.files.length);
         store.commit("setFiles", response.data.files);
+        const treePathList = response.data.files.map((file) =>
+          file.file_nodes.length > 0 ? "/" + file.file_nodes.join("/") : "/"
+        );
+        store.commit("buildTreePathList", [...new Set(treePathList)]);
+        // store.state.treePathList.forEach((path) => {
+        // console.log(path);
+        // });
       } catch (error) {
         await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
       }

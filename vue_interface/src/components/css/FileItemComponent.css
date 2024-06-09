@@ -13,11 +13,13 @@
 }
 
 .file-name {
+  /* flex-grow: 1; */
   font-weight: bold;
   color: #1a7be3;
   /* overflow: hidden; 隐藏超出元素宽度的内容 */
   text-overflow: ellipsis; /* 显示省略号来表示被裁剪的文本 */
   max-width: 200px; /* 限制元素的最大宽度 */
+  word-wrap: break-word;
 }
 
 .file-card-details {

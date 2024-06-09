@@ -17,10 +17,9 @@
   margin-bottom: 10px;
 }
 
-/* .file-tree-items { */
-/* display: flex; */
-/* flex-wrap: wrap; */
-/* } */
+.file-tree-items > * {
+  margin: 5px;
+}
 
 .folder-title {
   font-weight: bold;

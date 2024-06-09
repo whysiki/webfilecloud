@@ -5,6 +5,8 @@ export default createStore({
     files: [],
     selectedFiles: [],
     batchProgress: 0,
+    viewMode: "list",
+    treePathList: [],
   },
   mutations: {
     setFiles(state, files) {
@@ -18,6 +20,12 @@ export default createStore({
       if (index !== -1) {
         state.selectedFiles.splice(index, 1);
       }
+    },
+    changeViewMode(state, mode) {
+      state.viewMode = mode;
+    },
+    buildTreePathList(state, paths) {
+      state.treePathList = paths;
     },
   },
 });
