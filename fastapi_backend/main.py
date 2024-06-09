@@ -325,137 +325,20 @@ async def read_file(
         filename=os.path.basename(file.file_path),
     )
 
-    # # async with aiofiles.open(file.file_path, mode="rb") as f:
-
-    # #     encrypted_data = await f.read()
-
-    # # if not isinstance(encrypted_data, bytes):
-    # #     raise HTTPException(
-    # #         status_code=500, detail="File download failed, an unknown error"
-    # #     )
-
-    # # decrypted_data = get_decrypted_data(
-    # #     user.username, user.password, encrypted_data
-    # # )
-
-    # # if not isinstance(decrypted_data, bytes):
-    # #     raise HTTPException(
-    # #         status_code=500, detail="File download failed, an unknown error"
-    # #     )
-
-    # async with aiofiles.open(file.file_path, mode="rb") as f:
-    #     byte_data = await f.read()
-
-    # # # 创建一个BytesIO对象
-    # data = BytesIO(byte_data)
-
-    # logger.debug(f"Download file stream: {file.file_path}")
-
-    # return StreamingResponse(data, media_type="application/octet-stream")
-
-
-# @app.get("/files/download/stream")
-# async def read_file_stream(
-#     file_id: str,
-#     Authorization: Optional[str] = Header(None),
-#     db: Session = Depends(get_db),
-# ):
-
-#     access_token = auth.get_access_token_from_Authorization(Authorization)
-
-#     username: str = get_current_username(access_token)
-
-#     user = crud.get_user_by_username(db, username)
-
-#     file = crud.get_file_by_id(db, file_id=file_id)
-
-#     if file.file_owner_name != user.username:
-
-#         raise HTTPException(status_code=403, detail="Permission denied")
-
-#     if not crud.is_fileid_in_user_files(db, user, file.id):
-
-#         raise HTTPException(
-#             status_code=404, detail="File not found in user's file list"
-#         )
-
-#     if not os.path.exists(file.file_path):
-
-#         raise HTTPException(status_code=404, detail="File path not found")
-
-#     # 读取文件内容
-#     async with aiofiles.open(file.file_path, mode="rb") as f:
-#         byte_data = await f.read()
-
-#     # # 创建一个BytesIO对象
-#     data = BytesIO(byte_data)
-
-#     logger.debug(f"Download file stream: {file.file_path}")
-
-#     return StreamingResponse(data, media_type="application/octet-stream")
-
-
-# @app.get("/files/download/stream")
-# async def read_file_stream(
-#     request: Request,
-#     file_id: str,
-#     Authorization: Optional[str] = Header(None),
-#     db: Session = Depends(get_db),
-# ):
-#     access_token = auth.get_access_token_from_Authorization(Authorization)
-#     username: str = get_current_username(access_token)
-#     user = crud.get_user_by_username(db, username)
-#     file = crud.get_file_by_id(db, file_id=file_id)
-
-#     if file.file_owner_name != user.username:
-#         raise HTTPException(status_code=403, detail="Permission denied")
-
-#     if not crud.is_fileid_in_user_files(db, user, file.id):
-#         raise HTTPException(
-#             status_code=404, detail="File not found in user's file list"
-#         )
-
-#     if not os.path.exists(file.file_path):
-#         raise HTTPException(status_code=404, detail="File path not found")
-#     file_size = os.path.getsize(file.file_path)
-#     range_header = request.headers.get("Range")
-#     if range_header:
-#         start, end = range_header.replace("bytes=", "").split("-")
-#         start = int(start)
-#         end = int(end) if end else file_size - 1
-#     else:
-#         start = 0
-#         end = file_size - 1
-
-#     async def file_iterator():
-#         async with aiofiles.open(file.file_path, mode="rb") as f:
-#             await f.seek(start)
-#             chunk_size = 1024  # adjust chunk size as needed
-#             while True:
-#                 chunk = await f.read(chunk_size)
-#                 if not chunk:
-#                     break
-#                 yield chunk
-
-#     return StreamingResponse(
-#         file_iterator(), status_code=206 if range_header else 200, headers={
-#             "Content-Length": str(end - start + 1),
-#             "Content-Range": f"bytes {start}-{end}/{file_size}",
-#             "Accept-Ranges": "bytes"
-#         }
-#     )
-
 
 async def file_iterator(file_path: str, start: int, end: int):
     async with aiofiles.open(file_path, mode="rb") as f:
         await f.seek(start)
-        chunk_size = 1024  # 调整 chunk 大小
-        while True:
-            chunk = await f.read(chunk_size)
-            if not chunk or await f.tell() > end:
+        chunk_size = 1024
+        current_position = start
+        while current_position <= end: #只要当前位置小于等于end，就继续读取。 包含end
+            remaining_bytes = end - current_position + 1 # 从当前位置读到 end , 闭区间，一共有的字节数
+            read_size = min(chunk_size, remaining_bytes) # 不超过chunk_size
+            chunk = await f.read(read_size) # 读取
+            if not chunk: # 到达文件末尾
                 break
+            current_position += len(chunk) # 移动位置
             yield chunk
-
 
 @app.get("/files/download/stream")
 async def read_file_stream(
@@ -479,6 +362,7 @@ async def read_file_stream(
 
     if not os.path.exists(file.file_path):
         raise HTTPException(status_code=404, detail="File path not found")
+    
     file_size = os.path.getsize(file.file_path)
     range_header = request.headers.get("Range")
     if range_header:
@@ -489,7 +373,8 @@ async def read_file_stream(
         start = 0
         end = file_size - 1
 
-    logger.debug(f"{start}-{end}")
+    if start >= file_size or end >= file_size:
+        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
 
     return StreamingResponse(
         file_iterator(file.file_path, start, end),

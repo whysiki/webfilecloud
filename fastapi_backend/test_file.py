@@ -254,15 +254,13 @@ async def modyfy_file_nodes(client, token, file_id, nodes):
 async def Breakpoint_resume_download_test(client, token):
 
     # 测试文件生成
-    test_upload_file = f"{testfile_folder}/testbinary,b"
+    test_upload_file = f"{testfile_folder}/testbinary.b"
 
     def generate_random_binary_file(file_path, size_in_bytes):
         with open(file_path, "wb") as f:
             data = os.urandom(size_in_bytes)
             f.write(data)
 
-    # if os.path.exists(test_upload_file):
-    # os.remove(test_upload_file)
     generate_random_binary_file(test_upload_file, 1024 * 1024 * 4)
 
     with open(test_upload_file, "rb") as f:
@@ -270,6 +268,8 @@ async def Breakpoint_resume_download_test(client, token):
         original_bytes: bytes = f.read()
 
     original_bytes_size = os.path.getsize(test_upload_file)
+    
+    assert len(original_bytes) == original_bytes_size
 
     print(original_bytes_size)
 
@@ -298,25 +298,14 @@ async def Breakpoint_resume_download_test(client, token):
 
     ranges_list = re.findall(r"bytes=(\d+-\d+)", ranges)
 
-    async def download_part(client, headers, file_id, r: str) -> bytes:
+    async def download_part(client, headers, file_id, r: str=None) -> bytes:
         url = f"{base_url}/files/download/stream"
         params = {"file_id": file_id}
-        # headers["Range"] = f"bytes={start}-{end}"
-        headers["Range"] = r
-        # headers["Accept-Encoding"] = "identity"
-        # {"Accept-Encoding": "identity"} 是一个请求头的字典，
-        # 它告诉服务器你希望接收未经过压缩的原始数据。
+        if r:
+            headers["Range"] = r
         response = await client.get(url, headers=headers, params=params)
-
         print(response.headers)
-        # gzip_content = response.content
-        # compressed_stream = BytesIO(gzip_content)
-        # decompressed_stream = gzip.GzipFile(fileobj=compressed_stream, mode="rb")
-        # uncompressed_content = decompressed_stream.read()
-        # httpx.get(url).res
-        # return uncompressed_content
         return  response.content
-        # return gzip.decompress(response.content)
 
     # tasks = []
 
@@ -346,7 +335,15 @@ async def Breakpoint_resume_download_test(client, token):
     print("原始比特大小: ", original_bytes_size)
     # print("解压后大小：",len(ugizp))
 
-    # assert all_get_bytes == original_bytes, "断点续传下载失败"
+    assert len_get == original_bytes_size, "分片测试失败"
+    
+    print("分片测试通过")
+    
+    responseb = await download_part(client,headers.copy(),file_id=file_id)
+    
+    assert len(responseb) == original_bytes_size, "整体测试1失败"
+    
+    assert original_bytes == all_get_bytes , "整体测试2失败"
 
     # print(original_bytes_size)
 
@@ -397,7 +394,7 @@ async def main():
                 if os.path.exists(os.path.basename(test_file)):
                     os.remove(os.path.basename(test_file))
             await delete_user_files(client, token)
-        if True:
+        if False:
             node1 = ["11", "22"]
             response = await upload_file_with_nodes(client, token, test_file, node1)
             # print()
@@ -409,7 +406,7 @@ async def main():
             # nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
             # node2 = random.choice(nodess)
             # await modyfy_file_nodes(client, token, file_id, node2)
-        if False:
+        if True:
             await Breakpoint_resume_download_test(client, token)
         await delete_user(client, token, user_t)
 
