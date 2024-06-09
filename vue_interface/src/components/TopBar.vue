@@ -56,7 +56,7 @@
 </template>
 
 <script>
-// import CryptoJS from "crypto-js";
+import CryptoJS from "crypto-js";
 import axios from "../axios"; // 导入 axios 实例
 export default {
   name: "SideBar",
@@ -195,7 +195,18 @@ export default {
         // const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
         // const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
         // const fileId = fileHash + usernameHash + file_nodes_hash;
-        const fileId = "";
+        let fileId = "";
+        if (file.size <= 104857600) {
+          // 100MB
+          const username = localStorage.getItem("username");
+          const arrayBuffer = reader.result;
+          const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+          const fileHash = CryptoJS.SHA256(wordArray).toString();
+          const usernameHash = CryptoJS.SHA1(username).toString();
+          const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
+          const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
+          fileId = fileHash + usernameHash + file_nodes_hash;
+        }
         const formData = new FormData();
         formData.append("file", file);
         try {
