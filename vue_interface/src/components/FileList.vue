@@ -1,16 +1,14 @@
 <template>
-  <!-- <n-avatar round :src="userAvatar" alt="User Avatar" size="huge" /> -->
   <!-- 搜索视图 -->
   <SearchComponent :files="files" v-if="showSearch" />
   <!-- 批量操作组件 -->
   <BatchActionsComponent />
   <div class="file-list" v-if="!showSearch">
-    <!-- 用户头像 -->
-
     <!-- 文件信息 -->
     <div class="user-info">
       <h2>
         <router-link to="/user">
+          <!-- 用户头像 -->
           <!-- <i class="fas fa-user"></i> -->
           <img :src="userAvatar" alt="" class="user-avatar" />
         </router-link>
@@ -19,7 +17,6 @@
         <span class="file-count">{{ fileAllCount }}</span>
       </h2>
     </div>
-
     <!-- 按钮组 -->
     <!-- 按钮组 -->
     <div class="file-list-button-container">
@@ -41,7 +38,6 @@
         </ul>
       </div>
     </div>
-
     <!-- 文件类型视图 -->
     <div class="fileTypeView" v-if="viewMode === 'ShowByType' && !showSearch">
       <TypesComponent
@@ -53,21 +49,17 @@
         @toggle-visibility="toggleVisibility"
       />
     </div>
-
     <!-- 文件树视图 -->
     <div class="fileTreeView" v-if="viewMode === 'ShowByTree' && !showSearch">
       <NavigationBar />
-
       <!-- <div :style="FileTreeComponentStyle"> -->
       <FileTreeComponent :files="files" />
       <!-- </div> -->
     </div>
-
     <!-- 排序视图 -->
     <div class="order-file-list" v-if="viewMode === 'SortFiles' && !showSearch">
       <OrderComponent />
     </div>
-
     <!-- 弹出式警告组件 -->
     <AlertComponent ref="alertPopup" />
   </div>
@@ -82,8 +74,7 @@ import OrderComponent from "./OrderComponent.vue";
 import SearchComponent from "./SearchComponent.vue";
 import BatchActionsComponent from "./BatchActionsComponent.vue";
 import store from "../store";
-import { provide, ref } from "vue"; // 导入 provide 和 ref
-// import NAvatar from "naive-ui";
+import { provide, ref, onMounted } from "vue"; // 导入 provide 和 ref
 
 export default {
   components: {
@@ -93,12 +84,41 @@ export default {
     OrderComponent,
     SearchComponent,
     BatchActionsComponent,
-    // NAvatar,
   },
   setup() {
     const files = ref([]); // 使用 ref 创建一个响应式的数据对象
     provide("files", files); // 使用 provide 提供 files
-    return { files };
+    const alertPopup = ref(null); // 创建一个响应式的 alertPopup 引用
+    const fetchFiles = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/files/list", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        files.value = response.data.files;
+        localStorage.setItem("currentFilesLength", files.value.length);
+        store.commit("setFiles", response.data.files);
+      } catch (error) {
+        await alertPopup.value.showAlert(
+          `Error fetching files: ${error.response.data.detail}`
+        );
+      }
+    };
+
+    onMounted(async () => {
+      if (
+        localStorage.getItem("currentFilesLength") > 0 &&
+        localStorage.getItem("currentFilesLength") == store.state.files.length
+      ) {
+        files.value = [...store.state.files];
+      } else {
+        await fetchFiles();
+      }
+    });
+
+    return { files, fetchFiles, alertPopup };
   },
   data() {
     return {
@@ -107,7 +127,9 @@ export default {
       viewMode: "ShowByType",
       showSearch: false,
       dropdownOpen: false,
-      userAvatar: null,
+      userAvatar: localStorage.getItem("userAvatar")
+        ? localStorage.getItem("userAvatar")
+        : null,
     };
   },
   computed: {
@@ -121,10 +143,6 @@ export default {
     fileTypes() {
       return [...new Set(this.files.map((file) => file.file_type))];
     },
-  },
-  async created() {
-    await this.fetchFiles();
-    await this.fetchAvatar();
   },
   mounted() {
     this.emitter.on("file-uploaded", this.fetchFiles);
@@ -148,28 +166,17 @@ export default {
     this.emitter.off("batch-files-moved", this.fetchFiles);
     this.emitter.off("batch-files-deleted", this.fetchFiles);
   },
+  async created() {
+    await this.fetchAvatar();
+  },
   methods: {
-    async fetchAvatar() {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("/users/profileimage", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/octet-stream",
-          },
-          responseType: "blob",
-        });
-        this.userAvatar = URL.createObjectURL(new Blob([response.data]));
-        // console.log("this.userAvatar", this.userAvatar);
-      } catch (error) {
-        if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
-        } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
-        } else {
-          await this.$refs.alertPopup.showAlert("Error", error.message);
-        }
-      }
+    checkImage(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
     },
     changeFileViewMode(mode) {
       store.commit("changeViewMode", mode);
@@ -203,37 +210,34 @@ export default {
           break;
       }
     },
-    async fetchFiles() {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("/files/list", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        this.files = response.data.files;
-
-        localStorage.setItem("currentFilesLength", this.files.length);
-
-        store.commit("setFiles", response.data.files);
-
-        // const treePathList = response.data.files.map((file) =>
-        // file.file_nodes.length > 0 ? file.file_nodes : []
-        // );
-
-        // store.commit("buildTreePathList", [...new Set(treePathList)]);
-      } catch (error) {
-        await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
-      }
-    },
-
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
     changeViewMode(mode) {
       this.viewMode = mode;
       this.dropdownOpen = false;
+    },
+    async fetchAvatar() {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/users/profileimage", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/octet-stream",
+          },
+          responseType: "blob",
+        });
+        this.userAvatar = URL.createObjectURL(new Blob([response.data]));
+        localStorage.setItem("userAvatar", this.userAvatar);
+      } catch (error) {
+        if (error.response) {
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+        } else if (error.request) {
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
+        } else {
+          await this.$refs.alertPopup.showAlert("Error", error.message);
+        }
+      }
     },
   },
 };

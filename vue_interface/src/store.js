@@ -7,12 +7,13 @@ export default createStore({
     batchProgress: 0,
     viewMode: "list",
     treePathList: [],
-    baseUrl: "http://localhost:8000",
+    baseUrl: "http://47.115.43.139:8000",
     typesCount: {},
     typesSizeCount: {},
     allfileSize: 0,
     username: "",
     token: "",
+    toPreviewFile: false,
   },
   mutations: {
     setFiles(state, files) {
@@ -47,6 +48,9 @@ export default createStore({
     },
     setTypesSizeCount(state, typesSizeCount) {
       state.typesSizeCount = typesSizeCount;
+    },
+    setToPreviewFile(state, toPreviewFile) {
+      state.toPreviewFile = toPreviewFile;
     },
   },
 });

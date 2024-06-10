@@ -17,7 +17,7 @@ export default {
       const chart = echarts.init(this.$refs.chart);
       const option = {
         title: {
-          text: "File Type Count",
+          text: `File Type Count: ${Object.keys(this.typesCount).length} class`,
         },
         tooltip: {},
         xAxis: {

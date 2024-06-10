@@ -1,13 +1,13 @@
 <template>
   <div class="return-button">
-    <n-button round="true" size="small" @click="goBack">Return</n-button>
+    <n-button round size="small" @click="goBack">Return</n-button>
   </div>
   <div class="background-box">
     <n-card>
       <n-space align="center">
         <n-avatar round :src="userAvatar" alt="User Avatar" size="huge" />
         <h2>{{ username }}</h2>
-        <n-button round="ture" size="small" @click="uploadAvatar">Upload Avatar</n-button>
+        <n-button round size="small" @click="uploadAvatar">Upload Avatar</n-button>
         <input
           type="file"
           ref="fileInput"
@@ -33,7 +33,6 @@ import { NAvatar, NCard, NButton, NSpace } from "naive-ui";
 import store from "../store";
 import FileTypeChart from "../components/FileTypeChart.vue";
 import FileSizeChart from "../components/FileSizeChart.vue";
-import { mapState } from "vuex";
 
 export default {
   components: {
@@ -46,17 +45,20 @@ export default {
   },
   data() {
     return {
-      userAvatar: null,
-      username: null,
-      files: store.state.files,
+      userAvatar: localStorage.getItem("userAvatar")
+        ? localStorage.getItem("userAvatar")
+        : null,
+      username: store.state.username || localStorage.getItem("username") || null,
+      token: store.state.token || localStorage.getItem("token") || null,
     };
   },
   async created() {
-    this.username = store.state.username;
     await this.fetchAvatar();
   },
   computed: {
-    ...mapState(["files"]),
+    files() {
+      return store.state.files;
+    },
     typesCount() {
       return this.files.reduce((acc, file) => {
         acc[file.file_type] = acc[file.file_type] ? acc[file.file_type] + 1 : 1;
@@ -88,15 +90,15 @@ export default {
     },
     async fetchAvatar() {
       try {
-        const token = store.state.token;
         const response = await axios.get("/users/profileimage", {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/octet-stream",
           },
           responseType: "blob",
         });
         this.userAvatar = URL.createObjectURL(new Blob([response.data]));
+        localStorage.setItem("userAvatar", this.userAvatar);
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
@@ -115,15 +117,14 @@ export default {
       const formData = new FormData();
       formData.append("file", file);
       try {
-        const token = store.state.token;
         await axios.post("/users/upload/profileimage", formData, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "multipart/form-data",
           },
         });
         await this.fetchAvatar();
-        // console.log(this.userAvatar);
+        await this.$refs.alertPopup.showAlert("Update userAvatar successful");
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
