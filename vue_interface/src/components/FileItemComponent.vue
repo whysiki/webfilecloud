@@ -38,11 +38,11 @@
         <a
           :href="downloadLink"
           download
-          class="download-button"
-          id="download-button-single-file"
+          class="preview-button"
+          id="preview-button-single-file"
           @click.stop
         >
-          <i class="fas fa-download"></i>
+          <i class="fas fa-eye"></i>
         </a>
       </div>
     </div>
@@ -94,9 +94,6 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
-// import { WritableStream } from "web-streams-polyfill/ponyfill";
-// import { createWriteStream } from "streamsaver";
-// import { Filesystem, Directory } from "@capacitor/filesystem";
 export default {
   props: ["file"],
   data() {
@@ -105,7 +102,6 @@ export default {
       selected: false,
       fileImageUrl: null,
       fileContent: null,
-      // viewMode: "card",
     };
   },
 
@@ -119,14 +115,6 @@ export default {
         return {
           width: "280px",
           margin: "5px",
-
-          // height: "300px",
-          // margin: "10px",
-          // padding: "10px",
-          // border: "1px solid #ccc",
-          // borderRadius: "5px",
-          // boxShadow: "0 0 5px #ccc",
-          // overflow: "hidden",
         };
       } else {
         return {};

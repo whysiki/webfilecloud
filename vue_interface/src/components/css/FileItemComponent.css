@@ -30,13 +30,6 @@
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* .file-item-button-container {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  justify-content: space-around;
-} */
-
 .file-item-button-container {
   display: flex;
   flex-direction: column;
@@ -44,16 +37,6 @@
   margin-top: 10px;
   align-items: center;
 }
-
-/* .file-button {
-  background-color: #1a7be3;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-} */
 
 .file-button {
   background-color: #1a7be3;
@@ -157,14 +140,6 @@
   border-radius: 50%;
 }
 
-/* @media (max-width: 768px) {
-  .download-button,
-  .move-button,
-  .delete-button {
-    display: none;
-  }
-} */
-
 @media (max-width: 600px) {
   .file-button {
     display: none;
@@ -230,15 +205,27 @@ textarea.file-preview {
   }
 }
 
-.download-button {
-  display: inline-block;
-  padding: 10px;
-  background-color: #007bff;
+.preview-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #1a7be3;
   color: white;
-  text-decoration: none;
-  border-radius: 50%;
+  border: none;
+  border-radius: 50%; /* make the button round */
+  padding: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  width: 30px; /* set the width of the button */
+  height: 30px; /* set the height of the button */
+  text-decoration: none; /* remove the underline */
 }
 
-.download-button:hover {
-  background-color: #0056b3;
+.preview-button:hover {
+  background-color: #16723c;
+}
+
+.preview-button i {
+  font-size: 16px; /* increase the size of the icon */
 }

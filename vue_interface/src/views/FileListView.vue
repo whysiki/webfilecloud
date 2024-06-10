@@ -1,9 +1,7 @@
 <template>
   <TopBar />
   <FileList />
-  <button class="scroll-to-top" @click="scrollToTop" v-show="showScrollButton">↑</button>
 </template>
-
 <script>
 import TopBar from "../components/TopBar.vue";
 import FileList from "../components/FileList.vue";
@@ -34,37 +32,3 @@ export default {
   },
 };
 </script>
-
-<style screen>
-.scroll-to-top {
-  position: fixed;
-  bottom: 70px;
-  right: 20px;
-  background-color: #16723c;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.5s;
-}
-
-.scroll-to-top:hover {
-  opacity: 0.7;
-}
-
-@media (max-width: 600px) {
-  .scroll-to-top {
-    right: 5px;
-    padding: 5px;
-    font-size: 15px;
-    width: 42px;
-    height: 42px;
-  }
-}
-</style>

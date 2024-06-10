@@ -194,12 +194,9 @@ export default {
         localStorage.setItem("currentFilesLength", this.files.length);
         store.commit("setFiles", response.data.files);
         const treePathList = response.data.files.map((file) =>
-          file.file_nodes.length > 0 ? "/" + file.file_nodes.join("/") : "/"
+          file.file_nodes.length > 0 ? file.file_nodes : []
         );
         store.commit("buildTreePathList", [...new Set(treePathList)]);
-        // store.state.treePathList.forEach((path) => {
-        // console.log(path);
-        // });
       } catch (error) {
         await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
       }

@@ -117,15 +117,6 @@ export default {
           try {
             const source = axiosModule.CancelToken.source();
             this.cancelTokens.push(source);
-            //
-            // file.cancelTokenSource = axiosModule.CancelToken.source();
-            // this.cancelTokens.push(file.cancelTokenSource);
-            // if (file.cancelTokenSource) {
-            // this.cancelTokens.push(file.cancelTokenSource);
-            // } else {
-            // file.cancelTokenSource = axiosModule.CancelToken.source();
-            // this.cancelTokens.push(file.cancelTokenSource);
-            // }
             const token = localStorage.getItem("token");
             file.showdownloadProgressBar = true;
             const response = await axios.get(

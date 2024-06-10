@@ -591,26 +591,26 @@ async def modify_file_nodes(
     )
 
 
-# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
-# async def download_file(
-#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
-# ):
-#     user = crud.get_user_by_id(db, user_id)
-#     file = crud.get_file_by_id(db, file_id)
-#     if not file:
-#         raise HTTPException(status_code=404, detail="File not found")
-#     if file.file_owner_name != user.username or file.filename != file_name:
-#         raise HTTPException(status_code=403, detail="Permission denied")
+@app.get("/file/directdownload/{user_id}/{file_id}/{file_name}")
+async def download_file(
+    user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_id(db, user_id)
+    file = crud.get_file_by_id(db, file_id)
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if file.file_owner_name != user.username or file.filename != file_name:
+        raise HTTPException(status_code=403, detail="Permission denied")
 
-#     file_path = Path(file.file_path)
-#     file_size = file_path.stat().st_size
+    file_path = Path(file.file_path)
+    file_size = file_path.stat().st_size
 
-#     return FileResponse(
-#         file.file_path,
-#         filename=file.filename,
-#         media_type="application/octet-stream",
-#         headers={"Content-Length": str(file_size)},
-#     )
+    return FileResponse(
+        file.file_path,
+        filename=file.filename,
+        media_type="application/octet-stream",
+        headers={"Content-Length": str(file_size)},
+    )
 
 
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
