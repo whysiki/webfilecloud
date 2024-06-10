@@ -8,7 +8,10 @@
     <div class="user-info">
       <h2>
         <i class="fas fa-user"></i>
-        <span class="file-owner">{{ firstFileOwner }}</span>
+        <router-link to="/user">
+          <span class="file-owner">{{ firstFileOwner }}</span>
+        </router-link>
+
         <i class="fas fa-folder-open" id="user-info-fa-folder-open"></i>
         <span class="file-count">{{ fileAllCount }}</span>
       </h2>
@@ -93,13 +96,11 @@ export default {
   },
   data() {
     return {
-      // files: [], // 初始化 files 数组
-      visibleFileTypes: [], // 初始化 visibleFileTypes 数组
+      visibleFileTypes: [],
       showClassByType: false,
-      viewMode: "ShowByType", // 初始化视图模式
-      showSearch: false, // 初始化 showSearch 数据属性
+      viewMode: "ShowByType",
+      showSearch: false,
       dropdownOpen: false,
-      // viewMode: 'ShowByType'
     };
   },
   computed: {
@@ -113,16 +114,6 @@ export default {
     fileTypes() {
       return [...new Set(this.files.map((file) => file.file_type))];
     },
-    // FileTreeComponentStyle() {
-    // if (store.state.viewMode == "card") {
-    // return {
-    // display: "flex",
-    // "flex-wrap": "wrap",
-    // };
-    // } else {
-    // return {};
-    // }
-    // },
   },
   async created() {
     await this.fetchFiles();

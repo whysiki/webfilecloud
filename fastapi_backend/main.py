@@ -144,7 +144,6 @@ async def read_users_me(
 async def delete_user_files(
     Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
 ):
-
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username=username)
@@ -809,7 +808,7 @@ async def upload_profile_image(
         )
 
     return schemas.UserOut(
-        id=user.id,
+        # id=user.id,
         username=user.username,
         profile_image=user.profile_image,
         message="Profile image uploaded successfully",

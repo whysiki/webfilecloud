@@ -229,3 +229,30 @@ textarea.file-preview {
 .preview-button i {
   font-size: 16px; /* increase the size of the icon */
 }
+
+.download-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #1a7be3;
+  color: white;
+  border: none;
+  border-radius: 50%; /* make the button round */
+  padding: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  width: 30px; /* set the width of the button */
+  height: 30px; /* set the height of the button */
+  text-decoration: none; /* remove the underline */
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1); /* add some shadow */
+}
+
+.download-button:hover {
+  background-color: #16723c;
+  box-shadow: 0 0 15px rgba(176, 43, 43, 0.2); /* add some shadow when hovering */
+}
+
+.download-button i {
+  font-size: 16px; /* increase the size of the icon */
+}

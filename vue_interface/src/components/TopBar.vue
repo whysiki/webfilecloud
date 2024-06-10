@@ -134,56 +134,6 @@ export default {
       // 定义 handleFileUpload 方法
       this.file = event.target.files[0]; // 将用户选择的文件赋值给 this.file
     },
-    // async uploadFile() {
-    //   const reader = new FileReader();
-    //   reader.readAsArrayBuffer(this.file);
-    //   reader.onload = async () => {
-    //     const username = localStorage.getItem("username");
-    //     const arrayBuffer = reader.result;
-    //     const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
-    //     const fileHash = CryptoJS.SHA256(wordArray).toString();
-    //     const usernameHash = CryptoJS.SHA1(username).toString();
-    //     const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
-    //     const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
-    //     const fileId = fileHash + usernameHash + file_nodes_hash;
-    //     const formData = new FormData();
-    //     formData.append("file", this.file);
-    //     try {
-    //       this.showProgressBar = true;
-    //       const token = localStorage.getItem("token");
-    //       await axios.post(
-    //         `/files/upload?file_id=${fileId}&file_nodes=${this.currentUploadStrNodes}`,
-    //         formData,
-    //         {
-    //           headers: {
-    //             Authorization: `Bearer ${token}`,
-    //             "Content-Type": "multipart/form-data",
-    //           },
-    //           onUploadProgress: (progressEvent) => {
-    //             this.uploadProgress = Math.round(
-    //               (progressEvent.loaded * 100) / progressEvent.total
-    //             );
-    //           },
-    //         }
-    //       );
-    //       await this.$refs.alertPopup.showAlert(
-    //         `File uploaded successfully in ${this.currentUploadStrPath}`
-    //       );
-    //       this.emitter.emit("file-uploaded");
-    //     } catch (error) {
-    //       if (error.response) {
-    //         await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
-    //       } else if (error.request) {
-    //         await this.$refs.alertPopup.showAlert("Error: No response from server");
-    //       } else {
-    //         await this.$refs.alertPopup.showAlert("Error", error.message);
-    //       }
-    //     } finally {
-    //       this.showProgressBar = false;
-    //     }
-    //   };
-    // },
-
     async uploadSingleFile(file, totalFiles) {
       const reader = new FileReader();
       reader.readAsArrayBuffer(file);
@@ -282,11 +232,9 @@ export default {
             return inputValue;
           })
           .catch((error) => {
-            // console.log(error);
             return error;
           });
         if (typeof password === "string" && password !== "") {
-          // console.log(password);
           await this.deleteUser(password);
         } else {
           await this.$refs.alertPopup.showAlert("Password is invalid");
@@ -295,8 +243,6 @@ export default {
     },
     async deleteUser(password) {
       try {
-        // console.log(password);
-        // Get the user's id
         const token = localStorage.getItem("token");
         const username = localStorage.getItem("username");
         const userin = {
@@ -313,7 +259,6 @@ export default {
 
         const userId = getIdResponse.data.id;
 
-        // Delete the user
         await axios.delete("/users/delete", {
           headers: {
             Authorization: `Bearer ${token}`,

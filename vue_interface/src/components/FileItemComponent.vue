@@ -3,6 +3,7 @@
   <div class="file-item" title="Click to expand details" :style="listStyle">
     <!-- @mouseover="showfileCardDetails = true" -->
     <!-- @mouseleave="showfileCardDetails = false" -->
+    <!-- 复选框 -->
     <input
       type="checkbox"
       v-model="selected"
@@ -36,13 +37,16 @@
           Delete
         </button>
         <a
-          :href="downloadLink"
+          :href="previewLink"
           download
           class="preview-button"
           id="preview-button-single-file"
           @click.stop
         >
           <i class="fas fa-eye"></i>
+        </a>
+        <a :href="downloadLink" download class="download-button" @click.stop>
+          <i class="fas fa-download"></i>
         </a>
       </div>
     </div>
@@ -106,8 +110,14 @@ export default {
   },
 
   computed: {
-    downloadLink() {
+    previewLink() {
       return store.state.baseUrl + this.file.file_download_link;
+    },
+    downloadLink() {
+      return (store.state.baseUrl + this.file.file_download_link).replace(
+        "/file/download",
+        "/file/directdownload"
+      );
     },
     listStyle() {
       if (store.state.viewMode === "card") {
