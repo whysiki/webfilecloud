@@ -7,7 +7,12 @@ export default createStore({
     batchProgress: 0,
     viewMode: "list",
     treePathList: [],
-    baseUrl: "http://47.115.43.139:8000",
+    baseUrl: "http://localhost:8000",
+    typesCount: {},
+    typesSizeCount: {},
+    allfileSize: 0,
+    username: "",
+    token: "",
   },
   mutations: {
     setFiles(state, files) {
@@ -27,6 +32,21 @@ export default createStore({
     },
     buildTreePathList(state, paths) {
       state.treePathList = paths;
+    },
+    setTypesCount(state, typesCount) {
+      state.typesCount = typesCount;
+    },
+    setAllfileSize(state, allfileSize) {
+      state.allfileSize = allfileSize;
+    },
+    setUserName(state, username) {
+      state.username = username;
+    },
+    setToken(state, token) {
+      state.token = token;
+    },
+    setTypesSizeCount(state, typesSizeCount) {
+      state.typesSizeCount = typesSizeCount;
     },
   },
 });

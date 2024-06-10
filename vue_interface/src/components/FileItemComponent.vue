@@ -195,7 +195,7 @@ export default {
       immediate: true,
       handler(newFile) {
         if (newFile) {
-          if (newFile.file_size > 1024 * 1024 * 10) {
+          if (newFile.file_size > 1024 * 1024 * 5) {
             this.fileContent = null;
             this.fileImageUrl = null;
           } else if (this.isTextFile) {

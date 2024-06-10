@@ -1,17 +1,20 @@
 <template>
+  <!-- <n-avatar round :src="userAvatar" alt="User Avatar" size="huge" /> -->
   <!-- 搜索视图 -->
   <SearchComponent :files="files" v-if="showSearch" />
   <!-- 批量操作组件 -->
   <BatchActionsComponent />
   <div class="file-list" v-if="!showSearch">
+    <!-- 用户头像 -->
+
     <!-- 文件信息 -->
     <div class="user-info">
       <h2>
-        <i class="fas fa-user"></i>
         <router-link to="/user">
-          <span class="file-owner">{{ firstFileOwner }}</span>
+          <!-- <i class="fas fa-user"></i> -->
+          <img :src="userAvatar" alt="" class="user-avatar" />
         </router-link>
-
+        <span class="file-owner">{{ firstFileOwner }}</span>
         <i class="fas fa-folder-open" id="user-info-fa-folder-open"></i>
         <span class="file-count">{{ fileAllCount }}</span>
       </h2>
@@ -80,6 +83,8 @@ import SearchComponent from "./SearchComponent.vue";
 import BatchActionsComponent from "./BatchActionsComponent.vue";
 import store from "../store";
 import { provide, ref } from "vue"; // 导入 provide 和 ref
+// import NAvatar from "naive-ui";
+
 export default {
   components: {
     TypesComponent,
@@ -88,6 +93,7 @@ export default {
     OrderComponent,
     SearchComponent,
     BatchActionsComponent,
+    // NAvatar,
   },
   setup() {
     const files = ref([]); // 使用 ref 创建一个响应式的数据对象
@@ -101,6 +107,7 @@ export default {
       viewMode: "ShowByType",
       showSearch: false,
       dropdownOpen: false,
+      userAvatar: null,
     };
   },
   computed: {
@@ -117,6 +124,7 @@ export default {
   },
   async created() {
     await this.fetchFiles();
+    await this.fetchAvatar();
   },
   mounted() {
     this.emitter.on("file-uploaded", this.fetchFiles);
@@ -141,6 +149,28 @@ export default {
     this.emitter.off("batch-files-deleted", this.fetchFiles);
   },
   methods: {
+    async fetchAvatar() {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/users/profileimage", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/octet-stream",
+          },
+          responseType: "blob",
+        });
+        this.userAvatar = URL.createObjectURL(new Blob([response.data]));
+        // console.log("this.userAvatar", this.userAvatar);
+      } catch (error) {
+        if (error.response) {
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+        } else if (error.request) {
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
+        } else {
+          await this.$refs.alertPopup.showAlert("Error", error.message);
+        }
+      }
+    },
     changeFileViewMode(mode) {
       store.commit("changeViewMode", mode);
     },
@@ -181,13 +211,18 @@ export default {
             Authorization: `Bearer ${token}`,
           },
         });
+
         this.files = response.data.files;
+
         localStorage.setItem("currentFilesLength", this.files.length);
+
         store.commit("setFiles", response.data.files);
-        const treePathList = response.data.files.map((file) =>
-          file.file_nodes.length > 0 ? file.file_nodes : []
-        );
-        store.commit("buildTreePathList", [...new Set(treePathList)]);
+
+        // const treePathList = response.data.files.map((file) =>
+        // file.file_nodes.length > 0 ? file.file_nodes : []
+        // );
+
+        // store.commit("buildTreePathList", [...new Set(treePathList)]);
       } catch (error) {
         await this.$refs.alertPopup.showAlert(`Error fetching files: ${error.message}`);
       }
@@ -206,4 +241,10 @@ export default {
 
 <style scoped>
 @import "./css/FileList.css";
+.user-avatar {
+  border-radius: 50%;
+  border: 1px solid blue;
+  width: 40px;
+  height: 40px;
+}
 </style>

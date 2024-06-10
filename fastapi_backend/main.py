@@ -743,17 +743,13 @@ async def get_profile_image(
     if not user.profile_image or not os.path.exists(user.profile_image):
         if os.path.exists(config.User.DEFAULT_PROFILE_IMAGE):
             user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
+            logger.warning("default profile_image")
         else:
             raise HTTPException(
                 status_code=404,
                 detail="Profile image not found, Server error, no default profile image",
             )
-    # return schemas.UserOut(
-    #     id=user.id,
-    #     username=user.username,
-    #     profile_image=user.profile_image,
-    #     message="Profile image found",
-    # )
+
     return FileResponse(
             user.profile_image,
             filename=os.path.basename(user.profile_image),

@@ -42,7 +42,7 @@
 
 <script>
 import axios from "../axios"; // 导入 axios 实例
-
+import store from "../store"; // 导入 store
 export default {
   components: {},
   data() {
@@ -65,6 +65,9 @@ export default {
         localStorage.setItem("username", this.username); // 将 username 存储到 localStorage
         localStorage.setItem("currentNodes", "[]"); // 将 currentNodes 存储到 localStorage
 
+        store.commit("setToken", response.data.access_token); // 调用 store 中的 setToken 方法
+
+        store.commit("setUserName", this.username); // 调用 store 中的 setUsername 方法
         //test
         // localStorage.setItem("password", this.password);
 

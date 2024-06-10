@@ -11,7 +11,7 @@ const routes = [
     component: FileList,
   },
   {
-    path: "/user/:id",
+    path: "/user",
     component: UserView,
   },
 ];
