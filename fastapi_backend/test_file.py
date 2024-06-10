@@ -516,7 +516,7 @@ async def main():
             await test_getfilesbynode(client, token, ["11", "22", "testetst"])
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
-            await test_uploaduseravatar(client, token, r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg")
+            # await test_uploaduseravatar(client, token, r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg")
             await test_getuseravatar(client, token)
         await delete_user(client, token, user_t)
 
