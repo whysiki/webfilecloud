@@ -197,7 +197,6 @@ async def upload_file(
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
 
-
     # 检查文件是否已存在
     existing_file = (
         db.query(models.File)
@@ -311,14 +310,17 @@ async def file_iterator(file_path: str, start: int, end: int):
         await f.seek(start)
         chunk_size = 1024
         current_position = start
-        while current_position <= end: #只要当前位置小于等于end，就继续读取。 包含end
-            remaining_bytes = end - current_position + 1 # 从当前位置读到 end , 闭区间，一共有的字节数
-            read_size = min(chunk_size, remaining_bytes) # 不超过chunk_size
-            chunk = await f.read(read_size) # 读取
-            if not chunk: # 到达文件末尾
+        while current_position <= end:  # 只要当前位置小于等于end，就继续读取。 包含end
+            remaining_bytes = (
+                end - current_position + 1
+            )  # 从当前位置读到 end , 闭区间，一共有的字节数
+            read_size = min(chunk_size, remaining_bytes)  # 不超过chunk_size
+            chunk = await f.read(read_size)  # 读取
+            if not chunk:  # 到达文件末尾
                 break
-            current_position += len(chunk) # 移动位置
+            current_position += len(chunk)  # 移动位置
             yield chunk
+
 
 @app.get("/files/download/stream")
 async def read_file_stream(
@@ -342,7 +344,7 @@ async def read_file_stream(
 
     if not os.path.exists(file.file_path):
         raise HTTPException(status_code=404, detail="File path not found")
-    
+
     file_size = os.path.getsize(file.file_path)
     range_header = request.headers.get("Range")
     if range_header:
@@ -564,9 +566,35 @@ async def modify_file_nodes(
     )
 
 
+# @app.get("/file/download/{user_id}/{file_id}/{file_name}")
+# async def download_file(
+#     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+# ):
+#     user = crud.get_user_by_id(db, user_id)
+#     file = crud.get_file_by_id(db, file_id)
+#     if not file:
+#         raise HTTPException(status_code=404, detail="File not found")
+#     if file.file_owner_name != user.username or file.filename != file_name:
+#         raise HTTPException(status_code=403, detail="Permission denied")
+
+#     file_path = Path(file.file_path)
+#     file_size = file_path.stat().st_size
+
+#     return FileResponse(
+#         file.file_path,
+#         filename=file.filename,
+#         media_type="application/octet-stream",
+#         headers={"Content-Length": str(file_size)},
+#     )
+
+
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
 async def download_file(
-    user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
+    request: Request,
+    user_id: str,
+    file_id: str,
+    file_name: str,
+    db: Session = Depends(get_db),
 ):
     user = crud.get_user_by_id(db, user_id)
     file = crud.get_file_by_id(db, file_id)
@@ -575,12 +603,28 @@ async def download_file(
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
 
-    file_path = Path(file.file_path)
-    file_size = file_path.stat().st_size
+    if not os.path.exists(file.file_path):
+        raise HTTPException(status_code=404, detail="File path not found")
 
-    return FileResponse(
-        file.file_path,
-        filename=file.filename,
-        media_type="application/octet-stream",
-        headers={"Content-Length": str(file_size)},
+    file_size = os.path.getsize(file.file_path)
+    range_header = request.headers.get("Range")
+    if range_header:
+        start, end = range_header.replace("bytes=", "").split("-")
+        start = int(start)
+        end = int(end) if end else file_size - 1
+    else:
+        start = 0
+        end = file_size - 1
+
+    if start >= file_size or end >= file_size:
+        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+
+    return StreamingResponse(
+        file_iterator(file.file_path, start, end),
+        status_code=206 if range_header else 200,
+        headers={
+            "Content-Length": str(end - start + 1),
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+        },
     )
