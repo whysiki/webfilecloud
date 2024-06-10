@@ -3,52 +3,51 @@
 from dotenv import load_dotenv
 import os
 
+# Load environment variables
+load_dotenv()
+
 
 # Configuration classes
 class Config:
-    # read .env
-    load_dotenv()
-    # read environment variables
-    # the path to store uploaded files
-    UPLOAD_PATH: str = os.getenv("UPLOAD_PATH")
-    # jwt secret key
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
-    # jwt algorithm
-    ALGORITHM: str = os.getenv("ALGORITHM")
-    # jwt expire time
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-    # ROOT user
-    ROOT_USER: str = os.getenv("ROOT_USER")
-    # ROOT password
-    ROOT_PASSWORD: str = os.getenv("ROOT_PASSWORD")
-    # database URL
-    # dialect[+driver]://user:password@host/dbname
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    # Read environment variables
+    UPLOAD_PATH: str = os.getenv("UPLOAD_PATH", "")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    ALGORITHM: str = os.getenv("ALGORITHM", "")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "0")
+    )
+    ROOT_USER: str = os.getenv("ROOT_USER", "")
+    ROOT_PASSWORD: str = os.getenv("ROOT_PASSWORD", "")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+    STATIC_PATH: str = "./static"
+
+    # Validate environment variables
+    assert UPLOAD_PATH, "UPLOAD_PATH is missing, please check your .env file."
+    assert SECRET_KEY, "SECRET_KEY is missing, please check your .env file."
+    assert ALGORITHM, "ALGORITHM is missing, please check your .env file."
+    assert (
+        ACCESS_TOKEN_EXPIRE_MINUTES > 0
+    ), "ACCESS_TOKEN_EXPIRE_MINUTES is missing or invalid, please check your .env file."
+    assert ROOT_USER, "ROOT_USER is missing, please check your .env file."
+    assert ROOT_PASSWORD, "ROOT_PASSWORD is missing, please check your .env file."
+    assert DATABASE_URL, "DATABASE_URL is missing, please check your .env file."
 
     os.makedirs(UPLOAD_PATH, exist_ok=True)
+    os.makedirs(STATIC_PATH, exist_ok=True)
 
-    # cros-origins
+    assert os.path.exists(UPLOAD_PATH), "Upload path not found."
+    assert os.path.exists(STATIC_PATH), "Static path not found."
 
+    # CORS origins
     CROS_ORIGINS: list = ["*"]
 
-    # GIZE RESOPONSE MIN_SIEZ
-
+    # GZIP response minimum size
     GZIP_MINIMUM_SIZE: int = 500
 
-    assert (
-        UPLOAD_PATH
-        and SECRET_KEY
-        and ALGORITHM
-        and ACCESS_TOKEN_EXPIRE_MINUTES
-        and ROOT_USER
-        and ROOT_PASSWORD
-        and DATABASE_URL
-        and isinstance(ACCESS_TOKEN_EXPIRE_MINUTES, int)
-        and isinstance(ROOT_USER, str)
-        and isinstance(ROOT_PASSWORD, str)
-        and isinstance(DATABASE_URL, str)
-        and isinstance(UPLOAD_PATH, str)
-        and isinstance(SECRET_KEY, str)
-        and isinstance(ALGORITHM, str)
-        and os.path.exists(UPLOAD_PATH)
-    ), "Some environment variables are missing, please check your .env file. if you don't have one, please run `python env.py` to generate it."
+
+class User(Config):
+    # Default profile image path
+    DEFAULT_PROFILE_IMAGE: str = os.path.join(Config.STATIC_PATH, "whysiki.jpg")
+
+    assert os.path.exists(DEFAULT_PROFILE_IMAGE), "Default profile image not found."

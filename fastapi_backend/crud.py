@@ -212,3 +212,11 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
 
 # @handle_db_errors
 # def modify_file_nodes(db:Session,file:File, action:str, data):
+
+
+@handle_db_errors
+def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
+    setattr(file, arrtibute, value)
+    db.commit()
+    assert getattr(file, arrtibute) == value, "Modify file attribute failed"
+    logger.success(f"Modified file attribute : {arrtibute} to {value}")

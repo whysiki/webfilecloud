@@ -16,7 +16,7 @@ from typing import Optional
 import auth  # 认证
 from fastapi.responses import FileResponse
 import hashlib
-from config import Config  # 自定义配置类，里面有配置项
+import config  # 自定义配置类，里面有配置项
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import aiofiles
@@ -52,6 +52,15 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(data={"sub": user_in.username})
+    return schemas.Token(access_token=access_token, token_type="bearer")
+
+
+# 更新access_token
+@app.post("/users/refresh", response_model=schemas.Token)
+async def refresh_token(Authorization: Optional[str] = Header(None)):
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    access_token = create_access_token(data={"sub": username})
     return schemas.Token(access_token=access_token, token_type="bearer")
 
 
@@ -224,7 +233,7 @@ async def upload_file(
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
     file_path = utility.get_new_path(
-        os.path.join(Config.UPLOAD_PATH, username, file_type, filename)
+        os.path.join(config.Config.UPLOAD_PATH, username, file_type, filename)
     )
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -445,14 +454,17 @@ async def delete_file(
 
 @app.post("/db/reset", response_model=schemas.DbOut)
 async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
-    if user_in.username != Config.ROOT_USER or user_in.password != Config.ROOT_PASSWORD:
+    if (
+        user_in.username != config.Config.ROOT_USER
+        or user_in.password != config.Config.ROOT_PASSWORD
+    ):
         raise HTTPException(status_code=403, detail="Permission denied")
     db.query(models.association_table).delete()  # 清空联系表
     db.query(models.User).delete()  # 清空用户表
     db.query(models.File).delete()  # 清空文件表
     db.commit()
-    if os.path.exists(Config.UPLOAD_PATH):
-        shutil.rmtree(Config.UPLOAD_PATH)
+    if os.path.exists(config.onfig.UPLOAD_PATH):
+        shutil.rmtree(config.Config.UPLOAD_PATH)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),
@@ -627,4 +639,145 @@ async def download_file(
             "Content-Range": f"bytes {start}-{end}/{file_size}",
             "Accept-Ranges": "bytes",
         },
+    )
+
+
+# 修改文件名
+@app.post("/file/modifyname", response_model=schemas.FileOut)
+async def modify_file_name(
+    file_id: str,
+    new_file_name: str,
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    if not new_file_name:
+        raise HTTPException(status_code=405, detail="Invalid file name")
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username = get_current_username(access_token)
+    file = crud.get_file_by_id(db, file_id)
+    if file.file_owner_name != username:
+        raise HTTPException(status_code=401, detail="Access denied")
+    else:
+        file.filename = new_file_name
+    db.commit()
+
+    if file.filename != new_file_name:
+
+        raise HTTPException(
+            status_code=403, detail="Modify file name failes, Server error"
+        )
+
+    return schemas.FileOut(
+        id=file.id,
+        filename=file.filename,
+        file_size=file.file_size,
+        message="modify file name successful",
+        file_create_time=file.file_create_time,
+        file_type=file.file_type,
+        file_owner_name=file.file_owner_name,
+        file_nodes=file.file_nodes,
+    )
+
+
+# 获取同属于一个节点的文件列表
+@app.get("/files/nodefiles", response_model=schemas.FileList)
+async def list_node_files(
+    file_nodes: str,  # 数组字符串
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    if not file_nodes or numpy.array(json.loads(file_nodes)).shape != 1:
+        logger.error("invalid upload nodes, please input a string array, default: []")
+        raise HTTPException(
+            status_code=400,
+            detail="invalid upload nodes, please input a string array, default: []",
+        )
+
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+
+    username: str = get_current_username(access_token)
+
+    user = crud.get_user_by_username(db, username)
+
+    file_list = list(
+        schemas.FileOut(
+            id=file.id,
+            filename=file.filename,
+            file_size=file.file_size,
+            message="File found",
+            file_create_time=file.file_create_time,
+            file_type=file.file_type,
+            file_owner_name=file.file_owner_name,
+            file_nodes=file.file_nodes,
+            file_download_link=f"/file/download/{user.id}/{file.id}/{file.filename}",
+        )
+        for file in user.files
+        if file.file_nodes == json.loads(file_nodes)
+    )
+
+    return dict(files=file_list)
+
+
+# 获取用户头像
+@app.get("/users/profileimage", response_model=schemas.UserOut)
+async def get_profile_image(
+    Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+):
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+    if not user.profile_image or not os.path.exists(user.profile_image):
+        if os.path.exists(config.User.DEFAULT_PROFILE_IMAGE):
+            user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Profile image not found, Server error, no default profile image",
+            )
+    return schemas.UserOut(
+        id=user.id,
+        username=user.username,
+        profile_image=user.profile_image,
+        message="Profile image found",
+    )
+
+
+# 上传用户头像
+@app.post("/users/upload/profileimage", response_model=schemas.UserOut)
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    file_path = utility.get_new_path(
+        os.path.join(config.Config.STATIC_PATH, username, "profile", file.filename)
+    )
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    try:
+        async with aiofiles.open(file_path, "wb") as buffer:
+            await buffer.write(await file.read())
+    except:
+        raise HTTPException(
+            status_code=500, detail="Profile image save failed, Server error"
+        )
+    user.profile_image = file_path
+
+    db.commit()
+
+    if not user.profile_image or not os.path.exists(user.profile_image):
+
+        raise HTTPException(
+            status_code=500, detail="Profile image upload failed, Server error"
+        )
+
+    return schemas.UserOut(
+        id=user.id,
+        username=user.username,
+        profile_image=user.profile_image,
+        message="Profile image uploaded successfully",
     )

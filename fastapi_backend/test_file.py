@@ -405,7 +405,7 @@ async def main():
             # nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
             # node2 = random.choice(nodess)
             # await modyfy_file_nodes(client, token, file_id, node2)
-        if True:
+        if False:
             await Breakpoint_resume_download_test(client, token)
         await delete_user(client, token, user_t)
 

@@ -26,6 +26,9 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     password = Column(String)  # Not plain text password
     register_time = Column(String, default="")
+    role = Column(String, default="user")
+    profile = Column(String, default="")  # User profile
+    profile_image = Column(String, default="")  # User profile image
     files = relationship("File", secondary=association_table, cascade="all, delete")
 
 

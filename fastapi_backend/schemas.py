@@ -16,6 +16,9 @@ class UserOut(BaseModel):
     message: str
     id: str = Field("", title="id")  # 设置默认值
     username: str
+    profile_image: str = Field("", title="profile_image")  # 设置默认值
+    profile: str = Field("", title="profile")  # 设置默认值
+    role: str = Field("", title="role")  # 设置默认值
 
 
 class UserShow(BaseModel):
