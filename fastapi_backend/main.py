@@ -60,7 +60,15 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
 async def refresh_token(Authorization: Optional[str] = Header(None)):
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
+
+    ##
+    ##  通过access_token获取用户名，然后再生成新的access_token
     access_token = create_access_token(data={"sub": username})
+
+    test_username = get_current_username(access_token)
+
+    if not test_username == username:
+        raise HTTPException(status_code=401, detail="refresh token failed")
     return schemas.Token(access_token=access_token, token_type="bearer")
 
 
@@ -75,6 +83,8 @@ async def delete_user(
     if not (user.username == current_username):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     crud.delete_user_from_db(db, user)
+    if os.path.exists(user.profile_image):
+        os.remove(user.profile_image)
     logger.warning(f"User {current_username} deleted")
     return schemas.UserOut(
         # id=id,
@@ -262,6 +272,9 @@ async def upload_file(
     db.add(new_file)
     db.commit()
     db.refresh(new_file)
+
+    if not new_file == crud.get_file_by_id(db, file_id=new_file.id):
+        raise HTTPException(status_code=500, detail="Upload file failed")
 
     return schemas.FileOut(
         id=new_file.id,
@@ -654,6 +667,8 @@ async def modify_file_name(
         raise HTTPException(status_code=405, detail="Invalid file name")
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username = get_current_username(access_token)
+    logger.debug(f"new file name: {new_file_name}")
+    logger.debug(f"file_id: {file_id}")
     file = crud.get_file_by_id(db, file_id)
     if file.file_owner_name != username:
         raise HTTPException(status_code=401, detail="Access denied")
@@ -686,7 +701,7 @@ async def list_node_files(
     Authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    if not file_nodes or numpy.array(json.loads(file_nodes)).shape != 1:
+    if not file_nodes or len(numpy.array(json.loads(file_nodes)).shape) != 1:
         logger.error("invalid upload nodes, please input a string array, default: []")
         raise HTTPException(
             status_code=400,

@@ -20,7 +20,7 @@ class Config:
     ROOT_PASSWORD: str = os.getenv("ROOT_PASSWORD", "")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
-    STATIC_PATH: str = "./static"
+    STATIC_PATH: str = "static"
 
     # Validate environment variables
     assert UPLOAD_PATH, "UPLOAD_PATH is missing, please check your .env file."

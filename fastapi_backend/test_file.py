@@ -18,6 +18,7 @@ import re
 from tqdm import tqdm
 import gzip
 from io import BytesIO
+from httpx import AsyncClient, Client
 
 # import psutil
 # from achive.path_tools import forcey_delete_path
@@ -347,10 +348,76 @@ async def Breakpoint_resume_download_test(client, token):
     # print(original_bytes_size)
 
 
+# 刷新token
+async def test_refreshtoken(client: AsyncClient, token: str) -> str:
+    url = f"{base_url}/users/refresh"
+    headers = {"Authorization": f"Bearer {token}"}
+    response = await client.post(url, headers=headers)
+    print(response.status_code)
+    print(response.json())
+    return response.json()["access_token"]
+
+
+# 修改文件名
+async def test_modifyfilename(client: AsyncClient, token: str, file_id: str) -> dict:
+    url = f"{base_url}/file/modifyname"
+    headers = {"Authorization": f"Bearer {token}"}
+    newfilename = f"{str(uuid4())}.txt"
+    print("newfilename:", newfilename, "file_id:", file_id)
+    response = await client.post(
+        url, headers=headers, params={"file_id": file_id, "new_file_name": newfilename}
+    )
+    print(response.status_code)
+    print(response.json())
+    return response.json()
+
+
+# 测试获取同属于一个节点路径的文件列表
+async def test_getfilesbynode(client: AsyncClient, token: str, nodes: list):
+
+    url = f"{base_url}/files/nodefiles"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(
+        url, headers=headers, params={"file_nodes": json.dumps(nodes)}
+    )
+
+    print(response.status_code)
+    print(response.json())
+
+
+# 获取用户头像
+async def test_getuseravatar(client: AsyncClient, token: str):
+
+    url = f"{base_url}/users/profileimage"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(url, headers=headers)
+
+    print(response.status_code)
+    print(response.json())
+
+
+# 上传用户头像
+async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str):
+
+    url = f"{base_url}/users/upload/profileimage"
+
+    headers = {"Authorization": f"Bearer {token}"}
+    files = {"file": open(test_file, "rb")}
+    response = await client.post(url, headers=headers, files=files)
+
+    print(response.status_code)
+
+    print(response.json())
+
+
 async def main():
     async with httpx.AsyncClient(timeout=200) as client:
         # user_t = dict(username=str(uuid4()), password=str(uuid4()))
-        user_t = dict(username="11223344", password="11223344")
+        user_t = dict(username="1123434233", password="11111111111111111111")
         test_file = f"{testfile_folder}/{str(uuid4())}.txt"
         if not os.path.exists(test_file):
             os.makedirs(os.path.dirname(test_file), exist_ok=True)
@@ -407,6 +474,28 @@ async def main():
             # await modyfy_file_nodes(client, token, file_id, node2)
         if False:
             await Breakpoint_resume_download_test(client, token)
+
+        if True:
+            token = await test_refreshtoken(client, token)
+            await upload_file_with_nodes(
+                client, token, test_file, ["11", "22", "testetst", "11111"]
+            )
+            await upload_file_with_nodes(
+                client, token, test_file, ["testetst", "11111"]
+            )
+            await upload_file_with_nodes(client, token, test_file, ["11111"])
+            await upload_file_with_nodes(client, token, test_file, [])
+            fileid = (
+                await upload_file_with_nodes(
+                    client, token, test_file, ["11", "22", "testetst"]
+                )
+            ).json()["id"]
+            print("fileid:", fileid)
+            await test_modifyfilename(client, token, fileid)
+            await test_getfilesbynode(client, token, ["11", "22", "testetst"])
+            await test_getuseravatar(client, token)
+            await test_uploaduseravatar(client, token, "test/image.png")
+            await test_getuseravatar(client, token)
         await delete_user(client, token, user_t)
 
 
