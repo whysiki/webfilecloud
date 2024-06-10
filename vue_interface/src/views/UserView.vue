@@ -123,7 +123,7 @@ export default {
           },
         });
         await this.fetchAvatar();
-        console.log(this.userAvatar);
+        // console.log(this.userAvatar);
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);

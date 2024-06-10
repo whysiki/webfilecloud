@@ -286,7 +286,7 @@ export default {
     async confirmDeleteAllFiles() {
       //进制基数，这里为 10，表示将字符串作为十进制数解析。
       const currentFilesLength = parseInt(localStorage.getItem("currentFilesLength"), 10);
-      console.log(currentFilesLength);
+      // console.log(currentFilesLength);
       if (
         currentFilesLength === 0 ||
         currentFilesLength === null ||
