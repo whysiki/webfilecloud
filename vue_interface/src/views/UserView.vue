@@ -1,11 +1,11 @@
 <template>
   <div class="return-button">
-    <n-button round size="small" @click="goBack">Return</n-button>
+    <n-button round size="medium" @click="goBack">Return</n-button>
   </div>
   <div class="background-box">
     <n-card>
-      <n-space align="center">
-        <n-avatar round :src="userAvatar" alt="User Avatar" size="huge" />
+      <n-space vertical align="center" class="user-info-container">
+        <n-avatar class="user-avatar" round :src="userAvatar" alt="User Avatar" />
         <h2>{{ username }}</h2>
         <n-button round size="small" @click="uploadAvatar">Upload Avatar</n-button>
         <input
@@ -17,11 +17,12 @@
       </n-space>
     </n-card>
     <n-card>
-      <template #header>
-        <span>Statistics</span>
-      </template>
+      <h2>Statistics</h2>
       <FileTypeChart :typesCount="typesCount" />
       <FileSizeChart :allFilesSize="allFilesSize" :typesSizeCount="typesSizeCount" />
+    </n-card>
+    <n-card>
+      <ConfigComponent />
     </n-card>
   </div>
   <AlertComponent ref="alertPopup" />
@@ -33,6 +34,7 @@ import { NAvatar, NCard, NButton, NSpace } from "naive-ui";
 import store from "../store";
 import FileTypeChart from "../components/FileTypeChart.vue";
 import FileSizeChart from "../components/FileSizeChart.vue";
+import ConfigComponent from "../components/ConfigComponent.vue";
 
 export default {
   components: {
@@ -42,6 +44,7 @@ export default {
     NSpace,
     FileTypeChart,
     FileSizeChart,
+    ConfigComponent,
   },
   data() {
     return {
@@ -142,8 +145,40 @@ export default {
 <style scoped>
 @import "./css/UserView.css";
 .return-button {
+  z-index: 9999;
   position: absolute;
-  top: 10px;
+  top: 20px;
   left: 0px;
+  /* width: 40px; */
+  /* margin: 10px; */
+  /* font-size: 20px; */
+  /* padding: 10px; */
+}
+
+.user-info-container {
+  align-items: center;
+}
+
+.user-info-container n-avatar {
+  margin-bottom: 10px;
+}
+
+.user-info-container h2 {
+  margin: 10px 0;
+  font-size: 24px;
+  color: #333;
+  font-weight: bold;
+}
+
+.user-info-container n-button {
+  margin-top: 10px;
+}
+h2 {
+  color: #1a7be3;
+}
+.user-avatar {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 10px;
 }
 </style>
