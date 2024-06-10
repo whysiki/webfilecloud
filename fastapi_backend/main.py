@@ -749,12 +749,17 @@ async def get_profile_image(
                 status_code=404,
                 detail="Profile image not found, Server error, no default profile image",
             )
-    return schemas.UserOut(
-        id=user.id,
-        username=user.username,
-        profile_image=user.profile_image,
-        message="Profile image found",
-    )
+    # return schemas.UserOut(
+    #     id=user.id,
+    #     username=user.username,
+    #     profile_image=user.profile_image,
+    #     message="Profile image found",
+    # )
+    return FileResponse(
+            user.profile_image,
+            filename=os.path.basename(user.profile_image),
+            media_type="application/octet-stream",
+        )
 
 
 # 上传用户头像
@@ -764,28 +769,41 @@ async def upload_profile_image(
     Authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
+    # 获取访问令牌和用户名
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 保存文件
     file_path = utility.get_new_path(
         os.path.join(config.Config.STATIC_PATH, username, "profile", file.filename)
     )
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
+        total_size = 0
         async with aiofiles.open(file_path, "wb") as buffer:
-            await buffer.write(await file.read())
-    except:
+            while True:
+                chunk = await file.read(1024)  # 每次读取1KB
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
+                    os.remove(file_path)  # 删除已保存的文件
+                    logger.warning("profile image File size exceeds maximum limit")
+                    raise HTTPException(status_code=400, detail="profile image File size exceeds maximum limit")
+                await buffer.write(chunk)
+    except Exception as e:
         raise HTTPException(
-            status_code=500, detail="Profile image save failed, Server error"
+            status_code=500, detail=f"Profile image save failed, Server error: {e}"
         )
-    user.profile_image = file_path
 
+    user.profile_image = file_path
+    
     db.commit()
 
     if not user.profile_image or not os.path.exists(user.profile_image):
-
         raise HTTPException(
             status_code=500, detail="Profile image upload failed, Server error"
         )

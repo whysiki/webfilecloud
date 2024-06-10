@@ -51,3 +51,6 @@ class User(Config):
     DEFAULT_PROFILE_IMAGE: str = os.path.join(Config.STATIC_PATH, "whysiki.jpg")
 
     assert os.path.exists(DEFAULT_PROFILE_IMAGE), "Default profile image not found."
+
+    # 头像最大大小
+    PROFILE_IMAGE_MAX_FILE_SIZE : int = 1024 * 1024 * 3

@@ -19,7 +19,7 @@ from tqdm import tqdm
 import gzip
 from io import BytesIO
 from httpx import AsyncClient, Client
-
+from urllib.parse import unquote
 # import psutil
 # from achive.path_tools import forcey_delete_path
 
@@ -389,15 +389,36 @@ async def test_getfilesbynode(client: AsyncClient, token: str, nodes: list):
 
 # 获取用户头像
 async def test_getuseravatar(client: AsyncClient, token: str):
-
     url = f"{base_url}/users/profileimage"
-
     headers = {"Authorization": f"Bearer {token}"}
 
     response = await client.get(url, headers=headers)
 
     print(response.status_code)
-    print(response.json())
+
+    if response.status_code == 200:
+        # 从Content-Disposition头获取文件名
+        content_disposition = response.headers.get('Content-Disposition')
+        if content_disposition and 'filename*=' in content_disposition:
+            filename = content_disposition.split("filename*=")[1].strip().strip("utf-8''")
+            filename = unquote(filename)
+        elif content_disposition and 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[1].strip().strip('"')
+        else:
+            filename = "userprofileimg.jpg"
+
+        # 创建保存路径
+        save_path = os.path.join("test", filename)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)  # 确保目录存在
+
+        # 保存文件内容
+        with open(save_path, 'wb') as file:
+            file.write(response.content)
+
+        print(f"Profile image saved successfully as {save_path}.")
+    else:
+        print(f"Failed to retrieve profile image: {response.status_code}")
+        print(response.json())
 
 
 # 上传用户头像
@@ -495,6 +516,7 @@ async def main():
             await test_getfilesbynode(client, token, ["11", "22", "testetst"])
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
+            await test_uploaduseravatar(client, token, r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg")
             await test_getuseravatar(client, token)
         await delete_user(client, token, user_t)
 
