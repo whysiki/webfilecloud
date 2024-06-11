@@ -2,6 +2,11 @@
   <div class="return-button">
     <n-button round size="medium" @click="goBack">Return</n-button>
   </div>
+  <div class="return-home-button">
+    <router-link to="/">
+      <n-button round size="medium">Home</n-button>
+    </router-link>
+  </div>
   <div class="background-box">
     <n-card>
       <n-space vertical align="center" class="user-info-container">
@@ -167,42 +172,4 @@ export default {
 
 <style scoped>
 @import "./css/UserView.css";
-.return-button {
-  z-index: 9999;
-  position: absolute;
-  top: 20px;
-  left: 0px;
-  /* width: 40px; */
-  /* margin: 10px; */
-  /* font-size: 20px; */
-  /* padding: 10px; */
-}
-
-.user-info-container {
-  align-items: center;
-}
-
-.user-info-container n-avatar {
-  margin-bottom: 10px;
-}
-
-.user-info-container h2 {
-  margin: 10px 0;
-  font-size: 24px;
-  color: #333;
-  font-weight: bold;
-}
-
-.user-info-container n-button {
-  margin-top: 10px;
-}
-h2,
-#background-username {
-  color: #1a7be3;
-}
-.user-avatar {
-  width: 150px;
-  height: 150px;
-  margin-bottom: 10px;
-}
 </style>

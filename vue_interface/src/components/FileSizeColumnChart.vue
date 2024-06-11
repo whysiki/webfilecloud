@@ -39,10 +39,10 @@ export default {
         },
         yAxis: {
           type: "value",
-          axisLabel: {
-            formatter: (value) => this.formatSize(value),
-          },
-          data: Object.values(this.typesSizeCount),
+          // axisLabel: {
+          // formatter: (value) => this.formatSize(value),
+          // },
+          // data: Object.values(this.typesSizeCount),
         },
         series: [
           {
