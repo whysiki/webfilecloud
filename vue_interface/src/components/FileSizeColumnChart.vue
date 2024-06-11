@@ -27,6 +27,13 @@ export default {
     initChart() {
       const chart = echarts.init(this.$refs.chart);
       const option = {
+        grid: {
+          left: "10%",
+          right: "10%",
+          bottom: "10%",
+          top: "10%",
+          containLabel: true,
+        },
         tooltip: {
           trigger: "axis",
           axisPointer: {
@@ -36,12 +43,18 @@ export default {
         xAxis: {
           type: "category",
           data: Object.keys(this.typesSizeCount),
+          // axisLabel: {
+          //   interval: 0,
+          //   rotate: 45,
+          // },
         },
         yAxis: {
           type: "value",
-          // axisLabel: {
-          // formatter: (value) => this.formatSize(value),
-          // },
+          axisLabel: {
+            formatter: (value) => this.formatSize(value),
+            interval: 0,
+            rotate: 45,
+          },
           // data: Object.values(this.typesSizeCount),
         },
         series: [

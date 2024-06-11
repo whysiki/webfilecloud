@@ -1,6 +1,6 @@
 .background-box {
-  width: 95%;
-  margin: 10px auto;
+  width: 100%;
+  /* margin: 10px auto; */
   padding: 20px;
   margin-bottom: 40px;
   box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
@@ -12,10 +12,12 @@
 }
 
 .n-card {
-  background-color: rgba(255, 255, 255, 0.5);
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.427);
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
-  margin: 10px 0;
+  /* margin: 10px 0; */
+  margin-bottom: 10px;
 }
 .n-button {
   background-color: #3498db;
@@ -88,31 +90,6 @@
   color: red;
 }
 
-.return-button {
-  z-index: 9999;
-  position: absolute;
-  top: 20px;
-  left: 0px;
-  width: 40px;
-  /* display: flex; */
-  text-align: center;
-  justify-content: center;
-  /* margin: 10px; */
-  /* font-size: 20px; */
-  /* padding: 10px; */
-}
-
-.return-home-button {
-  z-index: 9999;
-  position: absolute;
-  top: 60px;
-  left: 0px;
-  width: 40px;
-  /* display: flex; */
-  text-align: center;
-  justify-content: center;
-}
-
 .user-info-container {
   align-items: center;
 }
@@ -139,4 +116,34 @@ h2,
   width: 150px;
   height: 150px;
   margin-bottom: 10px;
+}
+
+.home {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.home-icon {
+  font-size: 50px;
+  color: #007bff;
+}
+
+.home-icon:hover {
+  color: #0056b3;
+}
+
+.return-button {
+  z-index: 9999;
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  width: 40px;
+  /* display: flex; */
+  text-align: center;
+  justify-content: center;
+  /* margin: 10px; */
+  /* font-size: 20px; */
+  /* padding: 10px; */
 }

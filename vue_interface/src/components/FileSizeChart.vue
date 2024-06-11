@@ -38,7 +38,7 @@ export default {
           {
             name: "File Size",
             type: "pie",
-            radius: "70%",
+            radius: "50%",
             data: Object.keys(this.typesSizeCount).map((key) => ({
               value: this.typesSizeCount[key],
               name: key,

@@ -2,9 +2,9 @@
   <div class="return-button">
     <n-button round size="medium" @click="goBack">Return</n-button>
   </div>
-  <div class="return-home-button">
+  <div class="home">
     <router-link to="/">
-      <n-button round size="medium">Home</n-button>
+      <i class="fas fa-home home-icon"></i>
     </router-link>
   </div>
   <div class="background-box">
