@@ -7,7 +7,7 @@ export default createStore({
     batchProgress: 0,
     viewMode: "list",
     treePathList: [],
-    baseUrl: "http://localhost:8000",
+    // baseUrl: "http://localhost:8000",
     typesCount: {},
     typesSizeCount: {},
     allfileSize: 0,
