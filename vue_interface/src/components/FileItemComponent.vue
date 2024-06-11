@@ -91,6 +91,9 @@
       <p>Upload time: {{ file.file_create_time }}</p>
       <p>File size: {{ formatSize(file.file_size) }}</p>
       <p>File path: {{ parseNodes(file.file_nodes) }}</p>
+      <p>File type: {{ file.file_type }}</p>
+      <p v-if="copyError">Download link: {{ downloadLink }}</p>
+      <p v-if="copyError">Preview link: {{ previewLink }}</p>
       <div class="file-card-details-buttons">
         <button
           @click="copyToClipboard(downloadLink)"
@@ -159,6 +162,7 @@ export default {
       fileImageUrl: null,
       fileContent: null,
       isEditingFilename: false,
+      copyError: false,
       newFilename: "",
     };
   },
@@ -278,8 +282,12 @@ export default {
         await this.$refs.alertPopup.showAlert(
           "Copied to clipboard successfully"
         );
+        this.copyError = false;
       } catch (err) {
         await this.$refs.alertPopup.showAlert("Error copying to clipboard");
+        await this.$refs.alertPopup.showAlert(err);
+        await this.$refs.alertPopup.showAlert(text);
+        this.copyError = true;
       }
     },
     mouseleaveshowfileCardDetails() {
