@@ -22,6 +22,7 @@
       <FileSizeChart :allFilesSize="allFilesSize" :typesSizeCount="typesSizeCount" />
     </n-card>
     <n-card>
+      <h2>SomeConfig</h2>
       <ConfigComponent />
     </n-card>
   </div>

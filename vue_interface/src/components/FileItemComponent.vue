@@ -4,8 +4,8 @@
     class="file-item"
     title="Click to expand details"
     :style="listStyle"
-    @mouseover="showfileCardDetails = true"
-    @mouseleave="showfileCardDetails = false"
+    @mouseover="mouseovershowfileCardDetails"
+    @mouseleave="mouseleaveshowfileCardDetails"
   >
     <!-- 复选框 -->
     <input
@@ -254,6 +254,16 @@ export default {
     },
   },
   methods: {
+    mouseleaveshowfileCardDetails() {
+      if (store.state.toMouseEventFileItem) {
+        this.showfileCardDetails = false;
+      }
+    },
+    mouseovershowfileCardDetails() {
+      if (store.state.toMouseEventFileItem) {
+        this.showfileCardDetails = true;
+      }
+    },
     toggleSelect() {
       if (this.selected) {
         store.commit("addSelectedFile", this.file);

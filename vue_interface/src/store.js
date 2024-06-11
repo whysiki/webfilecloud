@@ -14,6 +14,7 @@ export default createStore({
     username: "",
     token: "",
     toPreviewFile: false,
+    toMouseEventFileItem: false,
   },
   mutations: {
     setFiles(state, files) {
@@ -51,6 +52,9 @@ export default createStore({
     },
     setToPreviewFile(state, toPreviewFile) {
       state.toPreviewFile = toPreviewFile;
+    },
+    setToMouseEventFileItem(state, toMouseEventFileItem) {
+      state.toMouseEventFileItem = toMouseEventFileItem;
     },
   },
 });
