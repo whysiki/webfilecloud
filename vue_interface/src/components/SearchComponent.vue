@@ -6,7 +6,7 @@
       class="search-input"
       placeholder="Search files... enter a file name"
     />
-    <div v-if="searchResults.length > 0" class="search-results">
+    <div v-if="searchResults.length > 0" class="search-results" :style="listStyle">
       <div v-for="file in searchResults" :key="file.id">
         <FileItemComponent :file="file" />
       </div>
@@ -18,7 +18,7 @@
 <script>
 import { ref, computed } from "vue";
 import FileItemComponent from "./FileItemComponent.vue"; // 导入 FileItemComponent 组件
-
+import store from "../store"; // 导入 store
 export default {
   components: {
     FileItemComponent,
@@ -44,6 +44,29 @@ export default {
       searchQuery,
       searchResults,
     };
+  },
+  computed: {
+    listStyle() {
+      if (store.state.viewMode === "card") {
+        return {
+          display: "flex",
+          flexWrap: "wrap",
+          padding: 0,
+        };
+      } else if (store.state.viewMode === "list") {
+        return {
+          display: "inline",
+          "flex-wrap": "nowrap",
+          padding: 0,
+        };
+      } else {
+        return {
+          display: "inline",
+          "flex-wrap": "nowrap",
+          padding: 0,
+        };
+      }
+    },
   },
 };
 </script>
