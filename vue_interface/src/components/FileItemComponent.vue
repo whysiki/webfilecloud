@@ -92,8 +92,10 @@
       <p>File size: {{ formatSize(file.file_size) }}</p>
       <p>File path: {{ parseNodes(file.file_nodes) }}</p>
       <p>File type: {{ file.file_type }}</p>
-      <p v-if="copyError">Download link: {{ downloadLink }}</p>
-      <p v-if="copyError">Preview link: {{ previewLink }}</p>
+      <p class="long-text" v-if="copyError">
+        Download link: {{ downloadLink }}
+      </p>
+      <p class="long-text" v-if="copyError">Preview link: {{ previewLink }}</p>
       <div class="file-card-details-buttons">
         <button
           @click="copyToClipboard(downloadLink)"
@@ -286,7 +288,7 @@ export default {
       } catch (err) {
         await this.$refs.alertPopup.showAlert("Error copying to clipboard");
         await this.$refs.alertPopup.showAlert(err);
-        await this.$refs.alertPopup.showAlert(text);
+        // await this.$refs.alertPopup.showAlert(text);
         this.copyError = true;
       }
     },
@@ -309,6 +311,7 @@ export default {
     },
     toggleDetails() {
       this.showfileCardDetails = !this.showfileCardDetails;
+      this.copyError = false;
     },
     editFilename() {
       this.isEditingFilename = !this.isEditingFilename;

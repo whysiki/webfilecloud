@@ -300,3 +300,7 @@ textarea.file-preview {
 .file-card-details-button:hover {
   background-color: #16723c;
 }
+
+.long-text {
+  word-wrap: break-word;
+}
