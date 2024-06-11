@@ -1,4 +1,5 @@
 import { createStore } from "vuex";
+import axios from "./axios";
 
 export default createStore({
   state: {
@@ -7,7 +8,7 @@ export default createStore({
     batchProgress: 0,
     viewMode: "list",
     treePathList: [],
-    // baseUrl: "http://localhost:8000",
+    baseUrl: axios.defaults.baseURL,
     typesCount: {},
     typesSizeCount: {},
     allfileSize: 0,

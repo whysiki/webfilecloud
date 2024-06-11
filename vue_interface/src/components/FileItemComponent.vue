@@ -15,7 +15,11 @@
       class="selected-file"
     />
     <div class="file-header" @click.prevent="toggleDetails">
-      <div class="file-name" v-if="!isEditingFilename" @dblclick.prevent="editFilename">
+      <div
+        class="file-name"
+        v-if="!isEditingFilename"
+        @dblclick.prevent="editFilename"
+      >
         {{ file.filename }}
       </div>
       <input
@@ -31,7 +35,9 @@
         <button @click.prevent="confirmMovefile(file.id)" class="file-button">
           Move
         </button>
-        <button @click.prevent="downloadFile(file)" class="file-button">Download</button>
+        <button @click.prevent="downloadFile(file)" class="file-button">
+          Download
+        </button>
         <button
           v-if="
             file.downloadProgress > 0 &&
@@ -319,18 +325,21 @@ export default {
         file.showdownloadProgressBar = true;
         const token = localStorage.getItem("token");
         file.cancelTokenSource = axiosModule.CancelToken.source();
-        const response = await axios.get(`/files/download/stream?file_id=${file.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          responseType: "blob",
-          onDownloadProgress: (progressEvent) => {
-            file.downloadProgress = Math.round(
-              (progressEvent.loaded * 100) / file.file_size
-            );
-          },
-          cancelToken: file.cancelTokenSource.token,
-        });
+        const response = await axios.get(
+          `/files/download/stream?file_id=${file.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            responseType: "blob",
+            onDownloadProgress: (progressEvent) => {
+              file.downloadProgress = Math.round(
+                (progressEvent.loaded * 100) / file.file_size
+              );
+            },
+            cancelToken: file.cancelTokenSource.token,
+          }
+        );
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;
@@ -341,7 +350,9 @@ export default {
         window.URL.revokeObjectURL(url);
       } catch (error) {
         if (axiosModule.isCancel(error)) {
-          await this.$refs.alertPopup.showAlert(`Download cancelled: ${error.message}`);
+          await this.$refs.alertPopup.showAlert(
+            `Download cancelled: ${error.message}`
+          );
         } else {
           await this.$refs.alertPopup.showAlert(
             `Error downloading file: ${error.message}`
@@ -399,7 +410,9 @@ export default {
             return error;
           });
         if (typeof newNodes === "string" && newNodes !== "") {
-          const newNodesArray = newNodes.split("/").filter((node) => node !== "");
+          const newNodesArray = newNodes
+            .split("/")
+            .filter((node) => node !== "");
           const newNodesArrayStr = JSON.stringify(newNodesArray);
           await this.moveFile(file_id, newNodesArrayStr);
         } else {
