@@ -139,6 +139,7 @@ async def read_users_me(
     )
 
 
+## 危险api,部署时删除或者修改
 # 删除用户的所有文件
 @app.delete("/users/files/delete", response_model=schemas.UserOut)
 async def delete_user_files(
@@ -288,6 +289,7 @@ async def upload_file(
     )
 
 
+# 下载文件文件式响应
 @app.get("/files/download")
 async def read_file(
     file_id: str,
@@ -343,6 +345,7 @@ async def file_iterator(file_path: str, start: int, end: int):
             yield chunk
 
 
+# 下载文件流式响应
 @app.get("/files/download/stream")
 async def read_file_stream(
     request: Request,
@@ -464,6 +467,8 @@ async def delete_file(
     )
 
 
+# ## 危险api,部署时删除或者修改
+# 重置数据库
 @app.post("/db/reset", response_model=schemas.DbOut)
 async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if (
@@ -590,6 +595,7 @@ async def modify_file_nodes(
     )
 
 
+# 直接下载文件，直接链接，实际可能需要生成一个临时链接比较好，待优化
 @app.get("/file/directdownload/{user_id}/{file_id}/{file_name}")
 async def download_file(
     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
@@ -612,6 +618,7 @@ async def download_file(
     )
 
 
+# 流式下载文件的直接链接
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
 async def download_file(
     request: Request,
@@ -751,10 +758,10 @@ async def get_profile_image(
             )
 
     return FileResponse(
-            user.profile_image,
-            filename=os.path.basename(user.profile_image),
-            media_type="application/octet-stream",
-        )
+        user.profile_image,
+        filename=os.path.basename(user.profile_image),
+        media_type="application/octet-stream",
+    )
 
 
 # 上传用户头像
@@ -787,7 +794,10 @@ async def upload_profile_image(
                 if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
                     os.remove(file_path)  # 删除已保存的文件
                     logger.warning("profile image File size exceeds maximum limit")
-                    raise HTTPException(status_code=400, detail="profile image File size exceeds maximum limit")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="profile image File size exceeds maximum limit",
+                    )
                 await buffer.write(chunk)
     except Exception as e:
         raise HTTPException(
@@ -795,7 +805,7 @@ async def upload_profile_image(
         )
 
     user.profile_image = file_path
-    
+
     db.commit()
 
     if not user.profile_image or not os.path.exists(user.profile_image):

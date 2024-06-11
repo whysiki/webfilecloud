@@ -211,9 +211,6 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
     return user
 
 
-# @handle_db_errors
-# def modify_file_nodes(db:Session,file:File, action:str, data):
-
 
 @handle_db_errors
 def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
