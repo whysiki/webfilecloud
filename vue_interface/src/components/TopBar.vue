@@ -151,7 +151,8 @@ export default {
           fileId = fileHash + usernameHash + file_nodes_hash;
         } else {
           await this.$refs.alertPopup.showAlert(
-            `File ${file.name} is too large to upload. The digest check existence will not be computed`
+            `File ${file.name} is too large to upload. The digest check existence will not be computed`,
+            1000
           );
         }
         const formData = new FormData();
@@ -188,17 +189,17 @@ export default {
           if (error.response) {
             await this.$refs.alertPopup.showAlert(
               `Error uploading file ${file.name}: ${error.response.data.detail}`,
-              2000
+              1000
             );
           } else if (error.request) {
             await this.$refs.alertPopup.showAlert(
               `Error uploading file ${file.name}: No response from server`,
-              2000
+              1000
             );
           } else {
             await this.$refs.alertPopup.showAlert(
               `Error uploading file ${file.name}: ${error.message}`,
-              2000
+              1000
             );
           }
         } finally {

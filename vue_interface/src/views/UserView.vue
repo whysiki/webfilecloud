@@ -6,7 +6,7 @@
     <n-card>
       <n-space vertical align="center" class="user-info-container">
         <n-avatar class="user-avatar" round :src="userAvatar" alt="User Avatar" />
-        <h2>{{ username }}</h2>
+        <h2 id="background-username">{{ username }}</h2>
         <n-button round size="small" @click="uploadAvatar">Upload Avatar</n-button>
         <input
           type="file"
@@ -173,7 +173,8 @@ export default {
 .user-info-container n-button {
   margin-top: 10px;
 }
-h2 {
+h2,
+#background-username {
   color: #1a7be3;
 }
 .user-avatar {

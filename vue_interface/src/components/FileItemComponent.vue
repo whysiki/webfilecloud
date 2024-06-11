@@ -198,7 +198,7 @@ export default {
       immediate: true,
       handler(newFile) {
         if (newFile && this.isShowPreview) {
-          if (newFile.file_size > 1024 * 1024 * 3) {
+          if (newFile.file_size > 1024 * 1024 * 5) {
             this.fileContent = null;
             this.fileImageUrl = null;
           } else if (this.isTextFile) {

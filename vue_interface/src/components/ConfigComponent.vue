@@ -4,7 +4,11 @@
       <span class="setting-label">Preview File {{ istoPreviewFile }}</span>
       <n-switch v-model:value="toPreviewFile" class="setting-switch"></n-switch>
     </div>
-    <n-button class="setting-button file-button" @click="clearCache">
+    <n-button
+      class="setting-button file-button"
+      id="setting-button-clear-cache"
+      @click="clearCache"
+    >
       Clear Cache
     </n-button>
   </div>
@@ -89,4 +93,8 @@ export default {
 /* .setting-button:hover { */
 /* background-color: #16723c; */
 /* } */
+
+#setting-button-clear-cache {
+  display: block;
+}
 </style>
