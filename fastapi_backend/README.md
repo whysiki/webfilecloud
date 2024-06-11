@@ -44,6 +44,8 @@ or
 
 `gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b :8000 -D main:app`
 
+实际部署时，配置域名、SSL证书、反向代理等
+
 ### api document 
 
 view in `http://127.0.0.1:8000/redoc` or `http://127.0.0.1:8000/docs`
