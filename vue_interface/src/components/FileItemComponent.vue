@@ -1,8 +1,12 @@
 <!-- FileItemComponent.vue -->
 <template>
-  <div class="file-item" title="Click to expand details" :style="listStyle">
-    <!-- @mouseover="showfileCardDetails = true" -->
-    <!-- @mouseleave="showfileCardDetails = false" -->
+  <div
+    class="file-item"
+    title="Click to expand details"
+    :style="listStyle"
+    @mouseover="showfileCardDetails = true"
+    @mouseleave="showfileCardDetails = false"
+  >
     <!-- 复选框 -->
     <input
       type="checkbox"
