@@ -91,6 +91,22 @@
       <p>Upload time: {{ file.file_create_time }}</p>
       <p>File size: {{ formatSize(file.file_size) }}</p>
       <p>File path: {{ parseNodes(file.file_nodes) }}</p>
+      <div class="file-card-details-buttons">
+        <button
+          @click="copyToClipboard(downloadLink)"
+          class="file-card-details-button"
+          title="Click to copy direct download link to clipboard"
+        >
+          📋<i class="fas fa-download"></i>
+        </button>
+        <button
+          @click="copyToClipboard(previewLink)"
+          class="file-card-details-button"
+          title="Click to copy preview link to clipboard"
+        >
+          📋<i class="fas fa-stream"></i>
+        </button>
+      </div>
 
       <div class="file-preview-container">
         <textarea
@@ -134,11 +150,7 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
-// import longpress from "vue-longpress";
 export default {
-  // directives: {
-  //   longpress,
-  // },
   props: ["file"],
   data() {
     return {
@@ -260,6 +272,16 @@ export default {
     },
   },
   methods: {
+    async copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        await this.$refs.alertPopup.showAlert(
+          "Copied to clipboard successfully"
+        );
+      } catch (err) {
+        await this.$refs.alertPopup.showAlert("Error copying to clipboard");
+      }
+    },
     mouseleaveshowfileCardDetails() {
       if (store.state.toMouseEventFileItem) {
         this.showfileCardDetails = false;

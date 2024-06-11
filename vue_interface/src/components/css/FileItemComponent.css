@@ -278,3 +278,25 @@ textarea.file-preview {
   box-shadow: 0 0 10px rgba(0, 86, 179, 0.5);
   outline: none;
 }
+
+.file-card-details-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.file-card-details-button {
+  background-color: #2a87ea;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  width: 45%; /* Adjust as needed */
+}
+
+.file-card-details-button:hover {
+  background-color: #16723c;
+}
