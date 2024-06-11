@@ -11,7 +11,18 @@
       class="selected-file"
     />
     <div class="file-header" @click.prevent="toggleDetails">
-      <div class="file-name">{{ file.filename }}</div>
+      <div class="file-name" v-if="!isEditingFilename" @dblclick.prevent="editFilename">
+        {{ file.filename }}
+      </div>
+      <input
+        class="file-rename-input"
+        type="text"
+        v-else
+        v-model="newFilename"
+        @blur="updateFilename"
+        @keyup.enter="updateFilename"
+        title="Press Enter a new filename and press Enter to save"
+      />
       <div class="file-item-button-container" v-if="!isCardView">
         <button @click.prevent="confirmMovefile(file.id)" class="file-button">
           Move
@@ -36,16 +47,31 @@
         >
           Delete
         </button>
+        <button
+          @click.prevent="editFilename"
+          class="rename-button"
+          id="rename-button-single-file"
+          title="Click to rename file or cancel renaming"
+        >
+          <i class="fas fa-edit"></i>
+        </button>
         <a
           :href="previewLink"
           download
           class="preview-button"
           id="preview-button-single-file"
+          title="Click to preview file image or video or text"
           @click.stop
         >
           <i class="fas fa-eye"></i>
         </a>
-        <a :href="downloadLink" download class="download-button" @click.stop>
+        <a
+          :href="downloadLink"
+          download
+          class="download-button"
+          @click.stop
+          title="Click to direct download file"
+        >
           <i class="fas fa-download"></i>
         </a>
       </div>
@@ -98,7 +124,11 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
+// import longpress from "vue-longpress";
 export default {
+  // directives: {
+  //   longpress,
+  // },
   props: ["file"],
   data() {
     return {
@@ -106,6 +136,8 @@ export default {
       selected: false,
       fileImageUrl: null,
       fileContent: null,
+      isEditingFilename: false,
+      newFilename: "",
     };
   },
 
@@ -124,7 +156,7 @@ export default {
         //统一卡片大小
         return {
           width: "280px",
-          margin: "5px",
+          // margin: "5px",
         };
       } else {
         return {};
@@ -227,6 +259,34 @@ export default {
     },
     toggleDetails() {
       this.showfileCardDetails = !this.showfileCardDetails;
+    },
+    editFilename() {
+      this.isEditingFilename = !this.isEditingFilename;
+      this.newFilename = this.file.filename;
+    },
+    async updateFilename() {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          `/file/modifyname?file_id=${this.file.id}&new_file_name=${this.newFilename}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        this.isEditingFilename = false;
+        this.emitter.emit("one-file-updated");
+      } catch (error) {
+        if (error.response) {
+          await this.$refs.alertPopup.showAlert(
+            `Error updating filename: ${error.response.data.detail}`
+          );
+        } else {
+          await this.$refs.alertPopup.showAlert("No response from server");
+        }
+      }
     },
     formatSize(size) {
       if (size < 1024) {

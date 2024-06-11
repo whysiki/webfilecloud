@@ -154,6 +154,7 @@ export default {
     });
     this.emitter.on("batch-files-moved", this.fetchFiles);
     this.emitter.on("batch-files-deleted", this.fetchFiles);
+    this.emitter.on("one-file-updated", this.fetchFiles);
   },
   beforeUnmount() {
     this.emitter.off("file-uploaded", this.fetchFiles);
@@ -165,6 +166,7 @@ export default {
     });
     this.emitter.off("batch-files-moved", this.fetchFiles);
     this.emitter.off("batch-files-deleted", this.fetchFiles);
+    this.emitter.off("one-file-updated", this.fetchFiles);
   },
   async created() {
     await this.fetchAvatar();

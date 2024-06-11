@@ -20,6 +20,7 @@
   text-overflow: ellipsis; /* 显示省略号来表示被裁剪的文本 */
   max-width: 200px; /* 限制元素的最大宽度 */
   word-wrap: break-word;
+  /* 换行 */
 }
 
 .file-card-details {
@@ -205,6 +206,7 @@ textarea.file-preview {
   }
 }
 
+.rename-button,
 .preview-button {
   display: inline-flex;
   justify-content: center;
@@ -212,22 +214,22 @@ textarea.file-preview {
   background-color: #1a7be3;
   color: white;
   border: none;
-  border-radius: 50%; /* make the button round */
+  border-radius: 50%;
   padding: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   font-size: 14px;
-  width: 30px; /* set the width of the button */
-  height: 30px; /* set the height of the button */
-  text-decoration: none; /* remove the underline */
+  width: 30px;
+  height: 30px;
+  text-decoration: none;
 }
-
+.rename-button:hover,
 .preview-button:hover {
   background-color: #16723c;
 }
-
+.rename-button i,
 .preview-button i {
-  font-size: 16px; /* increase the size of the icon */
+  font-size: 16px;
 }
 
 .download-button {
@@ -237,22 +239,42 @@ textarea.file-preview {
   background-color: #1a7be3;
   color: white;
   border: none;
-  border-radius: 50%; /* make the button round */
+  border-radius: 50%;
   padding: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   font-size: 14px;
-  width: 30px; /* set the width of the button */
-  height: 30px; /* set the height of the button */
-  text-decoration: none; /* remove the underline */
-  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1); /* add some shadow */
+  width: 30px;
+  height: 30px;
+  text-decoration: none;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
 }
 
 .download-button:hover {
   background-color: #16723c;
-  box-shadow: 0 0 15px rgba(176, 43, 43, 0.2); /* add some shadow when hovering */
+  box-shadow: 0 0 15px rgba(176, 43, 43, 0.2);
 }
 
 .download-button i {
-  font-size: 16px; /* increase the size of the icon */
+  font-size: 16px;
+}
+
+.file-rename-input[type="text"] {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  border: 1px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 75%;
+  margin-bottom: 10px;
+  font-size: 1em;
+  color: #333;
+  background-color: #f9f9f9;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.file-rename-input[type="text"]:focus {
+  box-shadow: 0 0 10px rgba(0, 86, 179, 0.5);
+  outline: none;
 }
