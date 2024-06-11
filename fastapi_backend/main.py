@@ -489,6 +489,45 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     )
 
 
+# 修改文件名
+@app.post("/file/modifyname", response_model=schemas.FileOut)
+async def modify_file_name(
+    file_id: str,
+    new_file_name: str,
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    if not new_file_name:
+        raise HTTPException(status_code=405, detail="Invalid file name")
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username = get_current_username(access_token)
+    logger.debug(f"new file name: {new_file_name}")
+    logger.debug(f"file_id: {file_id}")
+    file = crud.get_file_by_id(db, file_id)
+    if file.file_owner_name != username:
+        raise HTTPException(status_code=401, detail="Access denied")
+    else:
+        file.filename = new_file_name
+    db.commit()
+
+    if file.filename != new_file_name:
+
+        raise HTTPException(
+            status_code=403, detail="Modify file name failes, Server error"
+        )
+
+    return schemas.FileOut(
+        id=file.id,
+        filename=file.filename,
+        file_size=file.file_size,
+        message="modify file name successful",
+        file_create_time=file.file_create_time,
+        file_type=file.file_type,
+        file_owner_name=file.file_owner_name,
+        file_nodes=file.file_nodes,
+    )
+
+
 # 获取单个文件信息
 @app.get("/files/info", response_model=schemas.FileOut)
 async def file_info(
@@ -658,45 +697,6 @@ async def download_file(
             "Content-Range": f"bytes {start}-{end}/{file_size}",
             "Accept-Ranges": "bytes",
         },
-    )
-
-
-# 修改文件名
-@app.post("/file/modifyname", response_model=schemas.FileOut)
-async def modify_file_name(
-    file_id: str,
-    new_file_name: str,
-    Authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db),
-):
-    if not new_file_name:
-        raise HTTPException(status_code=405, detail="Invalid file name")
-    access_token = auth.get_access_token_from_Authorization(Authorization)
-    username = get_current_username(access_token)
-    logger.debug(f"new file name: {new_file_name}")
-    logger.debug(f"file_id: {file_id}")
-    file = crud.get_file_by_id(db, file_id)
-    if file.file_owner_name != username:
-        raise HTTPException(status_code=401, detail="Access denied")
-    else:
-        file.filename = new_file_name
-    db.commit()
-
-    if file.filename != new_file_name:
-
-        raise HTTPException(
-            status_code=403, detail="Modify file name failes, Server error"
-        )
-
-    return schemas.FileOut(
-        id=file.id,
-        filename=file.filename,
-        file_size=file.file_size,
-        message="modify file name successful",
-        file_create_time=file.file_create_time,
-        file_type=file.file_type,
-        file_owner_name=file.file_owner_name,
-        file_nodes=file.file_nodes,
     )
 
 
