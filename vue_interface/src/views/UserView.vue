@@ -5,9 +5,16 @@
   <div class="background-box">
     <n-card>
       <n-space vertical align="center" class="user-info-container">
-        <n-avatar class="user-avatar" round :src="userAvatar" alt="User Avatar" />
+        <n-avatar
+          class="user-avatar"
+          round
+          :src="userAvatar"
+          alt="User Avatar"
+        />
         <h2 id="background-username">{{ username }}</h2>
-        <n-button round size="small" @click="uploadAvatar">Upload Avatar</n-button>
+        <n-button round size="small" @click="uploadAvatar"
+          >Upload Avatar</n-button
+        >
         <input
           type="file"
           ref="fileInput"
@@ -19,10 +26,14 @@
     <n-card>
       <h2>Statistics</h2>
       <FileTypeChart :typesCount="typesCount" />
-      <FileSizeChart :allFilesSize="allFilesSize" :typesSizeCount="typesSizeCount" />
+      <FileSizeChart
+        :allFilesSize="allFilesSize"
+        :typesSizeCount="typesSizeCount"
+      />
+      <FileSizeColumnChart :typesSizeCount="typesSizeCount" />
     </n-card>
     <n-card>
-      <h2>SomeConfig</h2>
+      <h2>SomeConfigs</h2>
       <ConfigComponent />
     </n-card>
   </div>
@@ -36,6 +47,7 @@ import store from "../store";
 import FileTypeChart from "../components/FileTypeChart.vue";
 import FileSizeChart from "../components/FileSizeChart.vue";
 import ConfigComponent from "../components/ConfigComponent.vue";
+import FileSizeColumnChart from "../components/FileSizeColumnChart.vue";
 
 export default {
   components: {
@@ -46,13 +58,15 @@ export default {
     FileTypeChart,
     FileSizeChart,
     ConfigComponent,
+    FileSizeColumnChart,
   },
   data() {
     return {
       userAvatar: localStorage.getItem("userAvatar")
         ? localStorage.getItem("userAvatar")
         : null,
-      username: store.state.username || localStorage.getItem("username") || null,
+      username:
+        store.state.username || localStorage.getItem("username") || null,
       token: store.state.token || localStorage.getItem("token") || null,
     };
   },
@@ -105,9 +119,13 @@ export default {
         localStorage.setItem("userAvatar", this.userAvatar);
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          );
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          );
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
@@ -131,9 +149,13 @@ export default {
         await this.$refs.alertPopup.showAlert("Update userAvatar successful");
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          );
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          );
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }

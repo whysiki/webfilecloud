@@ -34,6 +34,12 @@
       title="Clear LocalStorage"
       >Clear LocalStorage</n-button
     >
+    <n-button
+      class="setting-button"
+      @click="clearStore"
+      title="Clear LocalStorage"
+      >Clear store</n-button
+    >
   </div>
 </template>
 
@@ -52,11 +58,15 @@ export default {
     const clearCache = () => {
       localStorage.clear();
     };
+    const clearStore = () => {
+      store.commit("clearStore");
+    };
 
     return {
       toPreviewFile,
       toMouseEventFileItem,
       clearCache,
+      clearStore,
     };
   },
   watch: {

@@ -22,6 +22,7 @@
   color: white;
   border-radius: 10px;
 }
+
 .n-button:hover {
   background-color: #16723c;
 }
@@ -36,7 +37,7 @@
   /* background-color: rgba(255, 255, 255, 0.5); */
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
-  /* display: flex; */
+  display: flex;
   flex-direction: column;
   align-items: center;
 }
@@ -60,6 +61,7 @@
 
 .setting-button {
   /* display: block; */
+  margin-bottom: 10px;
   width: 150px;
   height: 40px;
   color: #fff;
@@ -74,9 +76,9 @@
   justify-content: center;
 }
 
-/* .setting-button {
-  display: block;
-} */
+.setting-button:hover {
+  background-color: #16723c;
+}
 
 .text-green {
   color: green;

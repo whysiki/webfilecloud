@@ -56,5 +56,19 @@ export default createStore({
     setToMouseEventFileItem(state, toMouseEventFileItem) {
       state.toMouseEventFileItem = toMouseEventFileItem;
     },
+    clearStore(state) {
+      state.files = [];
+      state.selectedFiles = [];
+      state.batchProgress = 0;
+      state.viewMode = "list";
+      state.treePathList = [];
+      state.typesCount = {};
+      state.typesSizeCount = {};
+      state.allfileSize = 0;
+      state.username = "";
+      state.token = "";
+      state.toPreviewFile = false;
+      state.toMouseEventFileItem = false;
+    },
   },
 });

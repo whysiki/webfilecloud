@@ -7,7 +7,6 @@ import * as echarts from "echarts";
 
 export default {
   props: {
-    allFilesSize: Number,
     typesSizeCount: Object,
   },
   mounted() {
@@ -28,26 +27,42 @@ export default {
     initChart() {
       const chart = echarts.init(this.$refs.chart);
       const option = {
-        title: {
-          text: `File Size ToTal : ${this.formatSize(this.allFilesSize)}`,
-        },
         tooltip: {
-          trigger: "item",
+          trigger: "axis",
+          axisPointer: {
+            type: "shadow",
+          },
+        },
+        xAxis: {
+          type: "category",
+          data: Object.keys(this.typesSizeCount),
+        },
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            formatter: (value) => this.formatSize(value),
+          },
+          data: Object.values(this.typesSizeCount),
         },
         series: [
           {
             name: "File Size",
-            type: "pie",
-            radius: "70%",
-            data: Object.keys(this.typesSizeCount).map((key) => ({
-              value: this.typesSizeCount[key],
-              name: key,
-            })),
-            emphasis: {
-              itemStyle: {
-                shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowColor: "rgba(0, 0, 0, 0.5)",
+            type: "bar",
+            data: Object.values(this.typesSizeCount),
+            itemStyle: {
+              color: (params) => {
+                const colors = [
+                  "#5470C6",
+                  "#91CC75",
+                  "#FAC858",
+                  "#EE6666",
+                  "#73C0DE",
+                  "#3BA272",
+                  "#FC8452",
+                  "#9A60B4",
+                  "#EA7CCC",
+                ];
+                return colors[params.dataIndex % colors.length];
               },
             },
           },
