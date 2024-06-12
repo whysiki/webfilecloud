@@ -92,9 +92,8 @@ export default {
     BatchActionsComponent,
   },
   setup() {
-    const files = ref([]); // 使用 ref 创建一个响应式的数据对象
-    provide("files", files); // 使用 provide 提供 files
-    // const alertPopup = ref(null); // 创建一个响应式的 alertPopup 引用
+    let files = ref([]);
+    provide("files", files);
     const fetchFiles = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -109,19 +108,11 @@ export default {
         const treePathList = response.data.files.map((file) =>
           file.file_nodes.length > 0 ? file.file_nodes : []
         );
-        // const treePathListNoRepeat = Array.from(
-        //   new Set(treePathList.map(JSON.stringify))
-        // ).map(JSON.parse);
         store.commit("buildTreePathList", treePathList);
       } catch (error) {
-        // await alertPopup.value.showAlert(
-        // `Error fetching files: ${error.response.data.detail}`
-        // );
-        // console.error(error);
         console.error(error);
       }
     };
-
     onMounted(async () => {
       if (
         localStorage.getItem("currentFilesLength") > 0 &&
@@ -131,6 +122,8 @@ export default {
       } else {
         await fetchFiles();
       }
+      const asyncFetchFiles = async () => await fetchFiles();
+      fetchEvents.forEach((event) => eventBus.on(event, asyncFetchFiles));
     });
 
     return { files, fetchFiles };
@@ -174,6 +167,7 @@ export default {
   },
   async created() {
     await this.fetchAvatar();
+    // await this.fetchFiles;
   },
   methods: {
     checkImage(url) {
