@@ -41,7 +41,15 @@ import axios from "../axios";
 import OrderComponent from "./OrderComponent";
 import eventBus from "../eventBus";
 import { ref } from "vue";
-
+const eventNames = [
+  "file-uploaded",
+  "one-file-deleted",
+  "one-file-moved",
+  "all-files-deleted",
+  "batch-files-moved",
+  "batch-files-deleted",
+  "one-file-updated",
+];
 export default {
   components: {
     OrderComponent,
@@ -64,22 +72,11 @@ export default {
     }
   },
   mounted() {
-    eventBus.on("file-uploaded", this.navigateTo(this.currentPath));
-    eventBus.on("one-file-deleted", this.navigateTo(this.currentPath));
-    eventBus.on("one-file-moved", this.navigateTo(this.currentPath));
-    eventBus.on("all-files-deleted", this.navigateTo(this.currentPath));
-    eventBus.on("batch-files-moved", this.navigateTo(this.currentPath));
-    eventBus.on("batch-files-deleted", this.navigateTo(this.currentPath));
-    eventBus.on("one-file-updated", this.navigateTo(this.currentPath));
+    this.handleEvent = () => this.navigateTo(this.currentPath);
+    eventNames.forEach((event) => eventBus.on(event, this.handleEvent));
   },
   beforeUnmount() {
-    eventBus.off("file-uploaded", this.navigateTo(this.currentPath));
-    eventBus.off("one-file-deleted", this.navigateTo(this.currentPath));
-    eventBus.off("one-file-moved", this.navigateTo(this.currentPath));
-    eventBus.off("all-files-deleted", this.navigateTo(this.currentPath));
-    eventBus.off("batch-files-moved", this.navigateTo(this.currentPath));
-    eventBus.off("batch-files-deleted", this.navigateTo(this.currentPath));
-    eventBus.off("one-file-updated", this.navigateTo(this.currentPath));
+    eventNames.forEach((event) => eventBus.off(event, this.handleEvent));
   },
   methods: {
     goBack() {

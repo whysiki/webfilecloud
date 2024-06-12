@@ -177,6 +177,40 @@ import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
 import eventBus from "../eventBus";
+
+// 监听事件
+const events = [
+  {
+    name: "expand-all",
+    handler: () => {
+      this.showfileCardDetails = true;
+    },
+  },
+  {
+    name: "collapse-all",
+    handler: () => {
+      this.showfileCardDetails = false;
+    },
+  },
+  {
+    name: "clear-selected-files",
+    handler: () => {
+      this.selected = false;
+    },
+  },
+  {
+    name: "select-all-files",
+    handler: () => {
+      this.selected = true;
+    },
+  },
+  {
+    name: "cancel-all-requests",
+    handler: () => {
+      this.showdownloadProgressBar = false;
+    },
+  },
+];
 export default {
   props: {
     file: {
@@ -258,28 +292,16 @@ export default {
     },
   },
   mounted() {
-    eventBus.on("expand-all", () => {
-      this.showfileCardDetails = true;
-    });
-    eventBus.on("collapse-all", () => {
-      this.showfileCardDetails = false;
-    });
-    eventBus.on("clear-selected-files", () => {
-      this.selected = false;
-    });
-    eventBus.on("select-all-files", () => {
-      this.selected = true;
-    });
-    eventBus.on("cancel-all-requests", () => {
-      this.showdownloadProgressBar = false;
+    this.eventHandlers = events.map((event) => {
+      eventBus.on(event.name, event.handler);
+      return event;
     });
   },
   beforeUnmount() {
-    eventBus.off("expand-all");
-    eventBus.off("collapse-all");
-    eventBus.off("clear-selected-files");
-    eventBus.off("select-all-files");
-    eventBus.off("cancel-all-requests");
+    this.eventHandlers.forEach((event) =>
+      eventBus.off(event.name, event.handler)
+    );
+
     if (store.state.selectedFiles.includes(this.file)) {
       store.commit("removeSelectedFile", this.file);
     }

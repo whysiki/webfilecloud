@@ -27,6 +27,7 @@
 import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 import eventBus from "../eventBus";
+const events = ["expand-all", "collapse-all"];
 export default {
   components: {
     OrderComponent,
@@ -52,12 +53,10 @@ export default {
     };
   },
   mounted() {
-    eventBus.on("expand-all", this.expandAll);
-    eventBus.on("collapse-all", this.collapseAll);
+    events.forEach((event) => eventBus.on(event, this[event]));
   },
   beforeUnmount() {
-    eventBus.off("expand-all", this.expandAll);
-    eventBus.off("collapse-all", this.collapseAll);
+    events.forEach((event) => eventBus.off(event, this[event]));
   },
   computed: {
     fileTree() {

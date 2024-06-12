@@ -74,6 +74,15 @@ import store from "../store";
 import eventBus from "../eventBus";
 import { provide, ref, onMounted } from "vue"; // 导入 provide 和 ref
 // import { ref, onMounted } from "vue"; // 导入 ref 和 onMounted
+const fetchEvents = [
+  "file-uploaded",
+  "one-file-deleted",
+  "one-file-moved",
+  "all-files-deleted",
+  "batch-files-moved",
+  "batch-files-deleted",
+  "one-file-updated",
+];
 export default {
   components: {
     TypesComponent,
@@ -153,28 +162,15 @@ export default {
     },
   },
   mounted() {
-    eventBus.on("file-uploaded", this.fetchFiles);
-    eventBus.on("one-file-deleted", this.fetchFiles);
-    eventBus.on("one-file-moved", this.fetchFiles);
-    eventBus.on("all-files-deleted", this.fetchFiles);
-    eventBus.on("toggle-search", (showSearch) => {
+    this.handleToggleSearch = (showSearch) => {
       this.showSearch = showSearch;
-    });
-    eventBus.on("batch-files-moved", this.fetchFiles);
-    eventBus.on("batch-files-deleted", this.fetchFiles);
-    eventBus.on("one-file-updated", this.fetchFiles);
+    };
+    fetchEvents.forEach((event) => eventBus.on(event, this.fetchFiles));
+    eventBus.on("toggle-search", this.handleToggleSearch);
   },
   beforeUnmount() {
-    eventBus.off("file-uploaded", this.fetchFiles);
-    eventBus.off("one-file-deleted", this.fetchFiles);
-    eventBus.off("one-file-moved", this.fetchFiles);
-    eventBus.off("all-files-deleted", this.fetchFiles);
-    eventBus.off("toggle-search", (showSearch) => {
-      this.showSearch = showSearch;
-    });
-    eventBus.off("batch-files-moved", this.fetchFiles);
-    eventBus.off("batch-files-deleted", this.fetchFiles);
-    eventBus.off("one-file-updated", this.fetchFiles);
+    fetchEvents.forEach((event) => eventBus.off(event, this.fetchFiles));
+    eventBus.off("toggle-search", this.handleToggleSearch);
   },
   async created() {
     await this.fetchAvatar();
