@@ -91,7 +91,6 @@ export default {
     },
   },
   setup(props) {
-    const files = ref(props.files);
     const sortBy = ref("name");
     const order = ref({ size: "asc", name: "asc", date: "asc" });
 
@@ -100,8 +99,8 @@ export default {
       order.value[key] = order.value[key] === "asc" ? "desc" : "asc";
     };
 
-    const sortedFiles = computed(() => {
-      return [...files.value].sort((a, b) => {
+    let sortedFiles = computed(() => {
+      return [...props.files].sort((a, b) => {
         let comparison = 0;
 
         switch (sortBy.value) {
@@ -127,10 +126,6 @@ export default {
 </script>
 
 <style scoped>
-/* .order-file-list { */
-/* margin-top: 20px; */
-/* } */
-
 .order-file-buttons {
   margin-bottom: 10px;
   display: flex;

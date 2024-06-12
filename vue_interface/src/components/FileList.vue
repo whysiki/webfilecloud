@@ -122,8 +122,8 @@ export default {
       } else {
         await fetchFiles();
       }
-      const asyncFetchFiles = async () => await fetchFiles();
-      fetchEvents.forEach((event) => eventBus.on(event, asyncFetchFiles));
+      // const asyncFetchFiles = async () => await fetchFiles();
+      // fetchEvents.forEach((event) => eventBus.on(event, asyncFetchFiles));
     });
 
     return { files, fetchFiles };
