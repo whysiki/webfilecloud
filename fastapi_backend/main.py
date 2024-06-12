@@ -819,3 +819,7 @@ async def upload_profile_image(
         profile_image=user.profile_image,
         message="Profile image uploaded successfully",
     )
+
+
+# 计算文件预览
+@app.get("/file"

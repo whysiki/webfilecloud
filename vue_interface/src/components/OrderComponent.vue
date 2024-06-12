@@ -15,7 +15,8 @@
         <i
           :class="[
             'fas',
-            'fa-sort-' + (order.name === 'asc' ? 'alphabet-up' : 'alphabet-down'),
+            'fa-sort-' +
+              (order.name === 'asc' ? 'alphabet-up' : 'alphabet-down'),
           ]"
         ></i>
       </button>
@@ -44,6 +45,12 @@ import FileItemComponent from "./FileItemComponent.vue";
 import store from "../store";
 
 export default {
+  props: {
+    files: {
+      type: Array,
+      required: false,
+    },
+  },
   components: {
     FileItemComponent,
   },
@@ -70,8 +77,10 @@ export default {
       }
     },
   },
-  setup() {
-    const files = inject("files");
+  setup(props) {
+    // const files = files || inject("files");
+    // const files = props.files || inject("files");
+    const files = ref(props.files || inject("files"));
     const sortBy = ref("name");
     const order = ref({ size: "asc", name: "asc", date: "asc" });
 
@@ -92,7 +101,8 @@ export default {
             comparison = a.filename.localeCompare(b.filename);
             break;
           case "date":
-            comparison = new Date(a.file_create_time) - new Date(b.file_create_time);
+            comparison =
+              new Date(a.file_create_time) - new Date(b.file_create_time);
             break;
         }
 

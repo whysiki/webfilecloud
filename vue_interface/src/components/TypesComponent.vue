@@ -8,21 +8,25 @@
       class="fileType-file-items"
       :style="listStyle"
     >
-      <FileItemComponent
+      <!-- <FileItemComponent
         v-for="file in filesByType(fileType)"
         :key="file.id"
         :file="file"
-      />
+      /> -->
+      <OrderComponent :files="filesByType(fileType)" />
     </ul>
   </div>
 </template>
 
 <script>
-import FileItemComponent from "./FileItemComponent.vue"; // 导入 FileItemComponent 组件
+// import FileItemComponent from "./FileItemComponent.vue"; // 导入 FileItemComponent 组件
 import store from "../store"; // 导入 store
+import OrderComponent from "./OrderComponent.vue"; // 导入 OrderComponent 组件
+
 export default {
   components: {
-    FileItemComponent,
+    // FileItemComponent,
+    OrderComponent,
   },
   props: {
     fileType: {
