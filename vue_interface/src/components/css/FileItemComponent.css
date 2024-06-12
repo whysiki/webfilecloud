@@ -18,8 +18,9 @@
   color: #1a7be3;
   /* overflow: hidden; 隐藏超出元素宽度的内容 */
   text-overflow: ellipsis; /* 显示省略号来表示被裁剪的文本 */
-  max-width: 200px; /* 限制元素的最大宽度 */
+  /* max-width: 200px; 限制元素的最大宽度 */
   word-wrap: break-word;
+  max-width: 100%;
   /* 换行 */
 }
 
@@ -33,7 +34,9 @@
 
 .file-item-button-container {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
+  flex-direction: row;
+  justify-content: space-around;
   gap: 10px;
   margin-top: 10px;
   align-items: center;
@@ -43,26 +46,34 @@
   background-color: #1a7be3;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 50%;
   padding: 5px 10px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   font-size: 14px;
   width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 16px;
+  border-radius: 10px;
+  width: auto;
 }
 
-@media (min-width: 768px) {
-  .file-item-button-container {
+/* @media (min-width: 768px) { */
+/* .file-item-button-container {
     flex-direction: row;
     justify-content: space-around;
-  }
+  } */
 
-  .file-button {
+/* .file-button {
     font-size: 16px;
     border-radius: 10px;
     width: auto;
-  }
-}
+  } */
+/* } */
 
 .file-button:hover {
   background-color: #16723c;

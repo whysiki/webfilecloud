@@ -240,3 +240,18 @@ h2:hover .fas {
     padding: 0;
   }
 }
+
+/* 头像 */
+.user-avatar-small {
+  margin: 0px;
+  margin-top: 8px;
+  border-radius: 50%;
+  border: 1px solid #1a7be3;
+  width: 50px;
+  height: 50px;
+}
+
+/* 文件夹图标路由到文件管理视图样式 */
+#user-info-fa-folder-open:hover {
+  color: #16723c;
+}

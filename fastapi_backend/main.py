@@ -822,4 +822,4 @@ async def upload_profile_image(
 
 
 # 计算文件预览
-@app.get("/file"
+# @app.get("/file"

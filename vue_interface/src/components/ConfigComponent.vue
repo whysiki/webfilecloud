@@ -28,6 +28,23 @@
         class="setting-switch"
       ></n-switch>
     </div>
+    <div class="setting-item">
+      <span class="setting-label"
+        >FileItemControlButton
+        <span
+          :class="{
+            'text-green': toShowSingleFileItemControlButton,
+            'text-red': !toShowSingleFileItemControlButton,
+          }"
+        >
+          {{ istoShowSingleFileItemControlButton }}
+        </span></span
+      >
+      <n-switch
+        v-model:value="toShowSingleFileItemControlButton"
+        class="setting-switch"
+      ></n-switch>
+    </div>
     <n-button
       class="setting-button"
       @click="clearCache"
@@ -55,6 +72,9 @@ export default {
   setup() {
     const toPreviewFile = ref(store.state.toPreviewFile);
     const toMouseEventFileItem = ref(store.state.toMouseEventFileItem);
+    const toShowSingleFileItemControlButton = ref(
+      store.state.toShowSingleFileItemControlButton
+    );
     const clearCache = () => {
       localStorage.clear();
     };
@@ -65,6 +85,7 @@ export default {
     return {
       toPreviewFile,
       toMouseEventFileItem,
+      toShowSingleFileItemControlButton,
       clearCache,
       clearStore,
     };
@@ -76,6 +97,9 @@ export default {
     toMouseEventFileItem(newVal) {
       store.commit("setToMouseEventFileItem", newVal);
     },
+    toShowSingleFileItemControlButton(newVal) {
+      store.commit("setToShowSingleFileItemControlButton", newVal);
+    },
   },
   computed: {
     istoPreviewFile() {
@@ -83,6 +107,9 @@ export default {
     },
     istoMouseEventFileItem() {
       return store.state.toMouseEventFileItem;
+    },
+    istoShowSingleFileItemControlButton() {
+      return store.state.toShowSingleFileItemControlButton;
     },
   },
 };

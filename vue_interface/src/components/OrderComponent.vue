@@ -39,14 +39,14 @@
 
     <div :style="listStyle">
       <div v-for="file in sortedFiles" :key="file.id">
-        <FileItemComponent :file="file" />
+        <FileItemComponent :file="file" :viewMode="viewMode" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { inject, ref, computed } from "vue";
+import { ref, computed } from "vue";
 import FileItemComponent from "./FileItemComponent.vue";
 import store from "../store";
 
@@ -54,7 +54,7 @@ export default {
   props: {
     files: {
       type: Array,
-      required: false,
+      required: true,
     },
   },
   data() {
@@ -91,7 +91,7 @@ export default {
     },
   },
   setup(props) {
-    const files = ref(props.files || inject("files"));
+    const files = ref(props.files);
     const sortBy = ref("name");
     const order = ref({ size: "asc", name: "asc", date: "asc" });
 

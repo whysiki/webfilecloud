@@ -7,36 +7,81 @@
     @mouseover="mouseovershowfileCardDetails"
     @mouseleave="mouseleaveshowfileCardDetails"
   >
-    <!-- 复选框 -->
-    <input
-      type="checkbox"
-      v-model="selected"
-      @change="toggleSelect"
-      class="selected-file"
-    />
-    <div class="file-header" @click.prevent="toggleDetails">
-      <div
-        class="file-name"
-        v-if="!isEditingFilename"
-        @dblclick.prevent="editFilename"
-      >
-        <p class="long-text">{{ file.filename }}</p>
-      </div>
+    <!-- 文件卡片头部  显示文件�? -->
+    <div class="file-card-header">
+      <!-- 复选框 -->
       <input
-        class="file-rename-input"
-        type="text"
-        v-else
-        v-model="newFilename"
-        @blur="updateFilename"
-        @keyup.enter="updateFilename"
-        title="Press Enter a new filename and press Enter to save"
+        type="checkbox"
+        v-model="selected"
+        @change="toggleSelect"
+        class="selected-file"
       />
-      <div class="file-item-button-container" v-if="!isCardView">
-        <button @click.prevent="confirmMovefile(file.id)" class="file-button">
-          Move
+      <!-- 文件�? -->
+      <div class="file-header" @click.prevent="toggleDetails">
+        <div
+          class="file-name"
+          v-if="!isEditingFilename"
+          @dblclick.prevent="editFilename"
+        >
+          <p class="long-text">{{ file.filename }}</p>
+        </div>
+        <input
+          class="file-rename-input"
+          type="text"
+          v-else
+          v-model="newFilename"
+          @blur="updateFilename"
+          @keyup.enter="updateFilename"
+          title="Press Enter a new filename and press Enter to save"
+          @mouseleave="updateFilename"
+        />
+      </div>
+    </div>
+    <!-- 文件详细  显示文件详细信息和文件预�?  点击文件名展开 -->
+    <div v-if="showfileCardDetails" class="file-card-details">
+      <p>Owner name: {{ file.file_owner_name }}</p>
+      <p>Upload time: {{ file.file_create_time }}</p>
+      <p>File size: {{ formatSize(file.file_size) }}</p>
+      <p>File path: {{ parseNodes(file.file_nodes) }}</p>
+      <p>File type: {{ file.file_type }}</p>
+      <p class="long-text" v-if="copyError">
+        Download link: {{ downloadLink }}
+      </p>
+      <p class="long-text" v-if="copyError">Preview link: {{ previewLink }}</p>
+      <!-- 复制按钮 -->
+      <div class="file-card-details-buttons">
+        <button
+          @click="copyToClipboard(downloadLink)"
+          class="file-card-details-button"
+          title="Click to copy direct download link to clipboard"
+        >
+          📋<i class="fas fa-download"></i>
         </button>
-        <button @click.prevent="downloadFile(file)" class="file-button">
-          Download
+        <button
+          @click="copyToClipboard(previewLink)"
+          class="file-card-details-button"
+          title="Click to copy preview link to clipboard"
+        >
+          📋<i class="fas fa-stream"></i>
+        </button>
+      </div>
+      <!-- 文件操作按钮 -->
+      <div class="file-item-button-container" v-if="!isCardView">
+        <button
+          @click.prevent="confirmMovefile(file.id)"
+          class="file-button"
+          v-if="toShowSingleFileItemControlButton"
+          title="Click to move file"
+        >
+          <i class="fas fa-folder-plus"></i>
+        </button>
+        <button
+          @click.prevent="downloadFile(file)"
+          class="file-button"
+          v-if="toShowSingleFileItemControlButton"
+          title="Click to download file"
+        >
+          <i class="fas fa-download"></i>
         </button>
         <button
           v-if="
@@ -48,14 +93,15 @@
           class="file-button cancel-download"
           title="Click to cancel download"
         >
-          Cancel
+          <i class="fas fa-times"></i>
         </button>
         <button
           @click.prevent="confirmDeleteFile(file.id, file.filename)"
           class="file-button delete-file"
           title="Click to delete file"
+          v-if="toShowSingleFileItemControlButton"
         >
-          Delete
+          <i class="fas fa-trash"></i>
         </button>
         <button
           @click.prevent="editFilename"
@@ -85,34 +131,8 @@
           <i class="fas fa-download"></i>
         </a>
       </div>
-    </div>
-    <div v-if="showfileCardDetails" class="file-card-details">
-      <p>Owner name: {{ file.file_owner_name }}</p>
-      <p>Upload time: {{ file.file_create_time }}</p>
-      <p>File size: {{ formatSize(file.file_size) }}</p>
-      <p>File path: {{ parseNodes(file.file_nodes) }}</p>
-      <p>File type: {{ file.file_type }}</p>
-      <p class="long-text" v-if="copyError">
-        Download link: {{ downloadLink }}
-      </p>
-      <p class="long-text" v-if="copyError">Preview link: {{ previewLink }}</p>
-      <div class="file-card-details-buttons">
-        <button
-          @click="copyToClipboard(downloadLink)"
-          class="file-card-details-button"
-          title="Click to copy direct download link to clipboard"
-        >
-          📋<i class="fas fa-download"></i>
-        </button>
-        <button
-          @click="copyToClipboard(previewLink)"
-          class="file-card-details-button"
-          title="Click to copy preview link to clipboard"
-        >
-          📋<i class="fas fa-stream"></i>
-        </button>
-      </div>
 
+      <!-- 文件预览 容器 -->
       <div class="file-preview-container">
         <textarea
           v-if="isTextFile && fileContent"
@@ -134,6 +154,7 @@
         />
       </div>
     </div>
+    <!-- 下载进度�? -->
     <div
       v-show="file.showdownloadProgressBar"
       class="progress-bar-container"
@@ -156,7 +177,16 @@ import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
 export default {
-  props: ["file"],
+  props: {
+    file: {
+      type: Object,
+      required: true,
+    },
+    viewMode: {
+      type: String,
+      required: false,
+    },
+  },
   data() {
     return {
       showfileCardDetails: false,
@@ -170,6 +200,9 @@ export default {
   },
 
   computed: {
+    toShowSingleFileItemControlButton() {
+      return store.state.toShowSingleFileItemControlButton;
+    },
     previewLink() {
       return store.state.baseUrl + this.file.file_download_link;
     },
@@ -180,23 +213,15 @@ export default {
       );
     },
     listStyle() {
-      if (store.state.viewMode === "card") {
+      if (this.viewMode === "card") {
         //统一卡片大小
         return {
           width: "280px",
-          // width: "10vm",
-          // max-width: "280px",
-          // "max-width": "10vm",
-          // 相对大小
-          // width: "20%",
-          // margin: "5px",
+          // height: "35vh",
         };
       } else {
         return {};
       }
-    },
-    viewMode() {
-      return store.state.viewMode;
     },
     isCardView() {
       return this.viewMode === "card";
@@ -502,7 +527,6 @@ export default {
         return null;
       }
     },
-
     async readAsText(blob, encoding = "UTF-8") {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();

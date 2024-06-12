@@ -16,6 +16,7 @@ export default createStore({
     token: "",
     toPreviewFile: false,
     toMouseEventFileItem: false,
+    toShowSingleFileItemControlButton: false,
   },
   mutations: {
     setFiles(state, files) {
@@ -56,6 +57,13 @@ export default createStore({
     },
     setToMouseEventFileItem(state, toMouseEventFileItem) {
       state.toMouseEventFileItem = toMouseEventFileItem;
+    },
+    setToShowSingleFileItemControlButton(
+      state,
+      toShowSingleFileItemControlButton
+    ) {
+      state.toShowSingleFileItemControlButton =
+        toShowSingleFileItemControlButton;
     },
     clearStore(state) {
       state.files = [];

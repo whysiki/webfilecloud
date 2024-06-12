@@ -13,7 +13,9 @@
           <img :src="userAvatar" alt="" class="user-avatar-small" />
         </router-link>
         <span class="file-owner">{{ firstFileOwner }}</span>
-        <i class="fas fa-folder-open" id="user-info-fa-folder-open"></i>
+        <router-link to="/filefolder">
+          <i class="fas fa-folder-open" id="user-info-fa-folder-open"></i>
+        </router-link>
         <span class="file-count">{{ fileAllCount }}</span>
       </h2>
     </div>
@@ -34,9 +36,6 @@
           <li @click="changeViewMode('ShowByType')">Show By Type</li>
           <li @click="changeViewMode('ShowByTree')">Show By Tree</li>
           <li @click="changeViewMode('SortFiles')">Sort Files</li>
-          <!-- <li @click="changeFileViewMode('card')">Card View</li> -->
-          <!-- <li @click="changeFileViewMode('list')">List View</li> -->
-          <!-- <li @click="changeFileViewMode('tree')">Tree View</li> -->
         </ul>
       </div>
     </div>
@@ -53,14 +52,11 @@
     </div>
     <!-- 文件树视图 -->
     <div class="fileTreeView" v-if="viewMode === 'ShowByTree' && !showSearch">
-      <NavigationBar />
-      <!-- <div :style="FileTreeComponentStyle"> -->
       <FileTreeComponent :files="files" />
-      <!-- </div> -->
     </div>
     <!-- 排序视图 -->
     <div class="order-file-list" v-if="viewMode === 'SortFiles' && !showSearch">
-      <OrderComponent />
+      <OrderComponent :files="files" />
     </div>
     <!-- 弹出式警告组件 -->
     <AlertComponent ref="alertPopup" />
@@ -71,18 +67,16 @@
 import axios from "../axios"; // 导入 axios 实例
 import TypesComponent from "./TypesComponent.vue"; // 导入 TypesComponent 组件
 import FileTreeComponent from "./FileTreeComponent.vue"; // 导入 FileTreeComponent 组件
-import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 import SearchComponent from "./SearchComponent.vue";
 import BatchActionsComponent from "./BatchActionsComponent.vue";
 import store from "../store";
 import { provide, ref, onMounted } from "vue"; // 导入 provide 和 ref
-
+// import { ref, onMounted } from "vue"; // 导入 ref 和 onMounted
 export default {
   components: {
     TypesComponent,
     FileTreeComponent,
-    NavigationBar,
     OrderComponent,
     SearchComponent,
     BatchActionsComponent,
@@ -90,7 +84,7 @@ export default {
   setup() {
     const files = ref([]); // 使用 ref 创建一个响应式的数据对象
     provide("files", files); // 使用 provide 提供 files
-    const alertPopup = ref(null); // 创建一个响应式的 alertPopup 引用
+    // const alertPopup = ref(null); // 创建一个响应式的 alertPopup 引用
     const fetchFiles = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -102,10 +96,19 @@ export default {
         files.value = response.data.files;
         localStorage.setItem("currentFilesLength", files.value.length);
         store.commit("setFiles", response.data.files);
-      } catch (error) {
-        await alertPopup.value.showAlert(
-          `Error fetching files: ${error.response.data.detail}`
+        const treePathList = response.data.files.map((file) =>
+          file.file_nodes.length > 0 ? file.file_nodes : []
         );
+        // const treePathListNoRepeat = Array.from(
+        //   new Set(treePathList.map(JSON.stringify))
+        // ).map(JSON.parse);
+        store.commit("buildTreePathList", treePathList);
+      } catch (error) {
+        // await alertPopup.value.showAlert(
+        // `Error fetching files: ${error.response.data.detail}`
+        // );
+        // console.error(error);
+        console.error(error);
       }
     };
 
@@ -120,7 +123,7 @@ export default {
       }
     });
 
-    return { files, fetchFiles, alertPopup };
+    return { files, fetchFiles };
   },
   data() {
     return {
@@ -184,9 +187,6 @@ export default {
         img.src = url;
       });
     },
-    // changeFileViewMode(mode) {
-    // store.commit("changeViewMode", mode);
-    // },
     collapseAll() {
       this.visibleFileTypes = [];
       this.emitter.emit("collapse-all");
@@ -255,12 +255,4 @@ export default {
 
 <style scoped>
 @import "./css/FileList.css";
-.user-avatar-small {
-  margin: 0px;
-  margin-top: 8px;
-  border-radius: 50%;
-  border: 1px solid #1a7be3;
-  width: 50px;
-  height: 50px;
-}
 </style>

@@ -1,8 +1,8 @@
 <template>
+  <NavigationBar v-if="files && files.length > 0" />
   <div class="file-tree">
     <div v-for="(value, key) in fileTree" :key="key" class="file-tree-item">
       <div v-if="!Array.isArray(value)">
-        <!-- <div @click="toggleFolder(key)" class="folder-title">{{ key }}</div> -->
         <div @click="toggleFolder(key)" class="folder-title">
           <i
             :class="folderStates[key] ? 'fas fa-folder-open' : 'fas fa-folder'"
@@ -17,9 +17,6 @@
         </div>
       </div>
       <div v-else class="file-tree-items">
-        <!-- <div v-for="file in value" :key="file.id"> -->
-        <!-- <FileItemComponent :file="file" /> -->
-        <!-- </div> -->
         <OrderComponent :files="value" />
       </div>
     </div>
@@ -27,13 +24,12 @@
 </template>
 
 <script>
-// import FileItemComponent from "./FileItemComponent.vue";
-// import store from "../store";
+import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 export default {
   components: {
-    // FileItemComponent,
     OrderComponent,
+    NavigationBar,
   },
   props: {
     files: {
@@ -52,7 +48,6 @@ export default {
   data() {
     return {
       folderStates: {},
-      // currentNodes: [], // for tracking the current nodes
     };
   },
   mounted() {
@@ -103,8 +98,6 @@ export default {
         "update-current-nodes",
         JSON.stringify(currentNodes.flat())
       );
-
-      // console.log(currentNodes.flat().join("/"));
     },
     buildFileTree(files) {
       const root = {};
@@ -130,7 +123,23 @@ export default {
           root.files.push(file);
         }
       });
-      return root;
+
+      const sortedRoot = {};
+      Object.keys(root)
+        .sort((a, b) => {
+          if (Array.isArray(root[a]) && !Array.isArray(root[b])) {
+            return 1;
+          }
+          if (!Array.isArray(root[a]) && Array.isArray(root[b])) {
+            return -1;
+          }
+          return 0;
+        })
+        .forEach((key) => {
+          sortedRoot[key] = root[key];
+        });
+
+      return sortedRoot;
     },
   },
 };

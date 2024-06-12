@@ -5,7 +5,11 @@
         <i class="fas fa-home"></i>
       </router-link>
     </div>
-    <button class="top-bar-icon-button search" @click="toggleSearch" title="Search">
+    <button
+      class="top-bar-icon-button search"
+      @click="toggleSearch"
+      title="Search"
+    >
       <i class="fas fa-search"></i>
     </button>
     <button
@@ -30,7 +34,11 @@
       <i class="fa-solid fa-user-slash"></i>
     </button>
   </div>
-  <form v-if="showUploadFileForm" @submit.prevent="uploadFiles" class="form-uploadFile">
+  <form
+    v-if="showUploadFileForm"
+    @submit.prevent="uploadFiles"
+    class="form-uploadFile"
+  >
     <div class="form-uploadFile-group">
       <input
         type="file"
@@ -102,6 +110,9 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
+    // goBack() {
+    //   this.$router.go(-1);
+    // },
     handleFilesUpload(event) {
       this.files = Array.from(event.target.files); // 将用户选择的文件赋值给 this.files
     },
@@ -112,7 +123,6 @@ export default {
       await this.$refs.popInputRef
         .popInput("Upload Path")
         .then((inputValue) => {
-          // console.log("用户输入:", inputValue);
           const nodes = inputValue.split("/");
           const currentUploadStrNodes = JSON.stringify(nodes);
           this.inputUploadStrNodes = currentUploadStrNodes;
@@ -147,7 +157,9 @@ export default {
           const fileHash = CryptoJS.SHA256(wordArray).toString();
           const usernameHash = CryptoJS.SHA1(username).toString();
           const file_nodes_array = JSON.parse(this.currentUploadStrNodes);
-          const file_nodes_hash = CryptoJS.SHA1(file_nodes_array.join("")).toString();
+          const file_nodes_hash = CryptoJS.SHA1(
+            file_nodes_array.join("")
+          ).toString();
           fileId = fileHash + usernameHash + file_nodes_hash;
         } else {
           await this.$refs.alertPopup.showAlert(
@@ -173,7 +185,8 @@ export default {
                   (progressEvent.loaded * 100) / progressEvent.total
                 );
                 this.uploadProgress = Math.round(
-                  ((this.completedFiles + fileProgress / 100) * 100) / totalFiles
+                  ((this.completedFiles + fileProgress / 100) * 100) /
+                    totalFiles
                 );
               },
             }
@@ -271,9 +284,13 @@ export default {
         this.$router.push("/");
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          );
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          );
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
@@ -286,8 +303,10 @@ export default {
     },
     async confirmDeleteAllFiles() {
       //进制基数，这里为 10，表示将字符串作为十进制数解析。
-      const currentFilesLength = parseInt(localStorage.getItem("currentFilesLength"), 10);
-      // console.log(currentFilesLength);
+      const currentFilesLength = parseInt(
+        localStorage.getItem("currentFilesLength"),
+        10
+      );
       if (
         currentFilesLength === 0 ||
         currentFilesLength === null ||
@@ -314,9 +333,13 @@ export default {
         this.$refs.alertPopup.showAlert("All files deleted successfully"); // 显示文件删除成功的信息
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          );
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          );
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
