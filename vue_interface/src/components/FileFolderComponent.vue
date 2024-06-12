@@ -28,7 +28,6 @@
         <!-- 显示最后一个 -->
       </div>
     </div>
-
     <!-- 文件列表 -->
     <div v-if="files.length > 0 && showOrderComponent" class="file-tree-items">
       <OrderComponent :files="files" />
@@ -40,6 +39,7 @@
 import store from "../store";
 import axios from "../axios";
 import OrderComponent from "./OrderComponent";
+import eventBus from "../eventBus";
 import { ref } from "vue";
 
 export default {
@@ -64,22 +64,22 @@ export default {
     }
   },
   mounted() {
-    this.emitter.on("file-uploaded", this.navigateTo(this.currentPath));
-    this.emitter.on("one-file-deleted", this.navigateTo(this.currentPath));
-    this.emitter.on("one-file-moved", this.navigateTo(this.currentPath));
-    this.emitter.on("all-files-deleted", this.navigateTo(this.currentPath));
-    this.emitter.on("batch-files-moved", this.navigateTo(this.currentPath));
-    this.emitter.on("batch-files-deleted", this.navigateTo(this.currentPath));
-    this.emitter.on("one-file-updated", this.navigateTo(this.currentPath));
+    eventBus.on("file-uploaded", this.navigateTo(this.currentPath));
+    eventBus.on("one-file-deleted", this.navigateTo(this.currentPath));
+    eventBus.on("one-file-moved", this.navigateTo(this.currentPath));
+    eventBus.on("all-files-deleted", this.navigateTo(this.currentPath));
+    eventBus.on("batch-files-moved", this.navigateTo(this.currentPath));
+    eventBus.on("batch-files-deleted", this.navigateTo(this.currentPath));
+    eventBus.on("one-file-updated", this.navigateTo(this.currentPath));
   },
   beforeUnmount() {
-    this.emitter.off("file-uploaded", this.navigateTo(this.currentPath));
-    this.emitter.off("one-file-deleted", this.navigateTo(this.currentPath));
-    this.emitter.off("one-file-moved", this.navigateTo(this.currentPath));
-    this.emitter.off("all-files-deleted", this.navigateTo(this.currentPath));
-    this.emitter.off("batch-files-moved", this.navigateTo(this.currentPath));
-    this.emitter.off("batch-files-deleted", this.navigateTo(this.currentPath));
-    this.emitter.off("one-file-updated", this.navigateTo(this.currentPath));
+    eventBus.off("file-uploaded", this.navigateTo(this.currentPath));
+    eventBus.off("one-file-deleted", this.navigateTo(this.currentPath));
+    eventBus.off("one-file-moved", this.navigateTo(this.currentPath));
+    eventBus.off("all-files-deleted", this.navigateTo(this.currentPath));
+    eventBus.off("batch-files-moved", this.navigateTo(this.currentPath));
+    eventBus.off("batch-files-deleted", this.navigateTo(this.currentPath));
+    eventBus.off("one-file-updated", this.navigateTo(this.currentPath));
   },
   methods: {
     goBack() {
@@ -114,10 +114,7 @@ export default {
         this.currentPath = path.slice();
         this.showOrderComponent = true;
         // console.log("currentPath", this.currentPath);
-        this.emitter.emit(
-          "update-current-nodes",
-          JSON.stringify(this.currentPath)
-        );
+        eventBus.emit("update-current-nodes", JSON.stringify(this.currentPath));
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(

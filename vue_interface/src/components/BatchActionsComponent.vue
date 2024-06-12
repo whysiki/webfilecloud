@@ -7,7 +7,10 @@
       class="batch-actions-progress"
       v-if="batchProgress > 0 && batchProgress < 100"
     ></progress>
-    <button @click="batchMove" class="batch-actions-button batch-actions-button-move">
+    <button
+      @click="batchMove"
+      class="batch-actions-button batch-actions-button-move"
+    >
       <i class="fas fa-arrows-alt"></i>
       <span class="batch-actions-button-text">BatchMove</span>
     </button>
@@ -18,7 +21,10 @@
       <i class="fas fa-download"></i>
       <span class="batch-actions-button-text">BatchDownload</span>
     </button>
-    <button @click="batchDelete" class="batch-actions-button batch-actions-button-delete">
+    <button
+      @click="batchDelete"
+      class="batch-actions-button batch-actions-button-delete"
+    >
       <i class="fas fa-trash-alt"></i>
       <span class="batch-actions-button-text">BatchDelete</span>
     </button>
@@ -39,7 +45,9 @@
     <button
       @click="cancelAllRequests"
       class="batch-actions-button batch-actions-button-cancel"
-      v-if="(batchProgress > 0 && batchProgress < 100) || cancelTokens.length > 0"
+      v-if="
+        (batchProgress > 0 && batchProgress < 100) || cancelTokens.length > 0
+      "
     >
       <i class="fa-solid fa-ban"></i>
       <span class="batch-actions-button-text">CancelAll</span>
@@ -51,6 +59,7 @@
 <script>
 import axios from "../axios";
 import store from "../store";
+import eventBus from "../eventBus";
 import axiosModule from "axios";
 export default {
   data() {
@@ -69,11 +78,11 @@ export default {
   methods: {
     selectAllFiles() {
       store.state.selectedFiles = [...store.state.files];
-      this.emitter.emit("select-all-files");
+      eventBus.emit("select-all-files");
     },
     clearSelectedFiles() {
       store.state.selectedFiles = [];
-      this.emitter.emit("clear-selected-files");
+      eventBus.emit("clear-selected-files");
     },
     async batchDelete() {
       const tag = await this.$refs.alertPopup.showAlert(
@@ -97,13 +106,15 @@ export default {
             store.state.batchProgress = (count / total) * 100;
           } catch (error) {
             console.error(
-              `Error deleting file: ${error.response?.data?.detail || error.message}`
+              `Error deleting file: ${
+                error.response?.data?.detail || error.message
+              }`
             );
           }
         });
         await Promise.all(deletePromises);
         await this.$refs.alertPopup.showAlert("Delete completed");
-        this.emitter.emit("batch-files-deleted");
+        eventBus.emit("batch-files-deleted");
       }
     },
     async batchDownload() {
@@ -147,7 +158,9 @@ export default {
             store.state.batchProgress = (count / total) * 100;
           } catch (error) {
             await this.$refs.alertPopup.showAlert(
-              `Error downloading file: ${error.response?.data?.detail || error.message}`
+              `Error downloading file: ${
+                error.response?.data?.detail || error.message
+              }`
             );
           } finally {
             file.showdownloadProgressBar = false;
@@ -171,7 +184,9 @@ export default {
             return error;
           });
         if (typeof newNodes === "string" && newNodes !== "") {
-          const newNodesArray = newNodes.split("/").filter((node) => node !== "");
+          const newNodesArray = newNodes
+            .split("/")
+            .filter((node) => node !== "");
           const newNodesArrayStr = JSON.stringify(newNodesArray);
           const total = store.state.selectedFiles.length;
           let count = 0;
@@ -194,13 +209,15 @@ export default {
               store.state.batchProgress = (count / total) * 100;
             } catch (error) {
               console.error(
-                `Error moving file: ${error.response?.data?.detail || error.message}`
+                `Error moving file: ${
+                  error.response?.data?.detail || error.message
+                }`
               );
             }
           });
           await Promise.all(movePromises);
           await this.$refs.alertPopup.showAlert("Move completed");
-          this.emitter.emit("batch-files-moved");
+          eventBus.emit("batch-files-moved");
         } else {
           await this.$refs.alertPopup.showAlert("New file path is invalid");
         }
@@ -212,7 +229,7 @@ export default {
       });
       this.cancelTokens = [];
       store.state.batchProgress = 0;
-      this.emitter.emit("cancel-all-requests");
+      eventBus.emit("cancel-all-requests");
     },
   },
 };

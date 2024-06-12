@@ -176,6 +176,7 @@
 import axios from "../axios"; // 导入 axios 实例
 import axiosModule from "axios";
 import store from "../store";
+import eventBus from "../eventBus";
 export default {
   props: {
     file: {
@@ -257,28 +258,28 @@ export default {
     },
   },
   mounted() {
-    this.emitter.on("expand-all", () => {
+    eventBus.on("expand-all", () => {
       this.showfileCardDetails = true;
     });
-    this.emitter.on("collapse-all", () => {
+    eventBus.on("collapse-all", () => {
       this.showfileCardDetails = false;
     });
-    this.emitter.on("clear-selected-files", () => {
+    eventBus.on("clear-selected-files", () => {
       this.selected = false;
     });
-    this.emitter.on("select-all-files", () => {
+    eventBus.on("select-all-files", () => {
       this.selected = true;
     });
-    this.emitter.on("cancel-all-requests", () => {
+    eventBus.on("cancel-all-requests", () => {
       this.showdownloadProgressBar = false;
     });
   },
   beforeUnmount() {
-    this.emitter.off("expand-all");
-    this.emitter.off("collapse-all");
-    this.emitter.off("clear-selected-files");
-    this.emitter.off("select-all-files");
-    this.emitter.off("cancel-all-requests");
+    eventBus.off("expand-all");
+    eventBus.off("collapse-all");
+    eventBus.off("clear-selected-files");
+    eventBus.off("select-all-files");
+    eventBus.off("cancel-all-requests");
     if (store.state.selectedFiles.includes(this.file)) {
       store.commit("removeSelectedFile", this.file);
     }
@@ -360,7 +361,7 @@ export default {
           }
         );
         this.isEditingFilename = false;
-        this.emitter.emit("one-file-updated");
+        eventBus.emit("one-file-updated");
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(
@@ -448,7 +449,7 @@ export default {
           },
         });
         this.$refs.alertPopup.showAlert("File deleted successfully");
-        this.emitter.emit("one-file-deleted");
+        eventBus.emit("one-file-deleted");
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(
@@ -496,7 +497,7 @@ export default {
           }
         );
         await this.$refs.alertPopup.showAlert("File moved successfully");
-        this.emitter.emit("one-file-moved");
+        eventBus.emit("one-file-moved");
       } catch (error) {
         if (error.response) {
           await this.$refs.alertPopup.showAlert(

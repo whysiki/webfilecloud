@@ -26,6 +26,7 @@
 <script>
 import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
+import eventBus from "../eventBus";
 export default {
   components: {
     OrderComponent,
@@ -51,12 +52,12 @@ export default {
     };
   },
   mounted() {
-    this.emitter.on("expand-all", this.expandAll);
-    this.emitter.on("collapse-all", this.collapseAll);
+    eventBus.on("expand-all", this.expandAll);
+    eventBus.on("collapse-all", this.collapseAll);
   },
   beforeUnmount() {
-    this.emitter.off("expand-all", this.expandAll);
-    this.emitter.off("collapse-all", this.collapseAll);
+    eventBus.off("expand-all", this.expandAll);
+    eventBus.off("collapse-all", this.collapseAll);
   },
   computed: {
     fileTree() {
@@ -94,7 +95,7 @@ export default {
           fullPath.length > 1 ? fullPath.slice(0, fullPath.length - 1) : [];
       }
 
-      this.emitter.emit(
+      eventBus.emit(
         "update-current-nodes",
         JSON.stringify(currentNodes.flat())
       );

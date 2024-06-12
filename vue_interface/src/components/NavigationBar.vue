@@ -7,6 +7,7 @@
 </template>
 
 <script>
+import eventBus from "../eventBus";
 export default {
   data() {
     return {
@@ -14,7 +15,7 @@ export default {
     };
   },
   mounted() {
-    this.emitter.on("update-current-nodes", (value) => {
+    eventBus.on("update-current-nodes", (value) => {
       this.pathstr = "/" + JSON.parse(value).join("/");
     });
   },

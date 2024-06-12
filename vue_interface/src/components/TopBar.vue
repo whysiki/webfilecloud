@@ -66,6 +66,7 @@
 <script>
 import CryptoJS from "crypto-js";
 import axios from "../axios"; // 导入 axios 实例
+import eventBus from "../eventBus";
 export default {
   name: "SideBar",
   components: {},
@@ -102,11 +103,11 @@ export default {
     },
   },
   mounted() {
-    this.emitter.on("update-current-nodes", this.updateInputUploadStrNodes);
+    eventBus.on("update-current-nodes", this.updateInputUploadStrNodes);
     window.addEventListener("scroll", this.handleScroll);
   },
   beforeUnmount() {
-    this.emitter.off("update-current-nodes", this.updateInputUploadStrNodes);
+    eventBus.off("update-current-nodes", this.updateInputUploadStrNodes);
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
@@ -196,7 +197,7 @@ export default {
             `File ${file.name} uploaded successfully in ${this.currentUploadStrPath}`,
             1000
           );
-          this.emitter.emit("file-uploaded");
+          eventBus.emit("file-uploaded");
         } catch (error) {
           this.completedFiles += 1;
           if (error.response) {
@@ -298,7 +299,7 @@ export default {
     },
 
     toggleSearch() {
-      this.emitter.emit("toggle-search", !this.showSearch);
+      eventBus.emit("toggle-search", !this.showSearch);
       this.showSearch = !this.showSearch;
     },
     async confirmDeleteAllFiles() {
@@ -344,7 +345,7 @@ export default {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
       } finally {
-        this.emitter.emit("all-files-deleted");
+        eventBus.emit("all-files-deleted");
       }
     },
   },

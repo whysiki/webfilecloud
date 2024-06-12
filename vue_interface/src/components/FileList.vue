@@ -71,6 +71,7 @@ import OrderComponent from "./OrderComponent.vue";
 import SearchComponent from "./SearchComponent.vue";
 import BatchActionsComponent from "./BatchActionsComponent.vue";
 import store from "../store";
+import eventBus from "../eventBus";
 import { provide, ref, onMounted } from "vue"; // 导入 provide 和 ref
 // import { ref, onMounted } from "vue"; // 导入 ref 和 onMounted
 export default {
@@ -152,28 +153,28 @@ export default {
     },
   },
   mounted() {
-    this.emitter.on("file-uploaded", this.fetchFiles);
-    this.emitter.on("one-file-deleted", this.fetchFiles);
-    this.emitter.on("one-file-moved", this.fetchFiles);
-    this.emitter.on("all-files-deleted", this.fetchFiles);
-    this.emitter.on("toggle-search", (showSearch) => {
+    eventBus.on("file-uploaded", this.fetchFiles);
+    eventBus.on("one-file-deleted", this.fetchFiles);
+    eventBus.on("one-file-moved", this.fetchFiles);
+    eventBus.on("all-files-deleted", this.fetchFiles);
+    eventBus.on("toggle-search", (showSearch) => {
       this.showSearch = showSearch;
     });
-    this.emitter.on("batch-files-moved", this.fetchFiles);
-    this.emitter.on("batch-files-deleted", this.fetchFiles);
-    this.emitter.on("one-file-updated", this.fetchFiles);
+    eventBus.on("batch-files-moved", this.fetchFiles);
+    eventBus.on("batch-files-deleted", this.fetchFiles);
+    eventBus.on("one-file-updated", this.fetchFiles);
   },
   beforeUnmount() {
-    this.emitter.off("file-uploaded", this.fetchFiles);
-    this.emitter.off("one-file-deleted", this.fetchFiles);
-    this.emitter.off("one-file-moved", this.fetchFiles);
-    this.emitter.off("all-files-deleted", this.fetchFiles);
-    this.emitter.off("toggle-search", (showSearch) => {
+    eventBus.off("file-uploaded", this.fetchFiles);
+    eventBus.off("one-file-deleted", this.fetchFiles);
+    eventBus.off("one-file-moved", this.fetchFiles);
+    eventBus.off("all-files-deleted", this.fetchFiles);
+    eventBus.off("toggle-search", (showSearch) => {
       this.showSearch = showSearch;
     });
-    this.emitter.off("batch-files-moved", this.fetchFiles);
-    this.emitter.off("batch-files-deleted", this.fetchFiles);
-    this.emitter.off("one-file-updated", this.fetchFiles);
+    eventBus.off("batch-files-moved", this.fetchFiles);
+    eventBus.off("batch-files-deleted", this.fetchFiles);
+    eventBus.off("one-file-updated", this.fetchFiles);
   },
   async created() {
     await this.fetchAvatar();
@@ -189,11 +190,11 @@ export default {
     },
     collapseAll() {
       this.visibleFileTypes = [];
-      this.emitter.emit("collapse-all");
+      eventBus.emit("collapse-all");
     },
     expandAll() {
       this.visibleFileTypes = [...this.fileTypes];
-      this.emitter.emit("expand-all");
+      eventBus.emit("expand-all");
     },
     toggleVisibility(fileType) {
       const index = this.visibleFileTypes.indexOf(fileType);
