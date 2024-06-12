@@ -20,7 +20,7 @@
         v-if="!isEditingFilename"
         @dblclick.prevent="editFilename"
       >
-        {{ file.filename }}
+        <p class="long-text">{{ file.filename }}</p>
       </div>
       <input
         class="file-rename-input"
@@ -184,6 +184,11 @@ export default {
         //统一卡片大小
         return {
           width: "280px",
+          // width: "10vm",
+          // max-width: "280px",
+          // "max-width": "10vm",
+          // 相对大小
+          // width: "20%",
           // margin: "5px",
         };
       } else {

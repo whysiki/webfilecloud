@@ -1,9 +1,8 @@
 <template>
   <div class="order-file-list">
-    <div class="order-file-buttons">
+    <div class="order-file-buttons" v-if="sortedFiles.length > 0">
       <button @click="sort('size')" class="order-file-button">
-        Sort by size
-        <i
+        size<i
           :class="[
             'fas',
             'fa-sort-' + (order.size === 'asc' ? 'amount-up' : 'amount-down'),
@@ -11,23 +10,30 @@
         ></i>
       </button>
       <button @click="sort('name')" class="order-file-button">
-        Sort by name
-        <i
+        name<i
           :class="[
             'fas',
-            'fa-sort-' +
-              (order.name === 'asc' ? 'alphabet-up' : 'alphabet-down'),
+            'fa-sort-' + (order.name === 'asc' ? 'amount-up' : 'amount-down'),
           ]"
         ></i>
       </button>
       <button @click="sort('date')" class="order-file-button">
-        Sort by date
-        <i
+        date<i
           :class="[
             'fas',
             'fa-sort-' + (order.date === 'asc' ? 'amount-up' : 'amount-down'),
           ]"
         ></i>
+      </button>
+      <button
+        @click="viewMode = 'card'"
+        class="order-file-button"
+        id="order-file-button-card-view"
+      >
+        <i class="fas fa-th-large"></i>Card
+      </button>
+      <button @click="viewMode = 'list'" class="order-file-button">
+        <i class="fa-solid fa-list"></i>List
       </button>
     </div>
 
@@ -51,18 +57,25 @@ export default {
       required: false,
     },
   },
+  data() {
+    return {
+      viewMode: "list",
+    };
+  },
   components: {
     FileItemComponent,
   },
   computed: {
     listStyle() {
-      if (store.state.viewMode === "card") {
+      if (this.viewMode === "card") {
+        store.commit("changeViewMode", "card");
         return {
           display: "flex",
           flexWrap: "wrap",
           padding: 0,
         };
-      } else if (store.state.viewMode === "list") {
+      } else if (this.viewMode === "list") {
+        store.commit("changeViewMode", "list");
         return {
           display: "inline",
           "flex-wrap": "nowrap",
@@ -78,8 +91,6 @@ export default {
     },
   },
   setup(props) {
-    // const files = files || inject("files");
-    // const files = props.files || inject("files");
     const files = ref(props.files || inject("files"));
     const sortBy = ref("name");
     const order = ref({ size: "asc", name: "asc", date: "asc" });
@@ -116,14 +127,14 @@ export default {
 </script>
 
 <style scoped>
-.order-file-list {
-  margin-top: 20px;
-}
+/* .order-file-list { */
+/* margin-top: 20px; */
+/* } */
 
 .order-file-buttons {
   margin-bottom: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
 }
@@ -137,6 +148,7 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s ease;
   width: 100%;
+  height: 2.3rem;
   text-align: center;
 }
 
@@ -144,21 +156,10 @@ export default {
   background-color: #16723c;
 }
 
-.fa-sort-amount-up,
-.fa-sort-amount-down,
-.fa-sort-alphabet-up,
-.fa-sort-alphabet-down {
-  margin-left: 5px;
-}
-
-@media (min-width: 768px) {
-  .order-file-buttons {
-    flex-direction: row;
-    justify-content: space-evenly;
-  }
-
-  .order-file-button {
-    width: auto;
+/* 媒体查询 */
+@media (max-width: 600px) {
+  #order-file-button-card-view {
+    display: none;
   }
 }
 </style>

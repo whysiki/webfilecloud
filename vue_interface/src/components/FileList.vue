@@ -34,8 +34,8 @@
           <li @click="changeViewMode('ShowByType')">Show By Type</li>
           <li @click="changeViewMode('ShowByTree')">Show By Tree</li>
           <li @click="changeViewMode('SortFiles')">Sort Files</li>
-          <li @click="changeFileViewMode('card')">Card View</li>
-          <li @click="changeFileViewMode('list')">List View</li>
+          <!-- <li @click="changeFileViewMode('card')">Card View</li> -->
+          <!-- <li @click="changeFileViewMode('list')">List View</li> -->
           <!-- <li @click="changeFileViewMode('tree')">Tree View</li> -->
         </ul>
       </div>
@@ -184,9 +184,9 @@ export default {
         img.src = url;
       });
     },
-    changeFileViewMode(mode) {
-      store.commit("changeViewMode", mode);
-    },
+    // changeFileViewMode(mode) {
+    // store.commit("changeViewMode", mode);
+    // },
     collapseAll() {
       this.visibleFileTypes = [];
       this.emitter.emit("collapse-all");

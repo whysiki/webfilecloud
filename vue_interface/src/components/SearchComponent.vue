@@ -6,10 +6,8 @@
       class="search-input"
       placeholder="Search files... enter a file name"
     />
-    <div v-if="searchResults.length > 0" class="search-results" :style="listStyle">
-      <div v-for="file in searchResults" :key="file.id">
-        <FileItemComponent :file="file" />
-      </div>
+    <div v-if="searchResults.length > 0" class="search-results">
+      <OrderComponent :files="searchResults" />
     </div>
     <div v-else class="no-results">No results found</div>
   </div>
@@ -17,11 +15,10 @@
 
 <script>
 import { ref, computed } from "vue";
-import FileItemComponent from "./FileItemComponent.vue"; // 导入 FileItemComponent 组件
-import store from "../store"; // 导入 store
+import OrderComponent from "./OrderComponent.vue"; // 导入 OrderComponent 组件
 export default {
   components: {
-    FileItemComponent,
+    OrderComponent,
   },
   props: {
     files: {
@@ -44,29 +41,6 @@ export default {
       searchQuery,
       searchResults,
     };
-  },
-  computed: {
-    listStyle() {
-      if (store.state.viewMode === "card") {
-        return {
-          display: "flex",
-          flexWrap: "wrap",
-          padding: 0,
-        };
-      } else if (store.state.viewMode === "list") {
-        return {
-          display: "inline",
-          "flex-wrap": "nowrap",
-          padding: 0,
-        };
-      } else {
-        return {
-          display: "inline",
-          "flex-wrap": "nowrap",
-          padding: 0,
-        };
-      }
-    },
   },
 };
 </script>

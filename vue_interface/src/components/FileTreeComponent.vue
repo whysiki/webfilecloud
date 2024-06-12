@@ -4,28 +4,36 @@
       <div v-if="!Array.isArray(value)">
         <!-- <div @click="toggleFolder(key)" class="folder-title">{{ key }}</div> -->
         <div @click="toggleFolder(key)" class="folder-title">
-          <i :class="folderStates[key] ? 'fas fa-folder-open' : 'fas fa-folder'"></i>
+          <i
+            :class="folderStates[key] ? 'fas fa-folder-open' : 'fas fa-folder'"
+          ></i>
           {{ key }}
         </div>
         <div v-if="folderStates[key]" class="folder-content">
-          <FileTreeComponent :fileTreeSub="value" :parentPath="[...parentPath, key]" />
+          <FileTreeComponent
+            :fileTreeSub="value"
+            :parentPath="[...parentPath, key]"
+          />
         </div>
       </div>
-      <div v-else class="file-tree-items" :style="listStyle">
-        <div v-for="file in value" :key="file.id">
-          <FileItemComponent :file="file" />
-        </div>
+      <div v-else class="file-tree-items">
+        <!-- <div v-for="file in value" :key="file.id"> -->
+        <!-- <FileItemComponent :file="file" /> -->
+        <!-- </div> -->
+        <OrderComponent :files="value" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import FileItemComponent from "./FileItemComponent.vue";
-import store from "../store";
+// import FileItemComponent from "./FileItemComponent.vue";
+// import store from "../store";
+import OrderComponent from "./OrderComponent.vue";
 export default {
   components: {
-    FileItemComponent,
+    // FileItemComponent,
+    OrderComponent,
   },
   props: {
     files: {
@@ -66,16 +74,6 @@ export default {
         return this.buildFileTree(this.files);
       }
     },
-    listStyle() {
-      if (store.state.viewMode === "card") {
-        return {
-          display: "flex",
-          "flex-wrap": "wrap",
-        };
-      } else {
-        return {};
-      }
-    },
   },
   methods: {
     expandAll() {
@@ -97,10 +95,14 @@ export default {
       if (this.folderStates[folderName]) {
         currentNodes = [...this.parentPath, folderName];
       } else {
-        currentNodes = fullPath.length > 1 ? fullPath.slice(0, fullPath.length - 1) : [];
+        currentNodes =
+          fullPath.length > 1 ? fullPath.slice(0, fullPath.length - 1) : [];
       }
 
-      this.emitter.emit("update-current-nodes", JSON.stringify(currentNodes.flat()));
+      this.emitter.emit(
+        "update-current-nodes",
+        JSON.stringify(currentNodes.flat())
+      );
 
       // console.log(currentNodes.flat().join("/"));
     },
