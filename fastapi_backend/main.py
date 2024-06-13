@@ -905,41 +905,41 @@ async def preview_file(
     )
 
 
-# @lru_cache(maxsize=128)
-# def generate_preview_video(video_path, output_path):
-#     try:
-#         duration_command = [
-#             "ffprobe",
-#             "-v",
-#             "error",
-#             "-show_entries",
-#             "format=duration",
-#             "-of",
-#             "default=noprint_wrappers=1:nokey=1",
-#             video_path,
-#         ]
-#         result = subprocess.run(
-#             duration_command, capture_output=True, text=True, shell=True
-#         )
-#         original_duration = float(result.stdout.strip())
-#         preview_duration = min(original_duration, 5.0)
-#         command = [
-#             "ffmpeg",
-#             "-i",
-#             video_path,
-#             "-t",
-#             str(preview_duration),
-#             "-c:v",
-#             "copy",
-#             "-an",
-#             "-y",
-#             output_path,
-#         ]
-#         subprocess.run(command, check=True, shell=True)
-#         return output_path
-#     except Exception as e:
-#         logger.error(f"Error generating video preview: {e}")
-#         raise HTTPException(status_code=500, detail="Error generating video preview")
+@lru_cache(maxsize=128)
+def generate_preview_video(video_path, output_path):
+    try:
+        duration_command = [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            video_path,
+        ]
+        result = subprocess.run(
+            duration_command, capture_output=True, text=True, shell=True
+        )
+        original_duration = float(result.stdout.strip())
+        preview_duration = min(original_duration, 5.0)
+        command = [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-t",
+            str(preview_duration),
+            "-c:v",
+            "copy",
+            "-an",
+            "-y",
+            output_path,
+        ]
+        subprocess.run(command, check=True, shell=True)
+        return output_path
+    except Exception as e:
+        logger.error(f"Error generating video preview: {e}")
+        raise HTTPException(status_code=500, detail="Error generating video preview")
 
 
 # @app.get("/files/video/preview")
