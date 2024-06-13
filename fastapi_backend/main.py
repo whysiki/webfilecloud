@@ -34,6 +34,7 @@ import io
 import asyncio
 import subprocess
 from urllib.parse import quote
+import imageio
 
 # from concurrent.futures import ThreadPoolExecutor
 from PIL import UnidentifiedImageError
@@ -908,20 +909,23 @@ async def preview_file(
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
-        duration_command = [
-            "ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "default=noprint_wrappers=1:nokey=1",
-            video_path,
-        ]
-        result = subprocess.run(
-            duration_command, capture_output=True, text=True, shell=True
-        )
-        original_duration = float(result.stdout.strip())
+        # duration_command = [
+        #     "ffprobe",
+        #     "-v",
+        #     "error",
+        #     "-show_entries",
+        #     "format=duration",
+        #     "-of",
+        #     "default=noprint_wrappers=1:nokey=1",
+        #     video_path,
+        # ]
+        # result = subprocess.run(duration_command, capture_output=True, text=True)
+        reader = imageio.get_reader(video_path)
+        fps = reader.get_meta_data()["fps"]
+        nframes = reader.count_frames()
+        duration = nframes / fps
+        # return duration
+        original_duration = float(duration)
         preview_duration = min(original_duration, 5.0)
         command = [
             "ffmpeg",
