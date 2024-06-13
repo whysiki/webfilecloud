@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 import io
 import asyncio
+import subprocess
 
 # from concurrent.futures import ThreadPoolExecutor
 from PIL import UnidentifiedImageError
@@ -887,3 +888,85 @@ async def preview_file(
             "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}"
         },
     )
+
+
+@lru_cache(maxsize=128)
+def generate_preview_video(video_path, output_path):
+    try:
+        duration_command = [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            video_path,
+        ]
+        result = subprocess.run(
+            duration_command, capture_output=True, text=True, shell=True
+        )
+        original_duration = float(result.stdout.strip())
+        preview_duration = min(original_duration, 5.0)
+        command = [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-t",
+            str(preview_duration),
+            "-c:v",
+            "copy",
+            "-an",
+            "-y",
+            output_path,
+        ]
+        subprocess.run(command, check=True, shell=True)
+        return output_path
+    except Exception as e:
+        logger.error(f"Error generating video preview: {e}")
+        raise HTTPException(status_code=500, detail="Error generating video preview")
+
+
+@app.get("/files/video/preview")
+async def preview_video_file(
+    file_id: str,
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+    file = crud.get_file_by_id(db, file_id=file_id)
+
+    if file.file_owner_name != user.username:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    if not crud.is_fileid_in_user_files(db, user, file.id):
+        raise HTTPException(
+            status_code=404, detail="File not found in user's file list"
+        )
+
+    if (
+        not file.file_preview_path
+        or not os.path.exists(file.file_preview_path)
+        or os.path.getsize(file.file_preview_path) == 0
+    ):
+
+        file.file_preview_path = os.path.join("cache", f"{file.id}_preview.mp4")
+        os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            await loop.run_in_executor(
+                executor, generate_preview_video, file.file_path, file.file_preview_path
+            )
+    mime_type = "video/mp4"
+
+    with open(file.file_preview_path, "rb") as f:
+        return StreamingResponse(
+            f,
+            media_type=mime_type,
+            headers={
+                "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}.mp4"
+            },
+        )

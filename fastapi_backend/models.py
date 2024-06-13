@@ -43,6 +43,7 @@ class File(Base):
     file_create_time = Column(String)
     file_type = Column(String, default="binary")
     file_nodes = Column(ARRAY(String), default=[])
+    file_preview_path = Column(String, default="")
 
 
 # Create database engine
