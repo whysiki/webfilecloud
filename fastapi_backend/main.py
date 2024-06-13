@@ -33,6 +33,7 @@ from PIL import Image
 import io
 import asyncio
 import subprocess
+from urllib.parse import quote
 
 # from concurrent.futures import ThreadPoolExecutor
 from PIL import UnidentifiedImageError
@@ -894,12 +895,12 @@ async def preview_file(
 
     mime_type, _ = mimetypes.guess_type(file.file_path)
 
+    filename = quote(os.path.basename(file.file_path))  # URL encode the filename
+
     return StreamingResponse(
         io.BytesIO(thumbnail_data),
         media_type=mime_type,
-        headers={
-            "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}"
-        },
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
     )
 
 
