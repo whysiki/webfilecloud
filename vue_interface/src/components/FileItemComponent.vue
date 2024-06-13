@@ -573,13 +573,16 @@ export default {
     async createVideoUrl(file) {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(`/files/download?file_id=${file.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/octet-stream",
-          },
-          responseType: "blob",
-        });
+        const response = await axios.get(
+          `/files/video/preview?file_id=${file.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/octet-stream",
+            },
+            responseType: "blob",
+          }
+        );
         const url = window.URL.createObjectURL(new Blob([response.data]));
         return url;
       } catch (error) {

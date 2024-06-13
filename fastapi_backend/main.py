@@ -946,46 +946,46 @@ def generate_preview_video(video_path, output_path):
         raise HTTPException(status_code=500, detail="Error generating video preview")
 
 
-# @app.get("/files/video/preview")
-# async def preview_video_file(
-#     file_id: str,
-#     Authorization: Optional[str] = Header(None),
-#     db: Session = Depends(get_db),
-# ):
+@app.get("/files/video/preview")
+async def preview_video_file(
+    file_id: str,
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
 
-#     access_token = auth.get_access_token_from_Authorization(Authorization)
-#     username: str = get_current_username(access_token)
-#     user = crud.get_user_by_username(db, username)
-#     file = crud.get_file_by_id(db, file_id=file_id)
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+    file = crud.get_file_by_id(db, file_id=file_id)
 
-#     if file.file_owner_name != user.username:
-#         raise HTTPException(status_code=403, detail="Permission denied")
+    if file.file_owner_name != user.username:
+        raise HTTPException(status_code=403, detail="Permission denied")
 
-#     if not crud.is_fileid_in_user_files(db, user, file.id):
-#         raise HTTPException(
-#             status_code=404, detail="File not found in user's file list"
-#         )
+    if not crud.is_fileid_in_user_files(db, user, file.id):
+        raise HTTPException(
+            status_code=404, detail="File not found in user's file list"
+        )
 
-#     if (
-#         not file.file_preview_path
-#         or not os.path.exists(file.file_preview_path)
-#         or os.path.getsize(file.file_preview_path) == 0
-#     ):
+    if (
+        not file.file_preview_path
+        or not os.path.exists(file.file_preview_path)
+        or os.path.getsize(file.file_preview_path) == 0
+    ):
 
-#         file.file_preview_path = os.path.join("cache", f"{file.id}_preview.mp4")
-#         os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
-#         loop = asyncio.get_running_loop()
-#         with ThreadPoolExecutor(max_workers=4) as executor:
-#             await loop.run_in_executor(
-#                 executor, generate_preview_video, file.file_path, file.file_preview_path
-#             )
-#     mime_type = "video/mp4"
+        file.file_preview_path = os.path.join("cache", f"{file.id}_preview.mp4")
+        os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            await loop.run_in_executor(
+                executor, generate_preview_video, file.file_path, file.file_preview_path
+            )
+    mime_type = "video/mp4"
 
-#     with open(file.file_preview_path, "rb") as f:
-#         return StreamingResponse(
-#             f,
-#             media_type=mime_type,
-#             headers={
-#                 "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}.mp4"
-#             },
-#         )
+    with open(file.file_preview_path, "rb") as f:
+        return StreamingResponse(
+            f,
+            media_type=mime_type,
+            headers={
+                "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}.mp4"
+            },
+        )
