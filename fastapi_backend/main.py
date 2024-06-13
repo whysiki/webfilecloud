@@ -841,16 +841,29 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
             image.save(img_byte_arr, format=image.format)
             img_byte_arr.seek(0)
             return img_byte_arr.getvalue()
-    except UnidentifiedImageError:
-        raise HTTPException(
-            status_code=400, detail="File is not a supported image type"
-        )
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File path not found")
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error generating image preview: {e}"
-        )
+        # Open the specified image and return its data
+        if os.path.exists("whysiki.jpg"):
+            with Image.open("whysiki.jpg") as image:
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format=image.format)
+                img_byte_arr.seek(0)
+                return img_byte_arr.getvalue()
+        white_image = Image.new("RGB", size, (255, 255, 255))
+        img_byte_arr = io.BytesIO()
+        white_image.save(img_byte_arr, format="JPEG")
+        img_byte_arr.seek(0)
+        return img_byte_arr.getvalue()
+    # except UnidentifiedImageError:
+    #     raise HTTPException(
+    #         status_code=400, detail="File is not a supported image type"
+    #     )
+    # except FileNotFoundError:
+    #     raise HTTPException(status_code=404, detail="File path not found")
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500, detail=f"Error generating image preview: {e}"
+    #     )
 
 
 @app.get("/files/img/preview")
