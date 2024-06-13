@@ -54,3 +54,10 @@ class User(Config):
 
     # 头像最大大小
     PROFILE_IMAGE_MAX_FILE_SIZE: int = 1024 * 1024 * 3
+
+
+class File(Config):
+
+    LOAD_ERROR_IMG = "whysiki_load_error.jpg"
+
+    assert os.path.exists(LOAD_ERROR_IMG), "Load error image not found."

@@ -844,8 +844,9 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
             return img_byte_arr.getvalue()
     except Exception as e:
         # Open the specified image and return its data
-        if os.path.exists("whysiki.jpg"):
-            with Image.open("whysiki.jpg") as image:
+        LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
+        if os.path.exists(LOAD_ERROR_IMG):
+            with Image.open(LOAD_ERROR_IMG) as image:
                 img_byte_arr = io.BytesIO()
                 image.save(img_byte_arr, format=image.format)
                 img_byte_arr.seek(0)
