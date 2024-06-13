@@ -167,7 +167,6 @@ export default {
   },
   async created() {
     await this.fetchAvatar();
-    // await this.fetchFiles;
   },
   methods: {
     checkImage(url) {

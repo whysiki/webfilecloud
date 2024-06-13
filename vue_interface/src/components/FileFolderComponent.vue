@@ -1,4 +1,5 @@
 <template>
+  <SeachComponent :files="files" v-if="showSearch" />
   <div class="file-folder-view">
     <!-- 导航条 -->
     <nav class="navigation-bar">
@@ -41,6 +42,7 @@ import axios from "../axios";
 import OrderComponent from "./OrderComponent";
 import eventBus from "../eventBus";
 import { ref } from "vue";
+import SeachComponent from "./SearchComponent";
 const eventNames = [
   "file-uploaded",
   "one-file-deleted",
@@ -53,12 +55,14 @@ const eventNames = [
 export default {
   components: {
     OrderComponent,
+    SeachComponent,
   },
   data() {
     return {
       subDirectories: [], // 当前路径下的子文件夹
       currentPath: [], // 当前路径
       showOrderComponent: true,
+      showSearch: false,
     };
   },
   setup() {
@@ -74,9 +78,15 @@ export default {
   mounted() {
     this.handleEvent = () => this.navigateTo(this.currentPath);
     eventNames.forEach((event) => eventBus.on(event, this.handleEvent));
+    eventBus.on("toggle-search", (value) => {
+      this.showSearch = value;
+    });
   },
   beforeUnmount() {
     eventNames.forEach((event) => eventBus.off(event, this.handleEvent));
+    eventBus.off("toggle-search", (value) => {
+      this.showSearch = value;
+    });
   },
   methods: {
     goBack() {
