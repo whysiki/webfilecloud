@@ -146,6 +146,12 @@
           controls
           class="file-preview video-preview"
         ></video>
+        <!-- <img
+          :src="fileImageUrl"
+          alt="Image preview"
+          class="file-preview video-preview"
+          v-else-if="isVideoFile && fileImageUrl"
+        /> -->
         <img
           :src="fileImageUrl"
           alt="Image preview"
@@ -313,15 +319,22 @@ export default {
       immediate: true,
       handler(newFile) {
         if (newFile && this.isShowPreview) {
-          if (newFile.file_size > 1024 * 1024 * 5) {
+          if (newFile.file_size > 1024 * 1024 * 10) {
             this.fileContent = null;
             this.fileImageUrl = null;
           } else if (this.isTextFile) {
+            // 文本文件
             this.getFileContent(newFile).then((content) => {
               this.fileContent = content;
             });
-          } else if (this.isImageFile || this.isVideoFile) {
+          } else if (this.isImageFile) {
+            // 图片文件
             this.createImageUrl(newFile).then((url) => {
+              this.fileImageUrl = url;
+            });
+          } else if (this.isVideoFile) {
+            // 视频文件
+            this.createVideoUrl(newFile).then((url) => {
               this.fileImageUrl = url;
             });
           }
@@ -536,6 +549,30 @@ export default {
     async createImageUrl(file) {
       try {
         const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `/files/img/preview?file_id=${file.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/octet-stream",
+            },
+            responseType: "blob",
+          }
+        );
+        // console.log("img preview");
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        return url;
+      } catch (error) {
+        await this.$refs.alertPopup.showAlert(
+          `Error creating image URL: ${error.message}`
+        );
+        return null;
+      }
+    },
+
+    async createVideoUrl(file) {
+      try {
+        const token = localStorage.getItem("token");
         const response = await axios.get(`/files/download?file_id=${file.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -552,7 +589,8 @@ export default {
         return null;
       }
     },
-    async readAsText(blob, encoding = "UTF-8") {
+
+    async readAsText(blob, encoding = "GBK") {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => resolve(event.target.result);

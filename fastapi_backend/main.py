@@ -27,6 +27,16 @@ import json
 import numpy
 import utility
 from pathlib import Path
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+from PIL import Image
+import io
+import asyncio
+
+# from concurrent.futures import ThreadPoolExecutor
+from PIL import UnidentifiedImageError
+import mimetypes
+import ffmpeg
 
 
 # 注册用户
@@ -821,5 +831,114 @@ async def upload_profile_image(
     )
 
 
-# 计算文件预览
-# @app.get("/file"
+@lru_cache(maxsize=128)
+def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
+    try:
+        with Image.open(file_path) as image:
+            image.thumbnail(size)
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format=image.format)
+            img_byte_arr.seek(0)
+            return img_byte_arr.getvalue()
+    except UnidentifiedImageError:
+        raise HTTPException(
+            status_code=400, detail="File is not a supported image type"
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File path not found")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error generating image preview: {e}"
+        )
+
+
+@app.get("/files/img/preview")
+async def preview_file(
+    file_id: str,
+    Authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+
+    access_token = auth.get_access_token_from_Authorization(Authorization)
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+    file = crud.get_file_by_id(db, file_id=file_id)
+
+    if file.file_owner_name != user.username:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    if not crud.is_fileid_in_user_files(db, user, file.id):
+        raise HTTPException(
+            status_code=404, detail="File not found in user's file list"
+        )
+
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        thumbnail_data = await loop.run_in_executor(
+            executor, generate_thumbnail, file.file_path
+        )
+
+    mime_type, _ = mimetypes.guess_type(file.file_path)
+
+    return StreamingResponse(
+        io.BytesIO(thumbnail_data),
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}"
+        },
+    )
+
+
+# ## 生成视频预览
+# def generate_video_preview(
+#     file_path: str, start_time: float = 0, duration: float = 5
+# ) -> bytes:
+#     try:
+#         out, _ = (
+#             ffmpeg.input(file_path, ss=start_time, t=duration)
+#             .output("pipe:", format="mp4")
+#             .run(capture_stdout=True, capture_stderr=True)
+#         )
+#         return out
+#     except ffmpeg.Error as e:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Error generating video preview: {e.stderr.decode()}",
+#         )
+
+
+# ## 视频预览
+# @app.get("/files/video/preview")
+# async def preview_video_file(
+#     file_id: str,
+#     Authorization: Optional[str] = Header(None),
+#     db: Session = Depends(get_db),
+# ):
+
+#     access_token = auth.get_access_token_from_Authorization(Authorization)
+#     username: str = get_current_username(access_token)
+#     user = crud.get_user_by_username(db, username)
+#     file = crud.get_file_by_id(db, file_id=file_id)
+
+#     if file.file_owner_name != user.username:
+#         raise HTTPException(status_code=403, detail="Permission denied")
+
+#     if not crud.is_fileid_in_user_files(db, user, file.id):
+#         raise HTTPException(
+#             status_code=404, detail="File not found in user's file list"
+#         )
+
+#     loop = asyncio.get_running_loop()
+#     with ThreadPoolExecutor(max_workers=4) as executor:
+#         preview_data = await loop.run_in_executor(
+#             executor, generate_video_preview, file.file_path
+#         )
+#     mime_type = "video/mp4"
+
+#     return StreamingResponse(
+#         io.BytesIO(preview_data),
+#         media_type=mime_type,
+#         headers={
+#             "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}.mp4"
+#         },
+#     )
