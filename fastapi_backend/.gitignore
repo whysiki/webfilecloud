@@ -18,3 +18,4 @@
 /deploy.bat
 /.env
 /static
+/test_preview.py
