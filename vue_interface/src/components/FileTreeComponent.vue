@@ -27,7 +27,6 @@
 import NavigationBar from "./NavigationBar.vue";
 import OrderComponent from "./OrderComponent.vue";
 import eventBus from "../eventBus";
-// const events = ["expand-all", "collapse-all"];
 export default {
   components: {
     OrderComponent,
@@ -85,7 +84,6 @@ export default {
     },
     toggleFolder(folderName) {
       this.folderStates[folderName] = !this.folderStates[folderName];
-      // 获取完整的路径
       const fullPath = [...this.parentPath, folderName];
 
       let currentNodes = fullPath;

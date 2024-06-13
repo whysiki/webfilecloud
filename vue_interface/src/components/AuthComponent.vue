@@ -47,16 +47,14 @@ export default {
   components: {},
   data() {
     return {
-      username: "", // 初始化 username 数据属性
-      password: "", // 初始化 password 数据属性
-      isLogin: true, // 初始化 isLogin 数据属性
+      username: "",
+      password: "",
+      isLogin: true,
     };
   },
   methods: {
     async login() {
-      // 定义 login 方法
       try {
-        // 发送 POST 请求到 /users/login，请求体中包含 username 和 password
         const response = await axios.post("/users/login", {
           username: this.username,
           password: this.password,
@@ -77,10 +75,14 @@ export default {
       } catch (error) {
         if (error.response) {
           // 请求已发送，服务器返回了一个非 2xx 的状态码
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`); // 显示错误信息
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          ); // 显示错误信息
         } else if (error.request) {
           // 请求已发送，但没有收到响应
-          await this.$refs.alertPopup.showAlert("Error: No response from server"); // 显示错误信息
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          ); // 显示错误信息
         } else {
           // 设置请求时发生了错误
           await this.$refs.alertPopup.showAlert("Error", error.message); // 显示错误信息
@@ -105,9 +107,13 @@ export default {
       } catch (error) {
         // 如果请求失败，显示错误信息
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
+          await this.$refs.alertPopup.showAlert(
+            `Error: ${error.response.data.detail}`
+          );
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert("Error: No response from server");
+          await this.$refs.alertPopup.showAlert(
+            "Error: No response from server"
+          );
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
