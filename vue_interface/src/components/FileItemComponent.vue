@@ -178,39 +178,6 @@ import axiosModule from "axios";
 import store from "../store";
 import eventBus from "../eventBus";
 
-// 监听事件
-const events = [
-  {
-    name: "expand-all",
-    handler: () => {
-      this.showfileCardDetails = true;
-    },
-  },
-  {
-    name: "collapse-all",
-    handler: () => {
-      this.showfileCardDetails = false;
-    },
-  },
-  {
-    name: "clear-selected-files",
-    handler: () => {
-      this.selected = false;
-    },
-  },
-  {
-    name: "select-all-files",
-    handler: () => {
-      this.selected = true;
-    },
-  },
-  {
-    name: "cancel-all-requests",
-    handler: () => {
-      this.showdownloadProgressBar = false;
-    },
-  },
-];
 export default {
   props: {
     file: {
@@ -235,6 +202,41 @@ export default {
   },
 
   computed: {
+    // 监听事件
+    events() {
+      return [
+        {
+          name: "expand-all",
+          handler: () => {
+            this.showfileCardDetails = true;
+          },
+        },
+        {
+          name: "collapse-all",
+          handler: () => {
+            this.showfileCardDetails = false;
+          },
+        },
+        {
+          name: "clear-selected-files",
+          handler: () => {
+            this.selected = false;
+          },
+        },
+        {
+          name: "select-all-files",
+          handler: () => {
+            this.selected = true;
+          },
+        },
+        {
+          name: "cancel-all-requests",
+          handler: () => {
+            this.showdownloadProgressBar = false;
+          },
+        },
+      ];
+    },
     toShowSingleFileItemControlButton() {
       return store.state.toShowSingleFileItemControlButton;
     },
@@ -292,7 +294,7 @@ export default {
     },
   },
   mounted() {
-    this.eventHandlers = events.map((event) => {
+    this.eventHandlers = this.events.map((event) => {
       eventBus.on(event.name, event.handler);
       return event;
     });
