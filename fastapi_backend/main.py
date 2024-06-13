@@ -909,23 +909,14 @@ async def preview_file(
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
-        # duration_command = [
-        #     "ffprobe",
-        #     "-v",
-        #     "error",
-        #     "-show_entries",
-        #     "format=duration",
-        #     "-of",
-        #     "default=noprint_wrappers=1:nokey=1",
-        #     video_path,
-        # ]
-        # result = subprocess.run(duration_command, capture_output=True, text=True)
+        assert os.path.exists(video_path), f"Video file not found {video_path}"
         reader = imageio.get_reader(video_path)
         fps = reader.get_meta_data()["fps"]
         nframes = reader.count_frames()
         duration = nframes / fps
         # return duration
         original_duration = float(duration)
+        logger.debug(f"Original video duration: {original_duration}")
         preview_duration = min(original_duration, 5.0)
         command = [
             "ffmpeg",
@@ -939,8 +930,15 @@ def generate_preview_video(video_path, output_path):
             "-y",
             output_path,
         ]
-        subprocess.run(command, check=True, shell=True)
+        # subprocess.run(command, check=True, shell=True)
+        command_str = " ".join(command)
+        subprocess.run(command_str, check=True, shell=True)
         return output_path
+    except subprocess.CalledProcessError as e:
+        logger.error(f"ffmpeg command failed with exit status {e.returncode}")
+        logger.error(f"ffmpeg output: {e.output}")
+        logger.error(f"ffmpeg error: {e.stderr}")
+        raise HTTPException(status_code=500, detail="Error generating video preview")
     except Exception as e:
         logger.error(f"Error generating video preview: {e}")
         raise HTTPException(status_code=500, detail="Error generating video preview")
@@ -977,15 +975,22 @@ async def preview_video_file(
         loop = asyncio.get_running_loop()
         with ThreadPoolExecutor(max_workers=4) as executor:
             await loop.run_in_executor(
-                executor, generate_preview_video, file.file_path, file.file_preview_path
+                executor,
+                generate_preview_video,
+                # os.path.join(file.file_path, file.filename),
+                file.file_path,
+                file.file_preview_path,
             )
+
     mime_type = "video/mp4"
+
+    filename = quote(os.path.basename(file.file_path).replace(".", "_"))
 
     with open(file.file_preview_path, "rb") as f:
         return StreamingResponse(
             f,
             media_type=mime_type,
             headers={
-                "Content-Disposition": f"attachment; filename=preview_{os.path.basename(file.file_path)}.mp4"
+                "Content-Disposition": f"attachment; filename=preview_{filename}.mp4"
             },
         )
