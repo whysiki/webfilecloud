@@ -298,6 +298,18 @@ export default {
     isShowPreview() {
       return store.state.toPreviewFile;
     },
+    previewFileSize() {
+      if (
+        store.state.previewFileSize &&
+        typeof store.state.previewFileSize === "number" &&
+        store.state.previewFileSize > 0
+      ) {
+        //单位mb
+        return store.state.previewFileSize;
+      } else {
+        return 10;
+      }
+    },
   },
   mounted() {
     this.eventHandlers = this.events.map((event) => {
@@ -309,7 +321,6 @@ export default {
     this.eventHandlers.forEach((event) =>
       eventBus.off(event.name, event.handler)
     );
-
     if (store.state.selectedFiles.includes(this.file)) {
       store.commit("removeSelectedFile", this.file);
     }
@@ -318,8 +329,10 @@ export default {
     file: {
       immediate: true,
       handler(newFile) {
+        // console.log("previewFileSize", this.previewFileSize);
+        // console.log("previewFileSizetype", typeof this.previewFileSize);
         if (newFile && this.isShowPreview) {
-          if (newFile.file_size > 1024 * 1024 * 10) {
+          if (newFile.file_size > 1024 * 1024 * this.previewFileSize) {
             this.fileContent = null;
             this.fileImageUrl = null;
           } else if (this.isTextFile) {
@@ -593,7 +606,7 @@ export default {
       }
     },
 
-    async readAsText(blob, encoding = "GBK") {
+    async readAsText(blob, encoding = "UTF-8") {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => resolve(event.target.result);

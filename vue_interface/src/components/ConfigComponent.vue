@@ -45,6 +45,23 @@
         class="setting-switch"
       ></n-switch>
     </div>
+    <div class="setting-item">
+      <span class="setting-label">
+        Preview File Size
+        <span
+          :class="{
+            'text-green': whatpreviewFileSize < 50,
+            'text-red': whatpreviewFileSize >= 50,
+          }"
+          >{{ whatpreviewFileSize }}</span
+        >
+      </span>
+      <n-input
+        v-model:value="previewFileSize"
+        class="setting-input"
+        type="number"
+      ></n-input>
+    </div>
     <n-button
       class="setting-button"
       @click="clearCache"
@@ -63,13 +80,15 @@
 <script>
 import { ref } from "vue";
 import store from "../store";
-import { NButton, NSwitch } from "naive-ui";
+import { NButton, NSwitch, NInput } from "naive-ui";
 export default {
   components: {
     NButton,
     NSwitch,
+    NInput,
   },
   setup() {
+    const previewFileSize = ref(store.state.previewFileSize);
     const toPreviewFile = ref(store.state.toPreviewFile);
     const toMouseEventFileItem = ref(store.state.toMouseEventFileItem);
     const toShowSingleFileItemControlButton = ref(
@@ -88,9 +107,14 @@ export default {
       toShowSingleFileItemControlButton,
       clearCache,
       clearStore,
+      previewFileSize,
     };
   },
   watch: {
+    previewFileSize(newVal) {
+      //类型转为数字
+      store.commit("setPreviewFileSize", Number(newVal));
+    },
     toPreviewFile(newVal) {
       store.commit("setToPreviewFile", newVal);
     },
@@ -102,6 +126,9 @@ export default {
     },
   },
   computed: {
+    whatpreviewFileSize() {
+      return store.state.previewFileSize;
+    },
     istoPreviewFile() {
       return store.state.toPreviewFile;
     },
@@ -114,3 +141,12 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.setting-input {
+  margin-left: auto;
+  border: 2px solid #3498db;
+  width: 100px;
+  border-radius: 20px;
+}
+</style>

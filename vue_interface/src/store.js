@@ -1,5 +1,6 @@
 import { createStore } from "vuex";
 import axios from "./axios";
+// import { set } from "core-js/core/dict";
 
 export default createStore({
   state: {
@@ -15,6 +16,7 @@ export default createStore({
     username: "",
     token: "",
     toPreviewFile: false,
+    previewFileSize: 10, //10M
     toMouseEventFileItem: false,
     toShowSingleFileItemControlButton: false,
   },
@@ -64,6 +66,9 @@ export default createStore({
     ) {
       state.toShowSingleFileItemControlButton =
         toShowSingleFileItemControlButton;
+    },
+    setPreviewFileSize(state, previewFileSize) {
+      state.previewFileSize = previewFileSize;
     },
     clearStore(state) {
       state.files = [];
