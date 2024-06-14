@@ -33,6 +33,7 @@ class UserShow(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token : str = Field("", title="refresh_token")
 
 
 # 文件模型, SQLAlchemy 模型

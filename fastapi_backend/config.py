@@ -61,3 +61,5 @@ class File(Config):
     LOAD_ERROR_IMG = "whysiki_load_error.jpg"
 
     assert os.path.exists(LOAD_ERROR_IMG), "Load error image not found."
+    
+    PREVIEW_FILES_PATH: str = os.path.join("cache","preview")

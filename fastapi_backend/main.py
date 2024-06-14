@@ -8,7 +8,7 @@ import schemas
 import crud  # 数据库操作
 from auth import pwd_context, create_access_token, get_current_username
 from fastapi import File, UploadFile
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import shutil
 from fastapi import Header
@@ -65,7 +65,8 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(data={"sub": user_in.username})
-    return schemas.Token(access_token=access_token, token_type="bearer")
+    refresh_token= create_access_token(data={"sub": user_in.username},expires_delta=timedelta(config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
+    return schemas.Token(access_token=access_token, token_type="bearer",refresh_token=refresh_token)
 
 
 # 更新access_token
@@ -77,12 +78,16 @@ async def refresh_token(Authorization: Optional[str] = Header(None)):
     ##
     ##  通过access_token获取用户名，然后再生成新的access_token
     access_token = create_access_token(data={"sub": username})
+    
+    refresh_token= create_access_token(data={"sub": username},expires_delta=timedelta(config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
 
     test_username = get_current_username(access_token)
+    
+    test_username_refresh = get_current_username(refresh_token)
 
-    if not test_username == username:
+    if not (test_username == username == test_username_refresh):
         raise HTTPException(status_code=401, detail="refresh token failed")
-    return schemas.Token(access_token=access_token, token_type="bearer")
+    return schemas.Token(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
 
 
 # 删除用户
@@ -858,6 +863,7 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
         return img_byte_arr.getvalue()
 
 
+# 图片预览
 @app.get("/files/img/preview")
 async def preview_file(
     file_id: str,
@@ -895,7 +901,6 @@ async def preview_file(
     )
 
 
-
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
@@ -913,12 +918,12 @@ def generate_preview_video(video_path, output_path):
         ]
         result = subprocess.run(duration_command, capture_output=True, text=True)
         original_duration = float(result.stdout.strip())
-        
+
         print(f"原视频时长: {original_duration}秒")
 
         # 确定裁剪的时长（最多5秒）
         preview_duration = min(original_duration, 5.0)
-        
+
         try:
 
             # 构建ffmpeg命令
@@ -943,9 +948,9 @@ def generate_preview_video(video_path, output_path):
             # 执行ffmpeg命令
             subprocess.run(command, check=True)
         except:
-            
+
             logger.warning("default video width ..")
-            
+
             # 构建ffmpeg命令
             command = [
                 r"ffmpeg",
@@ -967,7 +972,7 @@ def generate_preview_video(video_path, output_path):
             ]
             # 执行ffmpeg命令
             subprocess.run(command, check=True)
-        
+
         return output_path
     except subprocess.CalledProcessError as e:
         logger.error(f"ffmpeg command failed with exit status {e.returncode}")
@@ -977,7 +982,6 @@ def generate_preview_video(video_path, output_path):
     except Exception as e:
         logger.error(f"Error generating video preview: {e}")
         raise HTTPException(status_code=500, detail="Error generating video preview")
-
 
 
 # 视频预览
@@ -1007,15 +1011,20 @@ async def preview_video_file(
         or os.path.getsize(file.file_preview_path) < 100
     ):
 
-        file.file_preview_path = os.path.join("cache", f"{file.id}_preview.mp4")
+        file.file_preview_path = os.path.join(
+            config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
+        )
         os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
-        generate_preview_video(file.file_path,file.file_preview_path)
+        generate_preview_video(file.file_path, file.file_preview_path)
 
     mime_type = "video/mp4"
 
     filename = quote(os.path.basename(file.file_path).replace(".", "_"))
 
-    if os.path.exists(file.file_preview_path) and os.path.getsize(file.file_preview_path) > 0:
+    if (
+        os.path.exists(file.file_preview_path)
+        and os.path.getsize(file.file_preview_path) > 0
+    ):
         return FileResponse(
             file.file_preview_path,
             media_type=mime_type,
@@ -1024,5 +1033,6 @@ async def preview_video_file(
             },
         )
     else:
-        raise HTTPException(status_code=500, detail="Error: Preview file not found or empty")
-
+        raise HTTPException(
+            status_code=500, detail="Error: Preview file not found or empty"
+        )
