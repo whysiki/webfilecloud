@@ -19,7 +19,7 @@ minimum_size = Config.GZIP_MINIMUM_SIZE
 # ]
 
 
-app = FastAPI()
+app = FastAPI(debug=True)
 
 app.add_middleware(
     CORSMiddleware,

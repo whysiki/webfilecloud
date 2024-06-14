@@ -844,7 +844,6 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
             img_byte_arr.seek(0)
             return img_byte_arr.getvalue()
     except Exception as e:
-        # Open the specified image and return its data
         LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
         if os.path.exists(LOAD_ERROR_IMG):
             with Image.open(LOAD_ERROR_IMG) as image:
@@ -857,16 +856,6 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
         white_image.save(img_byte_arr, format="JPEG")
         img_byte_arr.seek(0)
         return img_byte_arr.getvalue()
-    # except UnidentifiedImageError:
-    #     raise HTTPException(
-    #         status_code=400, detail="File is not a supported image type"
-    #     )
-    # except FileNotFoundError:
-    #     raise HTTPException(status_code=404, detail="File path not found")
-    # except Exception as e:
-    #     raise HTTPException(
-    #         status_code=500, detail=f"Error generating image preview: {e}"
-    #     )
 
 
 @app.get("/files/img/preview")
@@ -897,7 +886,7 @@ async def preview_file(
 
     mime_type, _ = mimetypes.guess_type(file.file_path)
 
-    filename = quote(os.path.basename(file.file_path))  # URL encode the filename
+    filename = quote(os.path.basename(file.file_path))
 
     return StreamingResponse(
         io.BytesIO(thumbnail_data),
@@ -906,33 +895,79 @@ async def preview_file(
     )
 
 
+
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
-        assert os.path.exists(video_path), f"Video file not found {video_path}"
-        reader = imageio.get_reader(video_path)
-        fps = reader.get_meta_data()["fps"]
-        nframes = reader.count_frames()
-        duration = nframes / fps
-        # return duration
-        original_duration = float(duration)
-        logger.debug(f"Original video duration: {original_duration}")
-        preview_duration = min(original_duration, 5.0)
-        command = [
-            "ffmpeg",
-            "-i",
-            video_path,
-            "-t",
-            str(preview_duration),
-            "-c:v",
-            "copy",
-            "-an",
-            "-y",
-            output_path,
+        assert os.path.exists(video_path), "视频路径不存在"
+        # 获取原视频的时长
+        duration_command = [
+            r"ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            f"{str(video_path)}",
         ]
-        # subprocess.run(command, check=True, shell=True)
-        command_str = " ".join(command)
-        subprocess.run(command_str, check=True, shell=True)
+        result = subprocess.run(duration_command, capture_output=True, text=True)
+        original_duration = float(result.stdout.strip())
+        
+        print(f"原视频时长: {original_duration}秒")
+
+        # 确定裁剪的时长（最多5秒）
+        preview_duration = min(original_duration, 5.0)
+        
+        try:
+
+            # 构建ffmpeg命令
+            command = [
+                r"ffmpeg",
+                "-i",
+                f"{video_path}",  # 输入视频文件路径
+                "-t",
+                str(preview_duration),  # 截取视频的时长，最多为5秒
+                "-vf",
+                "scale=-1:360",  # 设置视频高度为360p，宽度按比例缩放
+                "-c:v",
+                "libx264",  # 使用H.264编解码器
+                "-crf",
+                "30",  # 设置CRF值，数值越小质量越好，文件越大
+                "-preset",
+                "ultrafast",
+                "-an",  # 去除音频
+                "-y",  # 覆盖已存在的输出文件
+                f"{output_path}",  # 输出视频文件路径
+            ]
+            # 执行ffmpeg命令
+            subprocess.run(command, check=True)
+        except:
+            
+            logger.warning("default video width ..")
+            
+            # 构建ffmpeg命令
+            command = [
+                r"ffmpeg",
+                "-i",
+                f"{video_path}",  # 输入视频文件路径
+                "-t",
+                str(preview_duration),  # 截取视频的时长，最多为5秒
+                # "-vf",
+                # "scale=-1:360",  # 设置视频高度为360p，宽度按比例缩放
+                "-c:v",
+                "libx264",  # 使用H.264编解码器
+                "-crf",
+                "30",  # 设置CRF值，数值越小质量越好，文件越大
+                "-preset",
+                "ultrafast",
+                "-an",  # 去除音频
+                "-y",  # 覆盖已存在的输出文件
+                f"{output_path}",  # 输出视频文件路径
+            ]
+            # 执行ffmpeg命令
+            subprocess.run(command, check=True)
+        
         return output_path
     except subprocess.CalledProcessError as e:
         logger.error(f"ffmpeg command failed with exit status {e.returncode}")
@@ -944,6 +979,8 @@ def generate_preview_video(video_path, output_path):
         raise HTTPException(status_code=500, detail="Error generating video preview")
 
 
+
+# 视频预览
 @app.get("/files/video/preview")
 async def preview_video_file(
     file_id: str,
@@ -967,30 +1004,25 @@ async def preview_video_file(
     if (
         not file.file_preview_path
         or not os.path.exists(file.file_preview_path)
-        or os.path.getsize(file.file_preview_path) == 0
+        or os.path.getsize(file.file_preview_path) < 100
     ):
 
         file.file_preview_path = os.path.join("cache", f"{file.id}_preview.mp4")
         os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
-        loop = asyncio.get_running_loop()
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            await loop.run_in_executor(
-                executor,
-                generate_preview_video,
-                # os.path.join(file.file_path, file.filename),
-                file.file_path,
-                file.file_preview_path,
-            )
+        generate_preview_video(file.file_path,file.file_preview_path)
 
     mime_type = "video/mp4"
 
     filename = quote(os.path.basename(file.file_path).replace(".", "_"))
 
-    with open(file.file_preview_path, "rb") as f:
-        return StreamingResponse(
-            f,
+    if os.path.exists(file.file_preview_path) and os.path.getsize(file.file_preview_path) > 0:
+        return FileResponse(
+            file.file_preview_path,
             media_type=mime_type,
             headers={
                 "Content-Disposition": f"attachment; filename=preview_{filename}.mp4"
             },
         )
+    else:
+        raise HTTPException(status_code=500, detail="Error: Preview file not found or empty")
+

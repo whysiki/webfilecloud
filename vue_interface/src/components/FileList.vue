@@ -94,6 +94,8 @@ export default {
   setup() {
     let files = ref([]);
     provide("files", files);
+
+    let alertPopup = ref(null);
     const fetchFiles = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -110,7 +112,19 @@ export default {
         );
         store.commit("buildTreePathList", treePathList);
       } catch (error) {
-        console.error(error);
+        if (alertPopup.value) {
+          if (error.response) {
+            await alertPopup.value.showAlert(
+              `Error: ${error.response.data.detail}`
+            );
+          } else if (error.request) {
+            await alertPopup.value.showAlert("Error: No response from server");
+          } else {
+            await alertPopup.value.showAlert("Error", error.message);
+          }
+        } else {
+          console.error(error);
+        }
       }
     };
     onMounted(async () => {
@@ -126,7 +140,7 @@ export default {
       // fetchEvents.forEach((event) => eventBus.on(event, asyncFetchFiles));
     });
 
-    return { files, fetchFiles };
+    return { files, fetchFiles, alertPopup };
   },
   data() {
     return {
