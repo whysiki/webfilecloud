@@ -5,6 +5,8 @@ import FileList from "./views/FileListView.vue";
 import UserView from "./views/UserView.vue";
 // import path from "path-browserify";
 import FileFolderView from "./views/FileFolderView.vue";
+import PreviewPage from "./views/PreviewPage.vue";
+// import path from "path-browserify";
 
 const routes = [
   { path: "/", component: Home },
@@ -19,6 +21,10 @@ const routes = [
   {
     path: "/filefolder",
     component: FileFolderView,
+  },
+  {
+    path: "/preview/:type/:filename/:link",
+    component: PreviewPage,
   },
 ];
 

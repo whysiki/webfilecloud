@@ -111,16 +111,31 @@
         >
           <i class="fas fa-edit"></i>
         </button>
-        <a
-          :href="previewLink"
-          download
-          class="preview-button"
-          id="preview-button-single-file"
-          title="Click to preview file image or video or text"
-          @click.stop
+        <!-- //"/preview/:type/:id", -->
+        <router-link
+          :to="`/preview/${file.file_type}/${
+            file.filename
+          }/${encodeURIComponent(previewLink)}`"
         >
-          <i class="fas fa-eye"></i>
-        </a>
+          <!-- <a
+            :href="previewLink"
+            download
+            class="preview-button"
+            id="preview-button-single-file"
+            title="Click to preview file image or video or text"
+            @click.stop
+          >
+            <i class="fas fa-eye"></i>
+          </a> -->
+          <a
+            class="preview-button"
+            id="preview-button-single-file"
+            title="Click to preview file image or video or text"
+            @click.stop
+          >
+            <i class="fas fa-eye"></i>
+          </a>
+        </router-link>
         <a
           :href="downloadLink"
           download
