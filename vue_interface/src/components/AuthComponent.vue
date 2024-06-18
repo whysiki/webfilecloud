@@ -63,7 +63,7 @@ export default {
         localStorage.setItem("username", this.username);
         localStorage.setItem("currentNodes", "[]");
 
-        store.commit("setToken", response.data.access_token);
+        // store.commit("setToken", response.data.access_token);
 
         store.commit("setUserName", this.username);
 

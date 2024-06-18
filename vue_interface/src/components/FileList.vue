@@ -83,6 +83,14 @@ const fetchEvents = [
   "batch-files-deleted",
   "one-file-updated",
 ];
+const getPrefixPaths = (arr) => {
+  let prefixPaths = [];
+  for (let i = 1; i <= arr.length; i++) {
+    prefixPaths.push(arr.slice(0, i));
+  }
+  return prefixPaths;
+};
+
 export default {
   components: {
     TypesComponent,
@@ -102,9 +110,20 @@ export default {
         files.value = response.data.files;
         localStorage.setItem("currentFilesLength", files.value.length);
         store.commit("setFiles", response.data.files);
-        const treePathList = response.data.files.map((file) =>
-          file.file_nodes.length > 0 ? file.file_nodes : []
-        );
+        let treePathList = [];
+        let uniquePaths = new Set();
+        response.data.files.forEach((file) => {
+          if (file.file_nodes.length > 0) {
+            let prefixPaths = getPrefixPaths(file.file_nodes);
+            prefixPaths.forEach((path) => {
+              uniquePaths.add(JSON.stringify(path));
+            });
+          }
+        });
+        uniquePaths.forEach((path) => {
+          treePathList.push(JSON.parse(path));
+        });
+        // console.log(treePathList);
         store.commit("buildTreePathList", treePathList);
       } catch (error) {
         if (alertPopup.value) {
