@@ -400,15 +400,10 @@ export default {
     },
     async updateFilename() {
       try {
-        const token = localStorage.getItem("token");
         await axios.post(
           `/file/modifyname?file_id=${this.file.id}&new_file_name=${this.newFilename}`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          {}
         );
         this.isEditingFilename = false;
         eventBus.emit("one-file-updated");
@@ -437,14 +432,10 @@ export default {
     async downloadFile(file) {
       try {
         file.showdownloadProgressBar = true;
-        const token = localStorage.getItem("token");
         file.cancelTokenSource = axiosModule.CancelToken.source();
         const response = await axios.get(
           `/files/download/stream?file_id=${file.id}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
             responseType: "blob",
             onDownloadProgress: (progressEvent) => {
               file.downloadProgress = Math.round(
@@ -492,12 +483,7 @@ export default {
     },
     async deleteFile(fileId) {
       try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`/files/delete?file_id=${fileId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await axios.delete(`/files/delete?file_id=${fileId}`, {});
         this.$refs.alertPopup.showAlert("File deleted successfully");
         eventBus.emit("one-file-deleted");
       } catch (error) {
@@ -536,15 +522,10 @@ export default {
     },
     async moveFile(file_id, newNodesArrayStr) {
       try {
-        const token = localStorage.getItem("token");
         await axios.post(
           `/file/modifynodes?file_nodes=${newNodesArrayStr}&file_id=${file_id}`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          {}
         );
         await this.$refs.alertPopup.showAlert("File moved successfully");
         eventBus.emit("one-file-moved");
@@ -561,12 +542,10 @@ export default {
 
     async createImageUrl(file) {
       try {
-        const token = localStorage.getItem("token");
         const response = await axios.get(
           `/files/img/preview?file_id=${file.id}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "application/octet-stream",
             },
             responseType: "blob",
@@ -585,12 +564,10 @@ export default {
 
     async createVideoUrl(file) {
       try {
-        const token = localStorage.getItem("token");
         const response = await axios.get(
           `/files/video/preview?file_id=${file.id}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "application/octet-stream",
             },
             responseType: "blob",
@@ -616,10 +593,8 @@ export default {
     },
     async getFileContent(file) {
       try {
-        const token = localStorage.getItem("token");
         const response = await axios.get(`/files/download?file_id=${file.id}`, {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/octet-stream",
           },
           responseType: "blob",

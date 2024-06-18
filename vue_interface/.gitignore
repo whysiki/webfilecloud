@@ -33,3 +33,4 @@ deploy.bat
 /whysiki
 /src/store.js
 /tasklist.md
+/.env

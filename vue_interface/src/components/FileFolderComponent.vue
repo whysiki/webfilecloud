@@ -96,15 +96,10 @@ export default {
     async navigateTo(path) {
       this.showOrderComponent = false;
       const fileNodes = JSON.stringify(path);
-      const token = localStorage.getItem("token") || store.state.token;
       try {
         const response = await axios.get(
           `/files/nodefiles?file_nodes=${fileNodes}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          {}
         );
         this.files = response.data.files;
         const subDirectories = this.treePathList.filter(

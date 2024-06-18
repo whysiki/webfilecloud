@@ -14,7 +14,7 @@ class Config:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = os.getenv("ALGORITHM", "")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
-        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "0")
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
     ROOT_USER: str = os.getenv("ROOT_USER", "")
     ROOT_PASSWORD: str = os.getenv("ROOT_PASSWORD", "")

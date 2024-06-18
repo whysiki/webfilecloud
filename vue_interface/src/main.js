@@ -16,6 +16,6 @@ let app = createApp(App);
 app.component("AlertComponent", AlertComponent);
 app.component("PopInputComponent", PopInputComponent);
 app.use(router);
-// app.use(store);
+
 app.config.globalProperties.emitter = emitter;
 app.mount("#app");

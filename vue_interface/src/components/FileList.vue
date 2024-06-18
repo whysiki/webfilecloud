@@ -98,12 +98,7 @@ export default {
     let alertPopup = ref(null);
     const fetchFiles = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("/files/list", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get("/files/list", {});
         files.value = response.data.files;
         localStorage.setItem("currentFilesLength", files.value.length);
         store.commit("setFiles", response.data.files);
@@ -229,10 +224,8 @@ export default {
     },
     async fetchAvatar() {
       try {
-        const token = localStorage.getItem("token");
         const response = await axios.get("/users/profileimage", {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/octet-stream",
           },
           responseType: "blob",

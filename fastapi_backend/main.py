@@ -65,9 +65,8 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(data={"sub": user_in.username})
-    refresh_token= create_access_token(data={"sub": user_in.username},expires_delta=timedelta(config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
+    refresh_token= create_access_token(data={"sub": user_in.username},expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
     return schemas.Token(access_token=access_token, token_type="bearer",refresh_token=refresh_token)
-
 
 # 更新access_token
 @app.post("/users/refresh", response_model=schemas.Token)
@@ -79,7 +78,7 @@ async def refresh_token(Authorization: Optional[str] = Header(None)):
     ##  通过access_token获取用户名，然后再生成新的access_token
     access_token = create_access_token(data={"sub": username})
     
-    refresh_token= create_access_token(data={"sub": username},expires_delta=timedelta(config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
+    refresh_token= create_access_token(data={"sub": username},expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
 
     test_username = get_current_username(access_token)
     
@@ -87,6 +86,8 @@ async def refresh_token(Authorization: Optional[str] = Header(None)):
 
     if not (test_username == username == test_username_refresh):
         raise HTTPException(status_code=401, detail="refresh token failed")
+    
+    logger.debug(f"refresh token :{refresh_token}")
     return schemas.Token(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
 
 

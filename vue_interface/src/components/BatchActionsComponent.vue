@@ -95,11 +95,7 @@ export default {
           try {
             const source = axiosModule.CancelToken.source();
             this.cancelTokens.push(source);
-            const token = localStorage.getItem("token");
             await axios.delete(`/files/delete?file_id=${file.id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
               cancelToken: source.token,
             });
             count++;
@@ -128,14 +124,10 @@ export default {
           try {
             const source = axiosModule.CancelToken.source();
             this.cancelTokens.push(source);
-            const token = localStorage.getItem("token");
             file.showdownloadProgressBar = true;
             const response = await axios.get(
               `/files/download/stream?file_id=${file.id}`,
               {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
                 responseType: "blob",
                 onDownloadProgress: (progressEvent) => {
                   file.downloadProgress = Math.round(
@@ -194,14 +186,10 @@ export default {
             try {
               const source = axiosModule.CancelToken.source();
               this.cancelTokens.push(source);
-              const token = localStorage.getItem("token");
               await axios.post(
                 `/file/modifynodes?file_nodes=${newNodesArrayStr}&file_id=${file.id}`,
                 {},
                 {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
                   cancelToken: source.token,
                 }
               );

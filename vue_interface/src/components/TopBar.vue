@@ -172,13 +172,11 @@ export default {
         formData.append("file", file);
         try {
           this.showProgressBar = true;
-          const token = localStorage.getItem("token");
           await axios.post(
             `/files/upload?file_id=${fileId}&file_nodes=${this.currentUploadStrNodes}`,
             formData,
             {
               headers: {
-                Authorization: `Bearer ${token}`,
                 "Content-Type": "multipart/form-data",
               },
               onUploadProgress: (progressEvent) => {
@@ -258,14 +256,14 @@ export default {
     },
     async deleteUser(password) {
       try {
-        const token = localStorage.getItem("token");
+        // const token = localStorage.getItem("token");
         const username = localStorage.getItem("username");
         const userin = {
           username: username,
           password: password,
         };
         const headers = {
-          Authorization: `Bearer ${token}`,
+          // Authorization: `Bearer ${token}`,
         };
 
         const getIdResponse = await axios.post("/users/getid", userin, {
@@ -275,9 +273,9 @@ export default {
         const userId = getIdResponse.data.id;
 
         await axios.delete("/users/delete", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          // headers: {
+          //   Authorization: `Bearer ${token}`,
+          // },
           params: {
             id: userId,
           },
@@ -325,10 +323,10 @@ export default {
     },
     async deleteAllFiles() {
       try {
-        const token = localStorage.getItem("token");
+        // const token = localStorage.getItem("token");
         await axios.delete("/users/files/delete", {
           headers: {
-            Authorization: `Bearer ${token}`,
+            // Authorization: `Bearer ${token}`,
           },
         });
         this.$refs.alertPopup.showAlert("All files deleted successfully"); // 显示文件删除成功的信息

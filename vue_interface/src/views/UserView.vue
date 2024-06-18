@@ -72,7 +72,7 @@ export default {
         : null,
       username:
         store.state.username || localStorage.getItem("username") || null,
-      token: store.state.token || localStorage.getItem("token") || null,
+      // token: store.state.token || localStorage.getItem("token") || null,
     };
   },
   async created() {
@@ -115,7 +115,7 @@ export default {
       try {
         const response = await axios.get("/users/profileimage", {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            // Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/octet-stream",
           },
           responseType: "blob",
@@ -146,7 +146,7 @@ export default {
       try {
         await axios.post("/users/upload/profileimage", formData, {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            // Authorization: `Bearer ${this.token}`,
             "Content-Type": "multipart/form-data",
           },
         });

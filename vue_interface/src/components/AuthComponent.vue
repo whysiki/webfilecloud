@@ -59,19 +59,17 @@ export default {
           username: this.username,
           password: this.password,
         });
-        localStorage.setItem("token", response.data.access_token); // 将响应数据中的 access_token 存储到 localStorage
-        localStorage.setItem("username", this.username); // 将 username 存储到 localStorage
-        localStorage.setItem("currentNodes", "[]"); // 将 currentNodes 存储到 localStorage
+        localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("username", this.username);
+        localStorage.setItem("currentNodes", "[]");
 
-        store.commit("setToken", response.data.access_token); // 调用 store 中的 setToken 方法
+        store.commit("setToken", response.data.access_token);
 
-        store.commit("setUserName", this.username); // 调用 store 中的 setUsername 方法
-        //test
-        // localStorage.setItem("password", this.password);
+        store.commit("setUserName", this.username);
 
-        this.$router.push("/filelist"); // 导航到文件列表页面
-        //
-        //
+        localStorage.setItem("refresh_token", response.data.refresh_token);
+
+        this.$router.push("/filelist");
       } catch (error) {
         if (error.response) {
           // 请求已发送，服务器返回了一个非 2xx 的状态码
