@@ -62,48 +62,33 @@ export default {
         localStorage.setItem("token", response.data.access_token);
         localStorage.setItem("username", this.username);
         localStorage.setItem("currentNodes", "[]");
-
-        // store.commit("setToken", response.data.access_token);
-
         store.commit("setUserName", this.username);
-
         localStorage.setItem("refresh_token", response.data.refresh_token);
-
         this.$router.push("/filelist");
       } catch (error) {
         if (error.response) {
-          // 请求已发送，服务器返回了一个非 2xx 的状态码
           await this.$refs.alertPopup.showAlert(
             `Error: ${error.response.data.detail}`
-          ); // 显示错误信息
+          );
         } else if (error.request) {
-          // 请求已发送，但没有收到响应
           await this.$refs.alertPopup.showAlert(
             "Error: No response from server"
-          ); // 显示错误信息
+          );
         } else {
-          // 设置请求时发生了错误
-          await this.$refs.alertPopup.showAlert("Error", error.message); // 显示错误信息
+          await this.$refs.alertPopup.showAlert("Error", error.message);
         }
       }
     },
     async register() {
       try {
-        // 使用 axios 发送 POST 请求，注册新用户
         const response = await axios.post("/users/register", {
-          // 请求体中包含 username 和 password 字段
           username: this.username,
           password: this.password,
         });
-        // 如果请求成功，显示成功信息
         await this.$refs.alertPopup.showAlert(
           `User ${response.data.username} created successfully.`
         );
-        // ID: ${response.data.id}
-        // this.username = "";
-        // this.password = "";
       } catch (error) {
-        // 如果请求失败，显示错误信息
         if (error.response) {
           await this.$refs.alertPopup.showAlert(
             `Error: ${error.response.data.detail}`
