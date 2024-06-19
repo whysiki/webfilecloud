@@ -1,8 +1,25 @@
 <template>
-  <div>
+  <div
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd"
+    class="swipe-back-container"
+  >
     <CodeComponent :link="link" v-if="isText || isCode" />
     <VideoComponent :videoUrl="link" v-if="isVideo" />
     <ImageComponent :imageUrl="link" v-if="isImage" />
+    <div v-else class="default-preview">
+      <p class="text-center">No preview available</p>
+      <a
+        :href="link"
+        download
+        class="preview-button"
+        id="preview-button-single-file"
+        title="Click to preview file image or video or text"
+        @click.stop
+      >
+        <i class="fas fa-download"></i>
+      </a>
+    </div>
   </div>
 </template>
 
@@ -73,12 +90,64 @@ export default {
       return imageTypes.includes(this.filename.split(".").pop());
     },
   },
+  methods: {
+    handleTouchStart(event) {
+      // 记录触摸开始的位置
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
+    },
+    handleTouchEnd(event) {
+      const touchEndX = event.changedTouches[0].clientX;
+      const touchEndY = event.changedTouches[0].clientY;
+
+      // 计算滑动距离
+      const diffX = touchEndX - this.touchStartX;
+      const diffY = touchEndY - this.touchStartY;
+
+      // 判断是否为从左向右的滑动，并且滑动距离大于一定值，
+      if (diffX > 150 && Math.abs(diffY) < 150) {
+        // 执行返回操作
+        this.$router.go(-1);
+      }
+    },
+  },
 };
 </script>
 
-<style screen>
-.scroll-to-top,
-.scroll-to-bottom {
-  display: none;
+<style scoped>
+.swipe-back-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.default-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.default-preview p {
+  font-size: 24px;
+  margin-top: 10vh;
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.preview-button {
+  font-size: 35px;
+  padding: 40px 40px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  margin-top: 10vh;
 }
 </style>

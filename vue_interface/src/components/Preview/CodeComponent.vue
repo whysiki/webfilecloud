@@ -1,18 +1,16 @@
 <template>
-  <div class="code-container">
+  <div class="code-container" ref="codeContainerRef">
     <pre><code class="hljs" v-html="highlightedCode"></code></pre>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import hljs from "highlight.js";
-import "highlight.js/styles/github-dark.css"; // 默认加载一个主题
+import "highlight.js/styles/github-dark.css";
+import MD5 from "crypto-js/md5";
 
 export default {
-  components: {
-    // NSelect,
-  },
   props: {
     link: {
       type: String,
@@ -21,6 +19,7 @@ export default {
   },
   setup(props) {
     const highlightedCode = ref("");
+    const codeContainerRef = ref(null);
 
     const fetchAndHighlightCode = async () => {
       try {
@@ -36,10 +35,53 @@ export default {
       }
     };
 
-    onMounted(fetchAndHighlightCode);
+    const getScrollPositionKey = () => {
+      return `scrollPosition_${MD5(props.link).toString()}`;
+    };
 
+    const saveScrollPosition = () => {
+      if (codeContainerRef.value) {
+        const scrollPosition = codeContainerRef.value.scrollTop;
+        localStorage.setItem(getScrollPositionKey(), scrollPosition.toString());
+      }
+    };
+
+    const restoreScrollPosition = () => {
+      const savedPosition = localStorage.getItem(getScrollPositionKey());
+      if (savedPosition && codeContainerRef.value) {
+        codeContainerRef.value.scrollTop = parseInt(savedPosition, 10) || 0;
+      }
+    };
+
+    onMounted(async () => {
+      await fetchAndHighlightCode();
+      restoreScrollPosition();
+      window.addEventListener("beforeunload", saveScrollPosition);
+      if (codeContainerRef.value) {
+        codeContainerRef.value.addEventListener("scroll", saveScrollPosition);
+      }
+    });
+
+    onUnmounted(() => {
+      saveScrollPosition();
+      window.removeEventListener("beforeunload", saveScrollPosition);
+      if (codeContainerRef.value) {
+        codeContainerRef.value.removeEventListener(
+          "scroll",
+          saveScrollPosition
+        );
+      }
+    });
+    watch(
+      () => props.link,
+      async () => {
+        await fetchAndHighlightCode();
+        restoreScrollPosition();
+      }
+    );
     return {
       highlightedCode,
+      codeContainerRef,
     };
   },
 };
