@@ -867,7 +867,7 @@ async def preview_file(
         )
 
     file.file_preview_path = os.path.join(
-        config.File.PREVIEW_FILES_PATH, f"{file.id}_preview_{file.filename}"
+        config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.{file.file_type}"
     )
 
     if (
