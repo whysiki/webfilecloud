@@ -346,22 +346,6 @@ async def read_file(
     )
 
 
-async def file_iterator(file_path: str, start: int, end: int):
-    async with aiofiles.open(file_path, mode="rb") as f:
-        await f.seek(start)
-        chunk_size = 1024
-        current_position = start
-        while current_position <= end:  # 只要当前位置小于等于end，就继续读取。 包含end
-            remaining_bytes = (
-                end - current_position + 1
-            )  # 从当前位置读到 end , 闭区间，一共有的字节数
-            read_size = min(chunk_size, remaining_bytes)  # 不超过chunk_size
-            chunk = await f.read(read_size)  # 读取
-            if not chunk:  # 到达文件末尾
-                break
-            current_position += len(chunk)  # 移动位置
-            yield chunk
-
 
 # 下载文件流式响应
 @app.get("/files/download/stream")
@@ -401,7 +385,7 @@ async def read_file_stream(
         raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
 
     return StreamingResponse(
-        file_iterator(file.file_path, start, end),
+        utility.file_iterator(file.file_path, start, end),
         status_code=206 if range_header else 200,
         headers={
             "Content-Length": str(end - start + 1),
@@ -708,7 +692,7 @@ async def download_file(
         raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
 
     return StreamingResponse(
-        file_iterator(file.file_path, start, end),
+        utility.file_iterator(file.file_path, start, end),
         status_code=206 if range_header else 200,
         headers={
             "Content-Length": str(end - start + 1),
