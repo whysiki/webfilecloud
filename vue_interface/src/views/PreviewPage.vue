@@ -4,10 +4,13 @@
     @touchend="handleTouchEnd"
     class="swipe-back-container"
   >
-    <CodeComponent :link="link" v-if="isText || isCode" />
+    <CodeComponent :link="link" v-if="isCode || isText" />
     <VideoComponent :videoUrl="link" v-if="isVideo" />
     <ImageComponent :imageUrl="link" v-if="isImage" />
-    <div v-else class="default-preview">
+    <div
+      v-if="!isCode && !isVideo && !isImage && !isText"
+      class="default-preview"
+    >
       <p class="text-center">No preview available</p>
       <a
         :href="link"
@@ -56,7 +59,7 @@ export default {
       return videoTypes.includes(this.filename.split(".").pop());
     },
     isText() {
-      const textTypes = ["txt", "md", "html", "css", "js", "json", "xml"];
+      const textTypes = ["txt", "log", "conf", "cfg", "ini"];
       return textTypes.includes(this.filename.split(".").pop());
     },
     isCode() {
@@ -73,6 +76,10 @@ export default {
         "sql",
         "html",
         "css",
+        "scss",
+        "json",
+        "xml",
+        "yaml",
       ];
       return codeTypes.includes(this.filename.split(".").pop());
     },
