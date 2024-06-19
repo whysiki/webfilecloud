@@ -18,28 +18,27 @@ from fastapi.responses import FileResponse
 import hashlib
 import config  # 自定义配置类，里面有配置项
 from fastapi.responses import StreamingResponse
-from io import BytesIO
 import aiofiles
 from loguru import logger
 from dep import get_db  # 依赖注入
 from app import app  # 应用实例
 import json
 import numpy
-import utility
+import utility # 自定义工具函数
 from pathlib import Path
-from functools import lru_cache
+# from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
-from PIL import Image
+# from PIL import Image
 import io
 import asyncio
-import subprocess
+# import subprocess
 from urllib.parse import quote
-import imageio
+# import imageio
 
 # from concurrent.futures import ThreadPoolExecutor
-from PIL import UnidentifiedImageError
+# from PIL import UnidentifiedImageError
 import mimetypes
-import ffmpeg
+# import ffmpeg
 
 
 # 注册用户
@@ -840,30 +839,6 @@ async def upload_profile_image(
     )
 
 
-@lru_cache(maxsize=256)
-def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
-    try:
-        with Image.open(file_path) as image:
-            image.thumbnail(size)
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format=image.format)
-            img_byte_arr.seek(0)
-            return img_byte_arr.getvalue()
-    except Exception as e:
-        LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
-        if os.path.exists(LOAD_ERROR_IMG):
-            with Image.open(LOAD_ERROR_IMG) as image:
-                img_byte_arr = io.BytesIO()
-                image.save(img_byte_arr, format=image.format)
-                img_byte_arr.seek(0)
-                return img_byte_arr.getvalue()
-        white_image = Image.new("RGB", size, (255, 255, 255))
-        img_byte_arr = io.BytesIO()
-        white_image.save(img_byte_arr, format="JPEG")
-        img_byte_arr.seek(0)
-        return img_byte_arr.getvalue()
-
-
 # 图片预览
 @app.get("/files/img/preview")
 async def preview_file(
@@ -884,12 +859,36 @@ async def preview_file(
         raise HTTPException(
             status_code=404, detail="File not found in user's file list"
         )
-
-    loop = asyncio.get_running_loop()
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        thumbnail_data = await loop.run_in_executor(
-            executor, generate_thumbnail, file.file_path
+    
+    file.file_preview_path = os.path.join(
+            config.File.PREVIEW_FILES_PATH, f"{file.id}_preview_{file.filename}"
         )
+    
+    if (
+        not file.file_preview_path
+        or not os.path.exists(file.file_preview_path)
+        or os.path.getsize(file.file_preview_path) < 100
+    ):
+        
+        logger.debug(f"generate preview img :{file.filename}")
+
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            thumbnail_data = await loop.run_in_executor(
+                executor, utility.generate_thumbnail, file.file_path
+            )
+        
+        async with aiofiles.open(file.file_preview_path,"wb") as f:
+            
+            await f.write(thumbnail_data)
+    
+    else:
+        
+        async with aiofiles.open(file.file_preview_path,"rb") as f:
+            
+            thumbnail_data = await f.read()
+    
+    db.commit()
 
     mime_type, _ = mimetypes.guess_type(file.file_path)
 
@@ -900,89 +899,6 @@ async def preview_file(
         media_type=mime_type,
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
     )
-
-
-@lru_cache(maxsize=128)
-def generate_preview_video(video_path, output_path):
-    try:
-        assert os.path.exists(video_path), "视频路径不存在"
-        # 获取原视频的时长
-        duration_command = [
-            r"ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "default=noprint_wrappers=1:nokey=1",
-            f"{str(video_path)}",
-        ]
-        result = subprocess.run(duration_command, capture_output=True, text=True)
-        original_duration = float(result.stdout.strip())
-
-        print(f"原视频时长: {original_duration}秒")
-
-        # 确定裁剪的时长（最多5秒）
-        preview_duration = min(original_duration, 5.0)
-
-        try:
-
-            # 构建ffmpeg命令
-            command = [
-                r"ffmpeg",
-                "-i",
-                f"{video_path}",  # 输入视频文件路径
-                "-t",
-                str(preview_duration),  # 截取视频的时长，最多为5秒
-                "-vf",
-                "scale=-1:360",  # 设置视频高度为360p，宽度按比例缩放
-                "-c:v",
-                "libx264",  # 使用H.264编解码器
-                "-crf",
-                "30",  # 设置CRF值，数值越小质量越好，文件越大
-                "-preset",
-                "ultrafast",
-                "-an",  # 去除音频
-                "-y",  # 覆盖已存在的输出文件
-                f"{output_path}",  # 输出视频文件路径
-            ]
-            # 执行ffmpeg命令
-            subprocess.run(command, check=True)
-        except:
-
-            logger.warning("default video width ..")
-
-            # 构建ffmpeg命令
-            command = [
-                r"ffmpeg",
-                "-i",
-                f"{video_path}",  # 输入视频文件路径
-                "-t",
-                str(preview_duration),  # 截取视频的时长，最多为5秒
-                # "-vf",
-                # "scale=-1:360",  # 设置视频高度为360p，宽度按比例缩放
-                "-c:v",
-                "libx264",  # 使用H.264编解码器
-                "-crf",
-                "30",  # 设置CRF值，数值越小质量越好，文件越大
-                "-preset",
-                "ultrafast",
-                "-an",  # 去除音频
-                "-y",  # 覆盖已存在的输出文件
-                f"{output_path}",  # 输出视频文件路径
-            ]
-            # 执行ffmpeg命令
-            subprocess.run(command, check=True)
-
-        return output_path
-    except subprocess.CalledProcessError as e:
-        logger.error(f"ffmpeg command failed with exit status {e.returncode}")
-        logger.error(f"ffmpeg output: {e.output}")
-        logger.error(f"ffmpeg error: {e.stderr}")
-        raise HTTPException(status_code=500, detail="Error generating video preview")
-    except Exception as e:
-        logger.error(f"Error generating video preview: {e}")
-        raise HTTPException(status_code=500, detail="Error generating video preview")
 
 
 # 视频预览
@@ -1011,12 +927,16 @@ async def preview_video_file(
         or not os.path.exists(file.file_preview_path)
         or os.path.getsize(file.file_preview_path) < 100
     ):
+        
+        logger.debug(f"generate preview video :{file.filename}")
 
         file.file_preview_path = os.path.join(
             config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
         )
         os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
-        generate_preview_video(file.file_path, file.file_preview_path)
+        utility.generate_preview_video(file.file_path, file.file_preview_path)
+        
+        db.commit()
 
     mime_type = "video/mp4"
 

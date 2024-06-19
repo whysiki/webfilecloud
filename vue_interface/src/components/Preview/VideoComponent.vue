@@ -52,6 +52,8 @@ export default {
 <style scoped>
 .video-container {
   width: 100%;
+  align-items: center;
+  /* display: flex; */
 }
 .video-player {
   width: 100%;
