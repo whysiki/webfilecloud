@@ -113,7 +113,7 @@
         </button>
         <!-- //"/preview/:type/:id", -->
         <router-link
-          :to="`/preview/${file.file_type}/${
+          :to="`/preview/${file.id}/${file.file_type}/${
             file.filename
           }/${encodeURIComponent(previewLink)}`"
         >

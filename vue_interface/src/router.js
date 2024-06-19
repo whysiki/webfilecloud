@@ -23,7 +23,7 @@ const routes = [
     component: FileFolderView,
   },
   {
-    path: "/preview/:type/:filename/:link",
+    path: "/preview/:id/:type/:filename/:link",
     component: PreviewPage,
   },
 ];

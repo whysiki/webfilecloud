@@ -63,3 +63,9 @@ class File(Config):
     assert os.path.exists(LOAD_ERROR_IMG), "Load error image not found."
     
     PREVIEW_FILES_PATH: str = os.path.join("cache","preview")
+    
+    M3U8_INDEX_PATH:str = os.path.join("cache","m3u8")
+    
+    os.makedirs(M3U8_INDEX_PATH, exist_ok=True)
+    
+    os.makedirs(PREVIEW_FILES_PATH, exist_ok=True)

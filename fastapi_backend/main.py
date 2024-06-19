@@ -24,20 +24,25 @@ from dep import get_db  # 依赖注入
 from app import app  # 应用实例
 import json
 import numpy
-import utility # 自定义工具函数
+import utility  # 自定义工具函数
 from pathlib import Path
+
 # from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
+
 # from PIL import Image
 import io
 import asyncio
+
 # import subprocess
 from urllib.parse import quote
+
 # import imageio
 
 # from concurrent.futures import ThreadPoolExecutor
 # from PIL import UnidentifiedImageError
 import mimetypes
+
 # import ffmpeg
 
 
@@ -64,8 +69,14 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(data={"sub": user_in.username})
-    refresh_token= create_access_token(data={"sub": user_in.username},expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
-    return schemas.Token(access_token=access_token, token_type="bearer",refresh_token=refresh_token)
+    refresh_token = create_access_token(
+        data={"sub": user_in.username},
+        expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES * 2),
+    )
+    return schemas.Token(
+        access_token=access_token, token_type="bearer", refresh_token=refresh_token
+    )
+
 
 # 更新access_token
 @app.post("/users/refresh", response_model=schemas.Token)
@@ -76,18 +87,23 @@ async def refresh_token(Authorization: Optional[str] = Header(None)):
     ##
     ##  通过access_token获取用户名，然后再生成新的access_token
     access_token = create_access_token(data={"sub": username})
-    
-    refresh_token= create_access_token(data={"sub": username},expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES*2))
+
+    refresh_token = create_access_token(
+        data={"sub": username},
+        expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES * 2),
+    )
 
     test_username = get_current_username(access_token)
-    
+
     test_username_refresh = get_current_username(refresh_token)
 
     if not (test_username == username == test_username_refresh):
         raise HTTPException(status_code=401, detail="refresh token failed")
-    
+
     logger.debug(f"refresh token :{refresh_token}")
-    return schemas.Token(access_token=access_token, token_type="bearer", refresh_token=refresh_token)
+    return schemas.Token(
+        access_token=access_token, token_type="bearer", refresh_token=refresh_token
+    )
 
 
 # 删除用户
@@ -344,7 +360,6 @@ async def read_file(
         media_type="application/octet-stream",
         filename=os.path.basename(file.file_path),
     )
-
 
 
 # 下载文件流式响应
@@ -681,9 +696,16 @@ async def download_file(
     file_size = os.path.getsize(file.file_path)
     range_header = request.headers.get("Range")
     if range_header:
-        start, end = range_header.replace("bytes=", "").split("-")
-        start = int(start)
-        end = int(end) if end else file_size - 1
+        try:
+            start, end = range_header.replace("bytes=", "").split("-")
+            start = int(start)
+            end = int(end) if end else file_size - 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Range header")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid Range header:{str(e)}"
+            )
     else:
         start = 0
         end = file_size - 1
@@ -843,17 +865,17 @@ async def preview_file(
         raise HTTPException(
             status_code=404, detail="File not found in user's file list"
         )
-    
+
     file.file_preview_path = os.path.join(
-            config.File.PREVIEW_FILES_PATH, f"{file.id}_preview_{file.filename}"
-        )
-    
+        config.File.PREVIEW_FILES_PATH, f"{file.id}_preview_{file.filename}"
+    )
+
     if (
         not file.file_preview_path
         or not os.path.exists(file.file_preview_path)
         or os.path.getsize(file.file_preview_path) < 100
     ):
-        
+
         logger.debug(f"generate preview img :{file.filename}")
 
         loop = asyncio.get_running_loop()
@@ -861,17 +883,17 @@ async def preview_file(
             thumbnail_data = await loop.run_in_executor(
                 executor, utility.generate_thumbnail, file.file_path
             )
-        
-        async with aiofiles.open(file.file_preview_path,"wb") as f:
-            
+
+        async with aiofiles.open(file.file_preview_path, "wb") as f:
+
             await f.write(thumbnail_data)
-    
+
     else:
-        
-        async with aiofiles.open(file.file_preview_path,"rb") as f:
-            
+
+        async with aiofiles.open(file.file_preview_path, "rb") as f:
+
             thumbnail_data = await f.read()
-    
+
     db.commit()
 
     mime_type, _ = mimetypes.guess_type(file.file_path)
@@ -911,7 +933,7 @@ async def preview_video_file(
         or not os.path.exists(file.file_preview_path)
         or os.path.getsize(file.file_preview_path) < 100
     ):
-        
+
         logger.debug(f"generate preview video :{file.filename}")
 
         file.file_preview_path = os.path.join(
@@ -919,7 +941,7 @@ async def preview_video_file(
         )
         os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
         utility.generate_preview_video(file.file_path, file.file_preview_path)
-        
+
         db.commit()
 
     mime_type = "video/mp4"
@@ -941,3 +963,76 @@ async def preview_video_file(
         raise HTTPException(
             status_code=500, detail="Error: Preview file not found or empty"
         )
+
+
+# 获取hls流m3u8文件
+@app.get("/file/video/{file_id}/index.m3u8")
+async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
+
+    file = crud.get_file_by_id(db, file_id)
+
+    segment_index_path = os.path.join(config.File.M3U8_INDEX_PATH, file.id)
+
+    index_m3u8_name = "index.m3u8"
+
+    index_m3u8_path = os.path.join(segment_index_path, index_m3u8_name)
+
+    try:
+        utility.generate_hls_playlist(
+            file.file_path,
+            output_dir=segment_index_path,
+            playlist_name=index_m3u8_name,
+            file_id=file.id,
+        )
+
+    except Exception as e:
+
+        logger.warning(f"{type(e)}{str(e)}")
+
+        raise HTTPException(
+            status_code=500, detail="Failed to generate HLS playlist and segments"
+        )
+
+    return FileResponse(index_m3u8_path, media_type="application/vnd.apple.mpegurl")
+
+
+# 获取片段
+@app.get("/file/segments/{file_id}/{segment_name}")
+async def get_segment(request: Request,file_id: str, segment_name: str):
+    segment_path = os.path.join(
+        f"{os.path.join(config.File.M3U8_INDEX_PATH, file_id)}", segment_name
+    )
+    if not os.path.exists(segment_path):
+        raise HTTPException(status_code=404, detail="Segment not found")
+    
+    file_size = os.path.getsize(segment_path)
+    
+    range_header = request.headers.get("Range")
+    
+    if range_header:
+        try:
+            start, end = range_header.replace("bytes=", "").split("-")
+            start = int(start)
+            end = int(end) if end else file_size - 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Range header")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid Range header:{str(e)}"
+            )
+    else:
+        start = 0
+        end = file_size - 1
+
+    if start >= file_size or end >= file_size:
+        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+
+    return StreamingResponse(
+        utility.file_iterator(segment_path, start, end),
+        status_code=206 if range_header else 200,
+        headers={
+            "Content-Length": str(end - start + 1),
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+        },
+    )

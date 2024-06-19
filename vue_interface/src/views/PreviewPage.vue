@@ -5,7 +5,13 @@
     class="swipe-back-container"
   >
     <CodeComponent :link="link" v-if="isCode || isText" />
-    <VideoComponent :videoUrl="link" v-if="isVideo" />
+    <!-- <VideoComponent :videoUrl="link" v-if="false" /> -->
+    <HlsComponent
+      :src="hlsLink"
+      :fileId="id"
+      :domainNamePrefix="domainNamePrefix"
+      v-if="isVideo"
+    />
     <ImageComponent :imageUrl="link" v-if="isImage" />
     <div
       v-if="!isCode && !isVideo && !isImage && !isText"
@@ -28,15 +34,17 @@
 
 <script>
 // path: "/preview/:type/:filename/:link",
-import VideoComponent from "../components/Preview/VideoComponent.vue";
+// import VideoComponent from "../components/Preview/VideoComponent.vue";
 import CodeComponent from "../components/Preview/CodeComponent.vue";
 import ImageComponent from "../components/Preview/ImageComponent.vue";
+import HlsComponent from "../components/Preview/HlsComponent.vue";
 export default {
   name: "PreviewPage",
   components: {
-    VideoComponent,
+    // VideoComponent,
     CodeComponent,
     ImageComponent,
+    HlsComponent,
   },
   data() {
     return {
@@ -44,16 +52,30 @@ export default {
       type: "",
       filename: "",
       link: "",
+      id: "",
     };
   },
   created() {
     // 在组件创建时获取路由参数
+    this.id = this.$route.params.id;
     this.type = this.$route.params.type;
     this.filename = this.$route.params.filename;
     // 对 link 参数进行解码
     this.link = decodeURIComponent(this.$route.params.link);
   },
   computed: {
+    domainNamePrefix() {
+      return this.link.match(/^https?:\/\/[^/]+/)[0];
+    },
+    hlsLink() {
+      const domainNamePrefix = this.link.match(/^https?:\/\/[^/]+/)[0];
+
+      // console.log("domainNamePrefix", domainNamePrefix);
+      // console.log("this.id", this.id);
+      // console.log("this.filename", this.filename);
+      // console.log("this.link", this.link);
+      return `${domainNamePrefix}/file/video/${this.id}/index.m3u8`;
+    },
     isVideo() {
       const videoTypes = ["mp4", "webm", "ogg", "avi", "mov", "flv", "mkv"];
       return videoTypes.includes(this.filename.split(".").pop());
