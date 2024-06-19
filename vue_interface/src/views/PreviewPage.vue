@@ -48,7 +48,6 @@ export default {
   },
   data() {
     return {
-      // 初始化数据
       type: "",
       filename: "",
       link: "",
@@ -56,11 +55,8 @@ export default {
     };
   },
   created() {
-    // 在组件创建时获取路由参数
     this.id = this.$route.params.id;
     this.type = this.$route.params.type;
-    this.filename = this.$route.params.filename;
-    // 对 link 参数进行解码
     this.link = decodeURIComponent(this.$route.params.link);
   },
   computed: {
@@ -69,20 +65,15 @@ export default {
     },
     hlsLink() {
       const domainNamePrefix = this.link.match(/^https?:\/\/[^/]+/)[0];
-
-      // console.log("domainNamePrefix", domainNamePrefix);
-      // console.log("this.id", this.id);
-      // console.log("this.filename", this.filename);
-      // console.log("this.link", this.link);
       return `${domainNamePrefix}/file/video/${this.id}/index.m3u8`;
     },
     isVideo() {
       const videoTypes = ["mp4", "webm", "ogg", "avi", "mov", "flv", "mkv"];
-      return videoTypes.includes(this.filename.split(".").pop());
+      return videoTypes.includes(this.type);
     },
     isText() {
       const textTypes = ["txt", "log", "conf", "cfg", "ini"];
-      return textTypes.includes(this.filename.split(".").pop());
+      return textTypes.includes(this.type);
     },
     isCode() {
       const codeTypes = [
@@ -103,7 +94,7 @@ export default {
         "xml",
         "yaml",
       ];
-      return codeTypes.includes(this.filename.split(".").pop());
+      return codeTypes.includes(this.type);
     },
     isImage() {
       const imageTypes = [
@@ -116,7 +107,7 @@ export default {
         "svg",
         "ico",
       ];
-      return imageTypes.includes(this.filename.split(".").pop());
+      return imageTypes.includes(this.type);
     },
   },
   methods: {

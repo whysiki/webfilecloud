@@ -15,6 +15,13 @@ export default {
 };
 </script>
 <style scoped>
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
 .image-container,
 .image-container img {
   width: 100%;

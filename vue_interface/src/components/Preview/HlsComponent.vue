@@ -60,10 +60,15 @@ export default {
 <style scoped>
 .video-container {
   width: 100%;
+  height: 100vh;
   align-items: center;
+  justify-content: center;
+  /* 垂直居中 */
+  display: flex;
   /* display: flex; */
 }
 .video-player {
+  /* margin-top: 50%; */
   width: 100%;
   height: auto;
 }

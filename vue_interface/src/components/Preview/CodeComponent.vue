@@ -94,6 +94,7 @@ export default {
   height: 100%;
   max-height: 100vh;
   overflow-y: auto; /* 在垂直方向上添加滚动条 */
+  display: flex;
 }
 
 /* 使代码自动换行 */
