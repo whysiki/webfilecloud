@@ -1,21 +1,11 @@
 <template>
-  <div class="top-bar">
-    <div class="return-home" title="Return to home page">
-      <router-link to="/">
-        <i class="fas fa-home"></i>
-      </router-link>
-    </div>
-    <SearchComponent />
-    <button
-      @click="toggleUploadFileForm"
-      class="top-bar-icon-button uploadFile"
-      title="Upload File"
-    >
-      <i class="fas fa-upload"></i>
-    </button>
-    <DeleteAllComponent />
-    <DeleteUserComponent />
-  </div>
+  <button
+    @click="toggleUploadFileForm"
+    class="top-bar-icon-button uploadFile"
+    title="Upload File"
+  >
+    <i class="fas fa-upload"></i>
+  </button>
   <form v-if="showUploadFileForm" @submit.prevent="uploadFiles" class="form-uploadFile">
     <div class="form-uploadFile-group">
       <input
@@ -28,7 +18,7 @@
     </div>
     <button type="submit" class="form-uploadFile-button">Upload File</button>
     <button @click.prevent="showPopInput" class="form-uploadFile-button">
-      Modify Upload Path. Current : {{ currentUploadStrPath }}
+      Modify Upload Path. Current: {{ currentUploadStrPath }}
     </button>
     <progress
       max="100"
@@ -37,45 +27,33 @@
       v-show="showProgressBar"
     ></progress>
   </form>
-  <!-- the below is global register components -->
   <PopInputComponent ref="popInputRef" />
   <AlertComponent ref="alertPopup" />
 </template>
 
 <script>
 import CryptoJS from "crypto-js";
-import axios from "../axios"; // 导入 axios 实例
-import eventBus from "../eventBus";
-import SearchComponent from "./TopBar/SearchComponent.vue";
-import DeleteAllComponent from "./TopBar/DeleteAllComponent.vue";
-import DeleteUserComponent from "./TopBar/DeleteUserComponent.vue";
+import axios from "../../axios";
+import eventBus from "../../eventBus";
 export default {
-  name: "TopBar",
-  components: {
-    SearchComponent,
-    DeleteAllComponent,
-    DeleteUserComponent,
-  },
+  name: "UploadComponent",
   data() {
     return {
-      files: [], // 初始化 files 数据属性
-      file: null, // 初始化 file 数据属性
-      showUploadFileForm: false, // 初始化 UploadFile 数据属性
-      uploadProgress: 0, // 初始化 uploadProgress 数据属性
-      showProgressBar: false, // 初始化 showProgressBar 数据属性
+      files: [],
+      showUploadFileForm: false,
+      uploadProgress: 0,
+      showProgressBar: false,
       inputUploadStrNodes: "",
       completedFiles: 0,
     };
   },
   computed: {
     currentUploadStrNodes() {
-      //这是数组的字符串表示，用于上传文件时的路径
       return this.inputUploadStrNodes.length > 0
         ? this.inputUploadStrNodes
         : localStorage.getItem("currentNodes");
     },
     currentUploadStrPath() {
-      //这是路径的字符串表示，根据当前节点数组currentUploadStrNodes生成
       const Nodes = JSON.parse(this.currentUploadStrNodes);
       let path = "";
       for (let i = 0; i < Nodes.length; i++) {
@@ -97,7 +75,7 @@ export default {
   },
   methods: {
     handleFilesUpload(event) {
-      this.files = Array.from(event.target.files); // 将用户选择的文件赋值给 this.files
+      this.files = Array.from(event.target.files);
     },
     updateInputUploadStrNodes(value) {
       this.inputUploadStrNodes = value;
@@ -110,8 +88,7 @@ export default {
           const currentUploadStrNodes = JSON.stringify(nodes);
           this.inputUploadStrNodes = currentUploadStrNodes;
         })
-        .catch((error) => {
-          console.log(error);
+        .catch(() => {
           this.inputUploadStrNodes = "";
         });
     },
@@ -123,17 +100,12 @@ export default {
     toggleUploadFileForm() {
       this.showUploadFileForm = !this.showUploadFileForm;
     },
-    handleFileUpload(event) {
-      // 定义 handleFileUpload 方法
-      this.file = event.target.files[0]; // 将用户选择的文件赋值给 this.file
-    },
     async uploadSingleFile(file, totalFiles) {
       const reader = new FileReader();
       reader.readAsArrayBuffer(file);
       reader.onload = async () => {
         let fileId = "";
         if (file.size <= 1024 * 1024 * 100) {
-          // 100MB
           const username = localStorage.getItem("username");
           const arrayBuffer = reader.result;
           const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
@@ -215,7 +187,3 @@ export default {
   },
 };
 </script>
-
-<style>
-@import "./css/TopBar.css";
-</style>
