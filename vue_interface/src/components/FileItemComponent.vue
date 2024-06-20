@@ -148,12 +148,6 @@
           controls
           class="file-preview video-preview"
         ></video>
-        <!-- <img
-          :src="fileImageUrl"
-          alt="Image preview"
-          class="file-preview video-preview"
-          v-else-if="isVideoFile && fileImageUrl"
-        /> -->
         <img
           :src="fileImageUrl"
           alt="Image preview"

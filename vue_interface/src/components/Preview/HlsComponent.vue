@@ -65,6 +65,7 @@ export default {
   justify-content: center;
   /* 垂直居中 */
   display: flex;
+  background-color: #000;
   /* display: flex; */
 }
 .video-player {

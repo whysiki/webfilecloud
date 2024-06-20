@@ -998,17 +998,17 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 
 # 获取片段
 @app.get("/file/segments/{file_id}/{segment_name}")
-async def get_segment(request: Request,file_id: str, segment_name: str):
+async def get_segment(request: Request, file_id: str, segment_name: str):
     segment_path = os.path.join(
         f"{os.path.join(config.File.M3U8_INDEX_PATH, file_id)}", segment_name
     )
     if not os.path.exists(segment_path):
         raise HTTPException(status_code=404, detail="Segment not found")
-    
+
     file_size = os.path.getsize(segment_path)
-    
+
     range_header = request.headers.get("Range")
-    
+
     if range_header:
         try:
             start, end = range_header.replace("bytes=", "").split("-")

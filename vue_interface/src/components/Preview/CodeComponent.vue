@@ -1,5 +1,8 @@
 <template>
-  <div class="code-container" ref="codeContainerRef">
+  <div v-if="isLoading" class="loader-container">
+    <div class="loader"></div>
+  </div>
+  <div class="code-container" ref="codeContainerRef" v-else>
     <pre><code class="hljs" v-html="highlightedCode"></code></pre>
   </div>
 </template>
@@ -20,8 +23,10 @@ export default {
   setup(props) {
     const highlightedCode = ref("");
     const codeContainerRef = ref(null);
+    const isLoading = ref(true); // 添加加载状态
 
     const fetchAndHighlightCode = async () => {
+      isLoading.value = true; // 显示加载动画
       try {
         const response = await fetch(props.link);
         if (!response.ok) {
@@ -32,6 +37,8 @@ export default {
       } catch (error) {
         console.error("Failed to fetch and highlight code:", error);
         highlightedCode.value = "Failed to load code.";
+      } finally {
+        isLoading.value = false; // 隐藏加载动画
       }
     };
 
@@ -82,6 +89,7 @@ export default {
     return {
       highlightedCode,
       codeContainerRef,
+      isLoading,
     };
   },
 };
@@ -94,7 +102,7 @@ export default {
   height: 100%;
   max-height: 100vh;
   overflow-y: auto; /* 在垂直方向上添加滚动条 */
-  display: flex;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 /* 使代码自动换行 */
@@ -102,6 +110,7 @@ pre,
 .hljs {
   white-space: pre-wrap; /* 保持格式但允许换行 */
   word-wrap: break-word; /* 在长单词或URL地址内部进行换行 */
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 /* 针对手机屏幕优化 */

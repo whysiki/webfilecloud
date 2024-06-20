@@ -13,8 +13,9 @@
       v-if="isVideo"
     />
     <ImageComponent :imageUrl="link" v-if="isImage" />
+    <MarkDownComponent :link="link" v-if="isMarkdown" />
     <div
-      v-if="!isCode && !isVideo && !isImage && !isText"
+      v-if="!isCode && !isVideo && !isImage && !isText && !isMarkdown"
       class="default-preview"
     >
       <p class="text-center">No preview available</p>
@@ -38,6 +39,7 @@
 import CodeComponent from "../components/Preview/CodeComponent.vue";
 import ImageComponent from "../components/Preview/ImageComponent.vue";
 import HlsComponent from "../components/Preview/HlsComponent.vue";
+import MarkDownComponent from "../components/Preview/MarkDownComponent.vue";
 export default {
   name: "PreviewPage",
   components: {
@@ -45,6 +47,7 @@ export default {
     CodeComponent,
     ImageComponent,
     HlsComponent,
+    MarkDownComponent,
   },
   data() {
     return {
@@ -109,6 +112,9 @@ export default {
       ];
       return imageTypes.includes(this.type);
     },
+    isMarkdown() {
+      return this.type === "md";
+    },
   },
   methods: {
     handleTouchStart(event) {
@@ -145,23 +151,27 @@ export default {
 }
 
 .default-preview {
+  /* margin: 10vh auto; */
+  width: 95%;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  height: 80vh;
+  margin-top: 10vh;
 }
 
 .default-preview p {
   font-size: 24px;
-  margin-top: 10vh;
   color: #e74c3c;
   font-weight: bold;
 }
 
 .preview-button {
   font-size: 35px;
-  padding: 40px 40px;
+  padding: 35px 35px;
   background-color: #007bff;
   color: white;
   text-decoration: none;
@@ -169,5 +179,51 @@ export default {
   display: flex;
   align-items: center;
   margin-top: 10vh;
+}
+
+/* 加载动画容器 */
+>>> .loader-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景色 */
+  z-index: 9999; /* 确保在最上层 */
+}
+
+/* 加载动画样式 */
+>>> .loader {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #1a7be3; /* Blue */
+  border-right: 8px solid #32cd32; /* Lime green */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px); /* 从下方移动进来 */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0); /* 最终位置 */
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

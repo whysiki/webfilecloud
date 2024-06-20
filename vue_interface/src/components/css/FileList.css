@@ -113,12 +113,9 @@ h2:hover .fas {
   align-items: center;
   margin: 10px;
   background-color: #3498db;
+  text-align: center; /* 文字居中 */
+  text-decoration: none; /* 去除默认链接样式 */
 }
-
-/* .file-list-button.expandAll, */
-/* .file-list-button.collapseAll { */
-/* background-color: #3498db; */
-/* } */
 
 /* 按钮悬停样式 */
 .file-list-button:hover {
@@ -135,14 +132,6 @@ h2:hover .fas {
 
 /* 文件类型标题样式 */
 .fileTypeTitle {
-  /* font-weight: lighter;
-  text-align: center;
-  background-color: rgba(0, 86, 179, 0.5);
-  border-radius: 10px;
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
-  padding: 4px;
-  color: white;
-  margin-bottom: 20px; */
   margin-bottom: 10px;
   font-weight: bold;
   background-color: rgba(0, 86, 179, 0.6);
@@ -218,20 +207,14 @@ h2:hover .fas {
 }
 
 @media (max-width: 600px) {
-  /* .file-list-button { */
-  /* width: 100%; */
-  /* } */
-  /* 主按钮按钮样式 */
   .file-list-button {
-    width: 95px;
-    margin: 5px;
-    text-align: center;
-    /* 文本水平居中 */
-    align-items: center;
+    font-size: 12px;
+    width: 100px;
+    padding: 5px 10px;
   }
   .file-list-button-container {
     justify-content: center;
-    /* flex-wrap: nowrap; */
+    flex-wrap: nowrap;
   }
   /* 文件项列表样式 */
   .fileType-file-items {
