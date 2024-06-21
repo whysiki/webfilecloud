@@ -9,8 +9,6 @@ import crud  # 数据库操作
 from auth import pwd_context, create_access_token, get_current_username
 from fastapi import File, UploadFile
 from datetime import datetime, timedelta
-import os
-import shutil
 from fastapi import Header
 from typing import Optional
 import auth  # 认证
@@ -25,27 +23,16 @@ from app import app  # 应用实例
 import json
 import numpy
 import utility  # 自定义工具函数
-from pathlib import Path
-
-# from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
-
-# from PIL import Image
 import io
 import asyncio
-
-# import subprocess
 from urllib.parse import quote
-
-# import imageio
-
-# from concurrent.futures import ThreadPoolExecutor
-# from PIL import UnidentifiedImageError
 import mimetypes
+import storage_  # 解耦存储相关接口
 
-# import ffmpeg
 
-
+# from pathlib import Path
+# import os
 # 注册用户
 @app.post("/users/register", response_model=schemas.UserOut)
 async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
@@ -83,8 +70,6 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
 async def refresh_token(Authorization: Optional[str] = Header(None)):
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
-
-    ##
     ##  通过access_token获取用户名，然后再生成新的access_token
     access_token = create_access_token(data={"sub": username})
 
@@ -117,8 +102,9 @@ async def delete_user(
     if not (user.username == current_username):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     crud.delete_user_from_db(db, user)
-    if os.path.exists(user.profile_image):
-        os.remove(user.profile_image)
+    # if storage_.is_file_exist(user.profile_image):
+    #     storage_.remove_file(user.profile_image)
+    storage_.remove_file(user.profile_image)
     logger.warning(f"User {current_username} deleted")
     return schemas.UserOut(
         # id=id,
@@ -193,7 +179,7 @@ async def delete_user_files(
     )
 
 
-#  上传文件
+#  上传文件 适用于不是特别大的文件
 @app.post("/files/upload", response_model=schemas.FileOut)
 async def upload_file(
     file: UploadFile = File(...),
@@ -217,11 +203,16 @@ async def upload_file(
         except:
             pass
         else:
+            pass
             # 如果文件已存在，抛出异常
+            # filem = crud.get_file_by_id(db, file_id=file_id)
+            # # file
+            # # if storage_.is_file_exist(filem.file_path):
+            # if storage_.is_file_exist(filem.file_path):
+            #     logger.warning(f"File {filem.filename} already exists")
+            #     raise HTTPException(status_code=400, detail="File already exists")
             filem = crud.get_file_by_id(db, file_id=file_id)
-            # file
-            if os.path.exists(filem.file_path):
-                logger.warning(f"File {filem.filename} already exists")
+            if storage_.is_file_exist(filem.file_path):
                 raise HTTPException(status_code=400, detail="File already exists")
 
     if file_nodes:
@@ -241,8 +232,12 @@ async def upload_file(
     else:
         file_nodes = []
 
-    # 计算文件内容的哈希值作为文件ID
-    file_content = await file.read()
+    ##
+    ## 设计时候忘记了同样的文件冗余存的问题😅😅
+    ## 这里应该需要直接计算文件内容的哈希值作为文件ID，如果在文件表中存在
+    # 那么检查这个文件是否是当前用户的，是则返回存在
+    # 不是则在新用户上面的文件关系中添加这个文件，然后返回
+    file_content: bytes = await file.read()
     # 文件内容的哈希值 + 用户名哈希值 + 节点哈希值 作为文件ID
     file_hash = (
         hashlib.sha256(file_content).hexdigest()
@@ -270,21 +265,35 @@ async def upload_file(
             file_download_link=f"/file/download/{user.id}/{existing_file.id}/{existing_file.filename}",
         )
 
+    ##
+    ##
+    ##
+
     filename = file.filename
 
-    filename = os.path.basename(filename)  # 获取基本路径
+    # filename = storage_.get_path_basename(filename)  # 获取基本路径
+    filename = storage_.get_path_basename(filename)
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
     file_path = utility.get_new_path(
-        os.path.join(config.Config.UPLOAD_PATH, username, file_type, filename)
+        # storage_.get_join_path(config.Config.UPLOAD_PATH, username, file_type, filename)
+        storage_.get_join_path(config.Config.UPLOAD_PATH, username, file_type, filename)
+        # str(Path(config.Config.UPLOAD_PATH)/Path(username)/Path(file_type)/Path(filename))
+        # os.path.join(config.Config.UPLOAD_PATH, username, file_type, filename)
     )
 
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    async with aiofiles.open(file_path, "wb") as buffer:
-        await buffer.write(file_content)
+    # storage_.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    file_size = str(os.path.getsize(file_path))
+    storage_.makedirs(file_path)
+
+    # async with aiofiles.open(file_path, "wb") as buffer:
+    #     await buffer.write(file_content)
+
+    await storage_.async_write_file_wb(file_path, file_content)
+
+    # file_size = str(storage_.get_file_size(file_path))
+    file_size = str(storage_.get_file_size(file_path))
     file_create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     logger.debug(f"Upload file_nodes: {file_nodes}")
@@ -349,7 +358,8 @@ async def read_file(
             status_code=404, detail="File not found in user's file list"
         )
 
-    if not os.path.exists(file.file_path):
+    # if not storage_.is_file_exist(file.file_path):
+    if not storage_.is_file_exist(file.file_path):
 
         raise HTTPException(status_code=404, detail="File path not found")
 
@@ -358,7 +368,8 @@ async def read_file(
     return FileResponse(
         file.file_path,
         media_type="application/octet-stream",
-        filename=os.path.basename(file.file_path),
+        # filename=storage_.get_path_basename(file.file_path),
+        filename=storage_.get_path_basename(file.file_path),
     )
 
 
@@ -383,10 +394,12 @@ async def read_file_stream(
             status_code=404, detail="File not found in user's file list"
         )
 
-    if not os.path.exists(file.file_path):
+    # if not storage_.is_file_exist(file.file_path):
+    if not storage_.is_file_exist(file.file_path):
         raise HTTPException(status_code=404, detail="File path not found")
 
-    file_size = os.path.getsize(file.file_path)
+    # file_size = storage_.get_file_size(file.file_path)
+    file_size = storage_.get_file_size(file.file_path)
     range_header = request.headers.get("Range")
     if range_header:
         start, end = range_header.replace("bytes=", "").split("-")
@@ -466,7 +479,8 @@ async def delete_file(
             status_code=404, detail="File not found in user's file list"
         )
 
-    if not os.path.exists(file.file_path):
+    # if not storage_.is_file_exist(file.file_path):
+    if not storage_.is_file_exist(file.file_path):
 
         raise HTTPException(status_code=404, detail="File path not found")
 
@@ -497,8 +511,10 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     db.query(models.User).delete()  # 清空用户表
     db.query(models.File).delete()  # 清空文件表
     db.commit()
-    if os.path.exists(config.onfig.UPLOAD_PATH):
-        shutil.rmtree(config.Config.UPLOAD_PATH)
+    # if storage_.is_file_exist(config.onfig.UPLOAD_PATH):
+    # shutil.rmtree(config.Config.UPLOAD_PATH)
+
+    storage_.remove_path(config.Config.UPLOAD_PATH)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),
@@ -571,7 +587,8 @@ async def file_info(
             status_code=404, detail="File not found in user's file list"
         )
 
-    if not os.path.exists(file.file_path):
+    # if not storage_.is_file_exist(file.file_path):
+    if not storage_.is_file_exist(file.file_path):
 
         raise HTTPException(status_code=404, detail="File path not found")
 
@@ -663,8 +680,10 @@ async def download_file(
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
 
-    file_path = Path(file.file_path)
-    file_size = file_path.stat().st_size
+    # file_path = Path(file.file_path)
+    # file_size = file_path.stat().st_size
+
+    file_size = storage_.get_file_size(file.file_path)
 
     return FileResponse(
         file.file_path,
@@ -690,10 +709,12 @@ async def download_file(
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
 
-    if not os.path.exists(file.file_path):
+    # if not storage_.is_file_exist(file.file_path):
+    if not storage_.is_file_exist(file.file_path):
         raise HTTPException(status_code=404, detail="File path not found")
 
-    file_size = os.path.getsize(file.file_path)
+    # file_size = storage_.get_file_size(file.file_path)
+    file_size = storage_.get_file_size(file.file_path)
     range_header = request.headers.get("Range")
     if range_header:
         try:
@@ -771,8 +792,9 @@ async def get_profile_image(
     access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
-    if not user.profile_image or not os.path.exists(user.profile_image):
-        if os.path.exists(config.User.DEFAULT_PROFILE_IMAGE):
+    # if not user.profile_image or not storage_.is_file_exist(user.profile_image):
+    if not user.profile_image or not storage_.is_file_exist(user.profile_image):
+        if storage_.is_file_exist(config.User.DEFAULT_PROFILE_IMAGE):
             user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
             logger.warning("default profile_image")
         else:
@@ -783,7 +805,7 @@ async def get_profile_image(
 
     return FileResponse(
         user.profile_image,
-        filename=os.path.basename(user.profile_image),
+        filename=storage_.get_path_basename(user.profile_image),
         media_type="application/octet-stream",
     )
 
@@ -804,9 +826,11 @@ async def upload_profile_image(
 
     # 保存文件
     file_path = utility.get_new_path(
-        os.path.join(config.Config.STATIC_PATH, username, "profile", file.filename)
+        storage_.get_join_path(
+            config.Config.STATIC_PATH, username, "profile", file.filename
+        )
     )
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    storage_.makedirs(file_path)
     try:
         total_size = 0
         async with aiofiles.open(file_path, "wb") as buffer:
@@ -816,7 +840,7 @@ async def upload_profile_image(
                     break
                 total_size += len(chunk)
                 if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
-                    os.remove(file_path)  # 删除已保存的文件
+                    storage_.remove_file(file_path)  # 删除已保存的文件
                     logger.warning("profile image File size exceeds maximum limit")
                     raise HTTPException(
                         status_code=400,
@@ -832,7 +856,7 @@ async def upload_profile_image(
 
     db.commit()
 
-    if not user.profile_image or not os.path.exists(user.profile_image):
+    if not user.profile_image or not storage_.is_file_exist(user.profile_image):
         raise HTTPException(
             status_code=500, detail="Profile image upload failed, Server error"
         )
@@ -866,14 +890,14 @@ async def preview_file(
             status_code=404, detail="File not found in user's file list"
         )
 
-    file.file_preview_path = os.path.join(
+    file.file_preview_path = storage_.get_join_path(
         config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.{file.file_type}"
     )
 
     if (
         not file.file_preview_path
-        or not os.path.exists(file.file_preview_path)
-        or os.path.getsize(file.file_preview_path) < 100
+        or not storage_.is_file_exist(file.file_preview_path)
+        or storage_.get_file_size(file.file_preview_path) < 100
     ):
 
         logger.debug(f"generate preview img :{file.filename}")
@@ -884,21 +908,24 @@ async def preview_file(
                 executor, utility.generate_thumbnail, file.file_path
             )
 
-        async with aiofiles.open(file.file_preview_path, "wb") as f:
+        # async with aiofiles.open(file.file_preview_path, "wb") as f:
 
-            await f.write(thumbnail_data)
+        #     await f.write(thumbnail_data)
+
+        await storage_.async_write_file_wb(file.file_preview_path, thumbnail_data)
 
     else:
 
-        async with aiofiles.open(file.file_preview_path, "rb") as f:
+        # async with aiofiles.open(file.file_preview_path, "rb") as f:
 
-            thumbnail_data = await f.read()
+        # thumbnail_data = await f.read()
+        thumbnail_data = await storage_.async_read_file_rb(file.file_preview_path)
 
     db.commit()
 
     mime_type, _ = mimetypes.guess_type(file.file_path)
 
-    filename = quote(os.path.basename(file.file_path))
+    filename = quote(storage_.get_path_basename(file.file_path))
 
     return StreamingResponse(
         io.BytesIO(thumbnail_data),
@@ -930,27 +957,28 @@ async def preview_video_file(
 
     if (
         not file.file_preview_path
-        or not os.path.exists(file.file_preview_path)
-        or os.path.getsize(file.file_preview_path) < 100
+        or not storage_.is_file_exist(file.file_preview_path)
+        or storage_.get_file_size(file.file_preview_path) < 100
     ):
 
         logger.debug(f"generate preview video :{file.filename}")
 
-        file.file_preview_path = os.path.join(
+        file.file_preview_path = storage_.get_join_path(
             config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
         )
-        os.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
+        # storage_.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
+        storage_.makedirs(file.file_preview_path)
         utility.generate_preview_video(file.file_path, file.file_preview_path)
 
         db.commit()
 
     mime_type = "video/mp4"
 
-    filename = quote(os.path.basename(file.file_path).replace(".", "_"))
+    filename = quote(storage_.get_path_basename(file.file_path).replace(".", "_"))
 
     if (
-        os.path.exists(file.file_preview_path)
-        and os.path.getsize(file.file_preview_path) > 0
+        storage_.is_file_exist(file.file_preview_path)
+        and storage_.get_file_size(file.file_preview_path) > 0
     ):
         return FileResponse(
             file.file_preview_path,
@@ -971,11 +999,11 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 
     file = crud.get_file_by_id(db, file_id)
 
-    segment_index_path = os.path.join(config.File.M3U8_INDEX_PATH, file.id)
+    segment_index_path = storage_.get_join_path(config.File.M3U8_INDEX_PATH, file.id)
 
     index_m3u8_name = "index.m3u8"
 
-    index_m3u8_path = os.path.join(segment_index_path, index_m3u8_name)
+    index_m3u8_path = storage_.get_join_path(segment_index_path, index_m3u8_name)
 
     try:
         utility.generate_hls_playlist(
@@ -999,13 +1027,13 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 # 获取片段
 @app.get("/file/segments/{file_id}/{segment_name}")
 async def get_segment(request: Request, file_id: str, segment_name: str):
-    segment_path = os.path.join(
-        f"{os.path.join(config.File.M3U8_INDEX_PATH, file_id)}", segment_name
+    segment_path = storage_.get_join_path(
+        f"{storage_.get_join_path(config.File.M3U8_INDEX_PATH, file_id)}", segment_name
     )
-    if not os.path.exists(segment_path):
+    if not storage_.is_file_exist(segment_path):
         raise HTTPException(status_code=404, detail="Segment not found")
 
-    file_size = os.path.getsize(segment_path)
+    file_size = storage_.get_file_size(segment_path)
 
     range_header = request.headers.get("Range")
 

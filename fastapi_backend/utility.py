@@ -20,10 +20,13 @@ def get_new_path(path: str):
 
     def get_path_r(pathr: str, intn: int = 1):
         if os.path.exists(pathr):
+            # print(pathr)
+            # print(os.path.isfile(pathr))
             return get_path_r(
                 f"{name}({intn}).{extension}" if extension else f"{name}({intn})",
                 intn + 1,
             )
+            # print(pathr)
         else:
             return pathr
 

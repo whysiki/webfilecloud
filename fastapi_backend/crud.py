@@ -218,3 +218,8 @@ def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) 
     db.commit()
     assert getattr(file, arrtibute) == value, "Modify file attribute failed"
     logger.success(f"Modified file attribute : {arrtibute} to {value}")
+
+
+# @handle_db_errors
+
+# def shift_file

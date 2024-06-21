@@ -1,0 +1,11 @@
+/testfileupload
+/test/temp_upload_dir
+/__pycache__
+/config.py
+/credentials.json
+/func.py
+/get_start.py
+/mc.exe
+/minio.exe
+/question.md
+/tools.py
