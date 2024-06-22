@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Request, File
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile
+import aiofiles
 import asyncio
 from rich import print
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,8 @@ from minio.error import S3Error
 import json
 from fastapi.responses import StreamingResponse, Response
 from fastapi import Depends
+import os
+import shutil
 
 app = FastAPI()
 
@@ -22,8 +25,12 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
+# 临时文件夹
+TEMP_UPLOAD_DIR = "temp_upload_dir"
+
+
 def get_minio_client():
-    with open("../credentials.json") as f:
+    with open("./credentials.json") as f:
         cre = json.load(f)
         print(cre)
 
@@ -147,27 +154,94 @@ async def download_file(
     )
 
 
-# set alias
-# ./mc alias set myminio http://localhost:9000  accesskey secretkey
+# file_id is not object_name
+@app.post("/upload/")
+async def upload_file(file_id: str, order: str, upload_file: UploadFile = File(...)):
+    try:
+        print(file_id, order)
+        # 创建临时文件目录
+        temp_upload_dir = os.path.join(TEMP_UPLOAD_DIR, file_id)
+        os.makedirs(temp_upload_dir, exist_ok=True)
 
-# view all object in bucket
-# ./mc ls --json --recursive myminio/testmulupload
+        temp_file_path = os.path.join(temp_upload_dir, order)
+
+        # 写入文件
+        async with aiofiles.open(temp_file_path, "wb") as f:
+            await f.write(await upload_file.read())
+
+        # 返回临时文件目录和文件名以备后续合并
+        return {"temp_upload_dir": temp_upload_dir, "filename": order, "code": 200}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error occurred during upload: {type(e)}, {str(e)}"
+        )
 
 
-# status: Indicates the status of the operation. In this case, it's "success", meaning the operation to retrieve information about the file was successful.
+@app.post("/merge/")
+async def merge_files(
+    bucket_name: str,
+    filename: str,  # is object_name
+    file_id: str,
+    client: Minio = Depends(get_minio_client),
+):
 
-# type: Specifies the type of the object. Here, it's "file", indicating that the object referred to by this JSON is a file.
+    print(filename, file_id)
+    temp_upload_dir = os.path.join(TEMP_UPLOAD_DIR, file_id)
+    # 找到所有分片文件
+    parts = sorted(os.listdir(temp_upload_dir))
 
-# lastModified: Shows the timestamp when the file was last modified. The format is ISO 8601 with timezone offset (YYYY-MM-DDTHH:MM:SS+HH:MM).
+    print(parts)
 
-# size: Represents the size of the file in bytes. In this example, the file size is 1,211,437 bytes.
+    headers = {"Content-Type": "application/octet-stream"}
 
-# key: This typically refers to the object key or name within the storage system. In this case, the key is "瑶湖cad.dwg".
+    # 创建 MinIO 的分片上传会话
+    upload_id = client._create_multipart_upload(
+        bucket_name=bucket_name,
+        object_name=filename,
+        headers=headers,
+    )
 
-# etag: ETag (Entity Tag) is a unique identifier assigned to the object. It helps in identifying changes to the object's content. This value is often used for cache validation in HTTP headers.
+    print(upload_id)
 
-# url: Provides the URL where the file can be accessed or downloaded. In this example, the file is accessible at "http://localhost:9000/testmulupload/".
+    # 逐个上传分片
+    for i, part in enumerate(parts):
+        part_path = os.path.join(temp_upload_dir, part)
+        part_number = i + 1
+        async with aiofiles.open(part_path, "rb") as data:
+            data = await data.read()
+            etag = client._upload_part(
+                bucket_name=bucket_name,
+                object_name=filename,
+                part_number=part_number,  # 分片编号从 1 开始
+                upload_id=upload_id,
+                data=data,
+                headers=None,
+            )
+            print(part_path, len(data))
+            print(etag)
 
-# versionOrdinal: Indicates the version ordinal of the object. Here, it's 1, meaning it's the first version of the object.
+    list_parts = client._list_parts(
+        bucket_name=bucket_name,
+        object_name=filename,
+        upload_id=upload_id,
+    ).parts
 
-# storageClass: Specifies the storage class of the object. "STANDARD" typically refers to the standard storage class, which provides high durability and availability.
+    print(list_parts)
+
+    for p in list_parts:
+
+        print(p.size, p.part_number)
+
+    # 完成分片上传
+    client._complete_multipart_upload(
+        bucket_name=bucket_name,
+        object_name=filename,
+        upload_id=upload_id,
+        parts=list_parts,
+    )
+
+    # 删除临时分片文件目录
+    shutil.rmtree(temp_upload_dir, ignore_errors=True)
+
+    return {"message": "File uploaded successfully", "code": 200}

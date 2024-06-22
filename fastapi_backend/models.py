@@ -8,20 +8,27 @@ from sqlalchemy import create_engine
 
 Base = declarative_base()
 
-association_table = Table(
-    "association",
+association_user_to_file = Table(
+    "association_user_to_file",
     Base.metadata,
     Column("user_id", String, ForeignKey("users.id")),
     Column("file_id", String, ForeignKey("files.id")),
-    # Column("user_id", String, ForeignKey("whyshi.users.id")),  # Ensure type is String
-    # Column("file_id", String, ForeignKey("whyshi.files.id")),  # Ensure type is String
-    # schema="whyshi",  # 配置了schema迁移时比较麻烦，不配置的话默认为public，但需要有权限。生产环境建议不建议配置schema，授予public权限即可
 )
 
+association_file_to_user = Table(
+    "association_file_to_user",
+    Base.metadata,
+    Column("file_id", String, ForeignKey("files.id")),
+    Column("user_id", String, ForeignKey("users.id")),
+)
+
+association_path_to_file = Table(
+    "association_path_to_file",
+    
+)
 
 class User(Base):
     __tablename__ = "users"
-    # __table_args__ = {"schema": "whyshi"}
     id = Column(String, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)  # Not plain text password
@@ -29,7 +36,7 @@ class User(Base):
     role = Column(String, default="user")
     profile = Column(String, default="")  # User profile
     profile_image = Column(String, default="")  # User profile image
-    files = relationship("File", secondary=association_table, cascade="all, delete")
+    files = relationship("File", secondary=association_user_to_file, cascade="all, delete")
 
 
 class File(Base):
@@ -44,6 +51,13 @@ class File(Base):
     file_type = Column(String, default="binary")
     file_nodes = Column(ARRAY(String), default=[])
     file_preview_path = Column(String, default="")
+    users = relationship("User",secondary=association_file_to_user)
+
+
+class Node(Base):
+    
+    id = Column(String, primary_key=True, index=True)
+    file_nodes = Column(ARRAY(String), default=[],index=True,unique=True)
 
 
 # Create database engine

@@ -3,48 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>test multipart upload</title>
+    <title>Concurrent Chunked File Upload</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        /* background-color: gray; */
-        margin: 20px;
+        background-color: #989898;
+        padding: 20px;
       }
+
+      h1 {
+        color: #333;
+      }
+
       #fileInput {
-        margin-bottom: 10px;
+        margin-top: 10px;
       }
+
       #progressBar {
         width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 20px;
         height: 20px;
-        background-color: lightgray;
-        margin-top: 10px;
-        display: none;
       }
+
       #progressBar div {
         height: 100%;
-        background-color: green;
-        width: 0%;
+        width: 0;
+        background-color: #76c7c0;
+        transition: width 0.3s;
       }
+
       #uploadButton {
-        margin-top: 10px;
-        padding: 10px 20px;
-        background-color: dodgerblue;
+        background-color: #4caf50;
         color: white;
         border: none;
+        padding: 10px 20px;
+        text-align: center;
+        font-size: 16px;
+        margin-top: 20px;
         cursor: pointer;
+        border-radius: 5px;
+      }
+
+      #uploadButton:hover {
+        background-color: #45a049;
+      }
+
+      p {
+        margin: 10px 0;
+        color: #333;
+      }
+
+      #informationError {
+        color: red;
+      }
+
+      #apiInput {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        margin-top: 10px;
+        border-radius: 10px;
       }
     </style>
   </head>
   <body>
     <h1>Chunked File Upload</h1>
     <input type="file" id="fileInput" multiple />
+    <input type="text" id="apiInput" placeholder="Enter API address" />
     <div id="progressBar"><div></div></div>
     <button id="uploadButton" onclick="uploadFile()">Upload</button>
 
+    <p id="informationP2"></p>
+    <p id="informationP"></p>
+    <p id="informationP3"></p>
+    <p id="informationError"></p>
+
     <script>
       async function uploadFile() {
+        const apiInput = document.getElementById("apiInput").value.trim();
+        if (!apiInput) {
+          alert("Please enter API address.");
+          return;
+        }
+
         const fileInput = document.getElementById("fileInput");
         const files = fileInput.files;
+
+        const informationP2 = document.getElementById("informationP2");
+        const informationP = document.getElementById("informationP");
+        const informationP3 = document.getElementById("informationP3");
+        const informationError = document.getElementById("informationError");
 
         if (files.length === 0) {
           alert("Please select a file.");
@@ -52,69 +103,79 @@
         }
 
         const file = files[0];
-        const chunkSize = 10 * 1024 * 1024;
+        const chunkSize = 10 * 1024 * 1024; // 10 MB
         const chunks = Math.ceil(file.size / chunkSize);
         const file_id = uuidv4();
         let order = 0;
 
         const progressBar = document.getElementById("progressBar");
         progressBar.style.display = "block";
+        let currentProgress = 0;
 
-        for (let i = 0; i < chunks; i++) {
-          const start = i * chunkSize;
-          const end = Math.min(file.size, start + chunkSize);
+        const uploadChunk = async (start, end, order) => {
           const blob = file.slice(start, end);
           const chunkFormData = new FormData();
-          chunkFormData.append("order", order.toString());
-          chunkFormData.append("file_id", file_id);
           chunkFormData.append("upload_file", blob);
 
           try {
             const response = await fetch(
-              "http://localhost:8000/upload?" +
-                "file_id=" +
-                file_id +
-                "&order=" +
-                order,
+              apiInput + "/upload?" + "file_id=" + file_id + "&order=" + order,
               {
                 method: "POST",
                 body: chunkFormData,
               }
             );
             if (!response.ok) {
+              informationError.textContent =
+                "Failed to upload chunk " + (order + 1) + JSON.stringify(error);
               throw new Error("Failed to upload chunk " + (order + 1));
             }
+            informationP.innerHTML = `Uploaded chunk: ${order}`;
           } catch (error) {
-            console.error("Error uploading chunk " + (order + 1) + ":", error);
-            progressBar.style.display = "none";
-            return;
+            informationError.textContent =
+              "Failed to upload chunk " + (order + 1) + JSON.stringify(error);
+            throw error;
           }
 
-          const progress = ((i + 1) / chunks) * 100;
-          progressBar.querySelector("div").style.width = progress + "%";
+          const chunkProgress = (1 / chunks) * 100;
+          currentProgress += chunkProgress;
+          progressBar.querySelector("div").style.width = currentProgress + "%";
+        };
 
+        const chunkPromises = [];
+
+        for (let i = 0; i < chunks; i++) {
+          const start = i * chunkSize;
+          const end = Math.min(file.size, start + chunkSize);
+          chunkPromises.push(uploadChunk(start, end, order));
           order++;
         }
 
         try {
+          await Promise.all(chunkPromises);
           const mergeResponse = await fetch(
-            "http://localhost:8000/merge?filename=" +
+            apiInput +
+              "/merge?filename=" +
               encodeURIComponent(file.name) +
               "&file_id=" +
-              file_id,
+              file_id +
+              "&bucket_name=" +
+              bucket_name,
             {
               method: "POST",
             }
           );
           if (!mergeResponse.ok) {
+            informationError.textContent = "Failed to merge chunks";
             throw new Error("Failed to merge chunks");
           }
-          alert("File uploaded successfully!");
+          informationP3.innerHTML = `File uploaded successfully! <br> File ID: ${file_id} <br> Filename: ${file.name} <br> Bucket Name: ${bucket_name}`;
         } catch (error) {
-          console.error("Error merging chunks:", error);
+          informationError.textContent =
+            "Failed to merge chunks" + JSON.stringify(error);
         } finally {
-          progressBar.style.display = "none";
           progressBar.querySelector("div").style.width = "0%";
+          progressBar.style.display = "none";
         }
       }
 

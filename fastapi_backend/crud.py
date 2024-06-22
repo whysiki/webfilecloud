@@ -39,7 +39,6 @@ def get_file_id_list(db: Session, user: User) -> list:
 # 获取文件对象通过文件ID
 @handle_db_errors
 def get_file_by_id(db: Session, file_id: str) -> File:
-    # logger.debug(f"file_id: {file_id}")
     f = db.query(File).filter(File.id == file_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="File not found")
@@ -219,7 +218,3 @@ def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) 
     assert getattr(file, arrtibute) == value, "Modify file attribute failed"
     logger.success(f"Modified file attribute : {arrtibute} to {value}")
 
-
-# @handle_db_errors
-
-# def shift_file
