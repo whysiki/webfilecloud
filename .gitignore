@@ -36,3 +36,4 @@ filecloud.rar
 /minio_store/get_start.py
 /minio_store/func.py
 /minio_store/config.py
+minio_store/test/__pycache__/multipart_download.cpython-312.pyc
