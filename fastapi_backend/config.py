@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 from dotenv import load_dotenv
+
 import os
 
 # Load environment variables
@@ -33,11 +34,11 @@ class Config:
     assert ROOT_PASSWORD, "ROOT_PASSWORD is missing, please check your .env file."
     assert DATABASE_URL, "DATABASE_URL is missing, please check your .env file."
 
-    os.makedirs(UPLOAD_PATH, exist_ok=True)
-    os.makedirs(STATIC_PATH, exist_ok=True)
+    # os.makedirs(UPLOAD_PATH, exist_ok=True)
+    # os.makedirs(STATIC_PATH, exist_ok=True)
 
-    assert os.path.exists(UPLOAD_PATH), "Upload path not found."
-    assert os.path.exists(STATIC_PATH), "Static path not found."
+    # assert os.path.exists(UPLOAD_PATH), "Upload path not found."
+    # assert os.path.exists(STATIC_PATH), "Static path not found."
 
     # CORS origins
     CROS_ORIGINS: list = ["*"]
@@ -50,7 +51,7 @@ class User(Config):
     # Default profile image path
     DEFAULT_PROFILE_IMAGE: str = os.path.join("whysiki.jpg")
 
-    assert os.path.exists(DEFAULT_PROFILE_IMAGE), "Default profile image not found."
+    # assert os.path.exists(DEFAULT_PROFILE_IMAGE), "Default profile image not found."
 
     # 头像最大大小
     PROFILE_IMAGE_MAX_FILE_SIZE: int = 1024 * 1024 * 3
@@ -60,12 +61,12 @@ class File(Config):
 
     LOAD_ERROR_IMG = "whysiki_load_error.jpg"
 
-    assert os.path.exists(LOAD_ERROR_IMG), "Load error image not found."
+    # assert os.path.exists(LOAD_ERROR_IMG), "Load error image not found."
 
     PREVIEW_FILES_PATH: str = os.path.join("cache", "preview")
 
     M3U8_INDEX_PATH: str = os.path.join("cache", "m3u8")
 
-    os.makedirs(M3U8_INDEX_PATH, exist_ok=True)
+    # os.makedirs(M3U8_INDEX_PATH, exist_ok=True)
 
-    os.makedirs(PREVIEW_FILES_PATH, exist_ok=True)
+    # os.makedirs(PREVIEW_FILES_PATH, exist_ok=True)
