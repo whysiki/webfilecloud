@@ -69,17 +69,7 @@ def add_user(db: Session, user: User) -> User:
 
 @handle_db_errors
 def delete_file_from_db(db: Session, file: File) -> None:
-    # 一个文件路径可能对应多个文件id
-    # 只有当前文件链接到文件路径才删除（即文件路径对应的文件id只有当前要删除的文件）
-    if (storage_.is_file_exist(file.file_path)) and (
-        # only current file link to the file path
-        len(db.query(File).filter(File.file_path == file.file_path).all())
-        == 1
-    ):
-        storage_.remove_file(file.file_path)  # Now delete the file
-        logger.warning(f"Deleted a file: {file.filename}")
-    else:
-        logger.error("File not found in the store")
+
     if file.file_owner_name:
         username = file.file_owner_name
         user = get_user_by_username(db, username)
@@ -94,7 +84,19 @@ def delete_file_from_db(db: Session, file: File) -> None:
                 user.files.remove(file)
                 db.commit()
             db.delete(file)  # 删除文件在File表中的记录
+            # 一个文件路径可能对应多个文件id
+            # 只有当前文件链接到文件路径才删除（即文件路径对应的文件id只有当前要删除的文件）
+            if (storage_.is_file_exist(file.file_path)) and (
+                # only current file link to the file path
+                len(db.query(File).filter(File.file_path == file.file_path).all())
+                == 1
+            ):
+                storage_.remove_file(file.file_path)  # Now delete the file
+                logger.warning(f"Deleted a file: {file.filename}")
+            else:
+                logger.error("File not found in the store")
             db.commit()  # Commit all changes including cascade deletions
+
         else:
             logger.error("File not associated with the user")
     else:
