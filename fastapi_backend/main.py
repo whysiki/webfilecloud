@@ -195,7 +195,7 @@ async def upload_file(
             # pass
         else:
             # otherwise, raise an exception
-            logger.warning(f"file_id: {file_id} already exists, upload failed")
+            # logger.warning(f"file_id: {file_id} already exists, upload failed")
             # raise HTTPException(status_code=400, detail="File already exists")
             filem = crud.get_file_by_id(db, file_id=file_id)
             if storage_.is_file_exist(filem.file_path):
