@@ -7,10 +7,7 @@ from fastapi import HTTPException
 import io
 from PIL import Image
 import aiofiles
-
-# import imageio
-
-# import ffmpeg
+from functools import wraps
 
 
 def get_new_path(path: str):
@@ -221,3 +218,51 @@ def generate_hls_playlist(
         logger.info(f"HLS playlist and segments generated at {output_dir}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to generate HLS playlist: {e}")
+
+
+def get_start_end_from_range_header(
+    range_header: str,  # example: "bytes=0-1023"
+    file_size: int,
+    headers: dict = None,  # range_header = request.headers.get("Range")
+) -> tuple[int, int]:
+    if headers and headers.get("Range"):
+        range_header = headers.get("Range")
+    if not file_size:
+        raise HTTPException(status_code=404, detail="File not found")
+    if range_header:
+        try:
+            start, end = range_header.replace("bytes=", "").split("-")
+            start = int(start)
+            end = int(end) if end else file_size - 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid Range header")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid Range header:{str(e)}"
+            )
+    else:
+        start = 0
+        end = file_size - 1
+
+    if start >= file_size or end >= file_size:
+        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+
+    return start, end
+
+
+def require_double_confirmation(func):
+    confirmation_required = False
+
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        nonlocal confirmation_required
+        if not confirmation_required:
+            confirmation_required = True
+            raise HTTPException(
+                status_code=400, detail="Please confirm the action again"
+            )
+        result = await func(*args, **kwargs)
+        confirmation_required = False
+        return result
+
+    return wrapper

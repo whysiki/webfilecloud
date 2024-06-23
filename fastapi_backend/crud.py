@@ -87,7 +87,7 @@ def delete_file_from_db(db: Session, file: File) -> None:
             db.commit()  # Commit all changes including cascade deletions
             if os.path.exists(file.file_path):
                 os.remove(file.file_path)  # Now delete the file
-                logger.debug(f"Deleted a file: {file.filename}")
+                logger.warning(f"Deleted a file: {file.filename}")
             else:
                 logger.error("File not found in the filesystem")
             # test 开发时使用, 用于检查文件是否被删除 生产环境不需要
@@ -134,7 +134,7 @@ def delete_user_from_db(db: Session, user: User) -> None:
     user_folder = os.path.join(Config.UPLOAD_PATH, user.username)
     if os.path.exists(user_folder):
         shutil.rmtree(user_folder)
-    logger.debug(f"Deleted an user : {user.username}")
+    logger.warning(f"Deleted an user : {user.username}")
 
 
 # 获取用户通过用户名
@@ -210,11 +210,9 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
     return user
 
 
-
 @handle_db_errors
 def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
     setattr(file, arrtibute, value)
     db.commit()
     assert getattr(file, arrtibute) == value, "Modify file attribute failed"
     logger.success(f"Modified file attribute : {arrtibute} to {value}")
-

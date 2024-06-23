@@ -100,16 +100,7 @@ export default {
       return codeTypes.includes(this.type);
     },
     isImage() {
-      const imageTypes = [
-        "jpg",
-        "jpeg",
-        "png",
-        "gif",
-        "bmp",
-        "webp",
-        "svg",
-        "ico",
-      ];
+      const imageTypes = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico"];
       return imageTypes.includes(this.type);
     },
     isMarkdown() {
@@ -182,7 +173,7 @@ export default {
 }
 
 /* 加载动画容器 */
->>> .loader-container {
+:deep(.loader-container) {
   position: fixed;
   top: 0;
   left: 0;
@@ -196,7 +187,7 @@ export default {
 }
 
 /* 加载动画样式 */
->>> .loader {
+:deep(.loader) {
   border: 8px solid #f3f3f3; /* Light grey */
   border-top: 8px solid #1a7be3; /* Blue */
   border-right: 8px solid #32cd32; /* Lime green */

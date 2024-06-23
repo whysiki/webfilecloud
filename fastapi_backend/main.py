@@ -3,37 +3,37 @@ from fastapi import HTTPException, Depends
 from uuid import uuid4
 from starlette.requests import Request
 from sqlalchemy.orm import Session
-import models  # 模型定义
+import models  # model definition
 import schemas
-import crud  # 数据库操作
+import crud  # database operations
 from auth import pwd_context, create_access_token, get_current_username
 from fastapi import File, UploadFile
 from datetime import datetime, timedelta
-from fastapi import Header
+
+# from fastapi import Header
 from typing import Optional
-import auth  # 认证
+
+# import auth  # authentication functions
 from fastapi.responses import FileResponse
 import hashlib
-import config  # 自定义配置类，里面有配置项
+import config  # costom configuration
 from fastapi.responses import StreamingResponse
 import aiofiles
 from loguru import logger
-from dep import get_db  # 依赖注入
-from app import app  # 应用实例
+from dep import get_db, get_access_token, get_current_userneame  # inject dependency
+from app import app  # fast app instance
 import json
 import numpy
-import utility  # 自定义工具函数
+import utility  # costom utility functions
 from concurrent.futures import ThreadPoolExecutor
 import io
 import asyncio
 from urllib.parse import quote
 import mimetypes
-import storage_  # 解耦存储相关接口
+import storage_  # costom storage functions
 
 
-# from pathlib import Path
-# import os
-# 注册用户
+# register user
 @app.post("/users/register", response_model=schemas.UserOut)
 async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if crud.is_user_exist(db, user_in.username):
@@ -50,7 +50,7 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     )
 
 
-# 用户登录
+# login user and return access_token and refresh_token
 @app.post("/users/login", response_model=schemas.Token)
 async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if crud.is_not_valid_user(db, user_in):
@@ -65,45 +65,40 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
     )
 
 
-# 更新access_token
+# update access_token with refresh_token
 @app.post("/users/refresh", response_model=schemas.Token)
-async def refresh_token(Authorization: Optional[str] = Header(None)):
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+async def refresh_token(access_token: str = Depends(get_access_token)):
     username: str = get_current_username(access_token)
-    ##  通过access_token获取用户名，然后再生成新的access_token
+    ## by leveraging the refresh token, the user can get a new access token
     access_token = create_access_token(data={"sub": username})
-
     refresh_token = create_access_token(
         data={"sub": username},
         expires_delta=timedelta(minutes=config.Config.ACCESS_TOKEN_EXPIRE_MINUTES * 2),
     )
-
     test_username = get_current_username(access_token)
-
     test_username_refresh = get_current_username(refresh_token)
-
     if not (test_username == username == test_username_refresh):
         raise HTTPException(status_code=401, detail="refresh token failed")
-
     logger.debug(f"refresh token :{refresh_token}")
     return schemas.Token(
         access_token=access_token, token_type="bearer", refresh_token=refresh_token
     )
 
 
-# 删除用户
+# delete user
 @app.delete("/users/delete", response_model=schemas.UserOut)
 async def delete_user(
-    id: str, Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+    id: str,
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db),
 ):
-    access_token: str = auth.get_access_token_from_Authorization(Authorization)
+
     current_username: str = get_current_username(access_token)
     user = crud.get_user_by_id(db, id)
     if not (user.username == current_username):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     crud.delete_user_from_db(db, user)
-    # if storage_.is_file_exist(user.profile_image):
-    #     storage_.remove_file(user.profile_image)
+
     storage_.remove_file(user.profile_image)
     logger.warning(f"User {current_username} deleted")
     return schemas.UserOut(
@@ -113,18 +108,16 @@ async def delete_user(
     )
 
 
-# 获取用户ID
+# get user id
 @app.post("/users/getid", response_model=schemas.UserOut)
 async def get_user_id(
     user_in: schemas.UserIn,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
 
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -137,17 +130,16 @@ async def get_user_id(
     return schemas.UserOut(id=user.id, username=user.username, message="User found.")
 
 
-# 获取用户信息
+# get user info
 @app.post("/users/me", response_model=schemas.UserShow)
 async def read_users_me(
     user_in: schemas.UserIn,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username=username)
     return schemas.UserShow(
@@ -159,13 +151,13 @@ async def read_users_me(
     )
 
 
-## 危险api,部署时删除或者修改
-# 删除用户的所有文件
+# delete all users , dangerous api, not recommended for production
 @app.delete("/users/files/delete", response_model=schemas.UserOut)
+@utility.require_double_confirmation
 async def delete_user_files(
-    Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+    access_token: str = Depends(get_access_token), db: Session = Depends(get_db)
 ):
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username=username)
     for file in user.files:
@@ -179,38 +171,31 @@ async def delete_user_files(
     )
 
 
-#  上传文件 适用于不是特别大的文件
+# upload file, suitable for files that are not too large
 @app.post("/files/upload", response_model=schemas.FileOut)
 async def upload_file(
     file: UploadFile = File(...),
     file_id: Optional[str] = None,
     file_nodes: Optional[str] = None,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
     user = crud.get_user_by_username(db, username)
 
-    # 可选参数file_id，如果指定了file_id，检查文件是否已存在，防止重复上传，前端先计算文件内容的哈希值作为文件ID
-    if file_id:
+    if file_id:  # if file_id is not None, check if the file already exists
         try:
-            # 这里没有是会抛出异常，所以不需要判断是否存在
+            # if file_id is not exist, raise an exception
             crud.get_file_by_id(db, file_id=file_id)
         except:
-            pass
+            # if file_id is not exist, do nothing
+            logger.debug(f"file_id: {file_id} not exist, upload new file")
+            # pass
         else:
-            pass
-            # 如果文件已存在，抛出异常
-            # filem = crud.get_file_by_id(db, file_id=file_id)
-            # # file
-            # # if storage_.is_file_exist(filem.file_path):
-            # if storage_.is_file_exist(filem.file_path):
-            #     logger.warning(f"File {filem.filename} already exists")
-            #     raise HTTPException(status_code=400, detail="File already exists")
+            # otherwise, raise an exception
+            logger.warning(f"file_id: {file_id} already exists, upload failed")
             filem = crud.get_file_by_id(db, file_id=file_id)
             if storage_.is_file_exist(filem.file_path):
                 raise HTTPException(status_code=400, detail="File already exists")
@@ -232,20 +217,23 @@ async def upload_file(
     else:
         file_nodes = []
 
-    ##
-    ## 设计时候忘记了同样的文件冗余存的问题😅😅
-    ## 这里应该需要直接计算文件内容的哈希值作为文件ID，如果在文件表中存在
-    # 那么检查这个文件是否是当前用户的，是则返回存在
-    # 不是则在新用户上面的文件关系中添加这个文件，然后返回
+    ## I forgot to store the same files at design time 😅😅.
+    # It doesn't matter if you don't store large files for your own  use 🤣
+    ## It should be necessary to directly compute the hash of the file contents as the file id, if present in the file table
+    # Then check if the file is for the current user and if it is, return it exists
+    # If not, add this file in the file relationship above the new user,  and then return ## Forgot the same file redundancy problem at design time 😅😅,  and don't store large files for your own use, it doesn't matter 🤣
+    ## It should be necessary to directly compute the hash of the file contents as the file id, if present in the file table
+    # Then check if the file is for the current user and if it is, return it exists
+    # If not, add the file to the new user's file relationship and return
     file_content: bytes = await file.read()
-    # 文件内容的哈希值 + 用户名哈希值 + 节点哈希值 作为文件ID
+    # the file content hash + the user name hash + the file node hash 🤣
     file_hash = (
         hashlib.sha256(file_content).hexdigest()
         + hashlib.sha1(username.encode()).hexdigest()
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
 
-    # 检查文件是否已存在
+    # check if the file already exists
     existing_file = (
         db.query(models.File)
         .filter(models.File.id == file_hash, models.File.file_owner_name == username)
@@ -266,33 +254,21 @@ async def upload_file(
         )
 
     ##
-    ##
-    ##
 
     filename = file.filename
 
-    # filename = storage_.get_path_basename(filename)  # 获取基本路径
     filename = storage_.get_path_basename(filename)
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
     file_path = utility.get_new_path(
-        # storage_.get_join_path(config.Config.UPLOAD_PATH, username, file_type, filename)
         storage_.get_join_path(config.Config.UPLOAD_PATH, username, file_type, filename)
-        # str(Path(config.Config.UPLOAD_PATH)/Path(username)/Path(file_type)/Path(filename))
-        # os.path.join(config.Config.UPLOAD_PATH, username, file_type, filename)
     )
-
-    # storage_.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     storage_.makedirs(file_path)
 
-    # async with aiofiles.open(file_path, "wb") as buffer:
-    #     await buffer.write(file_content)
-
     await storage_.async_write_file_wb(file_path, file_content)
 
-    # file_size = str(storage_.get_file_size(file_path))
     file_size = str(storage_.get_file_size(file_path))
     file_create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -309,7 +285,6 @@ async def upload_file(
         file_nodes=file_nodes,
     )
 
-    # 添加文件到用户的文件列表
     crud.add_file_to_user(db, new_file, user)
 
     db.add(new_file)
@@ -332,15 +307,13 @@ async def upload_file(
     )
 
 
-# 下载文件文件式响应
+# download file with direct filereponse
 @app.get("/files/download")
 async def read_file(
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -358,7 +331,6 @@ async def read_file(
             status_code=404, detail="File not found in user's file list"
         )
 
-    # if not storage_.is_file_exist(file.file_path):
     if not storage_.is_file_exist(file.file_path):
 
         raise HTTPException(status_code=404, detail="File path not found")
@@ -368,20 +340,19 @@ async def read_file(
     return FileResponse(
         file.file_path,
         media_type="application/octet-stream",
-        # filename=storage_.get_path_basename(file.file_path),
         filename=storage_.get_path_basename(file.file_path),
     )
 
 
-# 下载文件流式响应
+# download file with stream response
 @app.get("/files/download/stream")
 async def read_file_stream(
     request: Request,
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     file = crud.get_file_by_id(db, file_id=file_id)
@@ -394,23 +365,12 @@ async def read_file_stream(
             status_code=404, detail="File not found in user's file list"
         )
 
-    # if not storage_.is_file_exist(file.file_path):
     if not storage_.is_file_exist(file.file_path):
         raise HTTPException(status_code=404, detail="File path not found")
 
-    # file_size = storage_.get_file_size(file.file_path)
     file_size = storage_.get_file_size(file.file_path)
     range_header = request.headers.get("Range")
-    if range_header:
-        start, end = range_header.replace("bytes=", "").split("-")
-        start = int(start)
-        end = int(end) if end else file_size - 1
-    else:
-        start = 0
-        end = file_size - 1
-
-    if start >= file_size or end >= file_size:
-        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+    start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
         utility.file_iterator(file.file_path, start, end),
@@ -423,13 +383,11 @@ async def read_file_stream(
     )
 
 
-# 获取用户文件列表
+# get file list of current user
 @app.get("/files/list", response_model=schemas.FileList)
 async def list_files(
-    Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+    access_token: str = Depends(get_access_token), db: Session = Depends(get_db)
 ):
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -453,15 +411,13 @@ async def list_files(
     return dict(files=file_list)
 
 
-# 删除一个文件
+# delete file of current user
 @app.delete("/files/delete", response_model=schemas.FileOut)
 async def delete_file(
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -479,7 +435,6 @@ async def delete_file(
             status_code=404, detail="File not found in user's file list"
         )
 
-    # if not storage_.is_file_exist(file.file_path):
     if not storage_.is_file_exist(file.file_path):
 
         raise HTTPException(status_code=404, detail="File path not found")
@@ -498,8 +453,7 @@ async def delete_file(
     )
 
 
-# ## 危险api,部署时删除或者修改
-# 重置数据库
+# reset database, dangerous api, not recommended for production
 @app.post("/db/reset", response_model=schemas.DbOut)
 async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if (
@@ -507,12 +461,10 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
         or user_in.password != config.Config.ROOT_PASSWORD
     ):
         raise HTTPException(status_code=403, detail="Permission denied")
-    db.query(models.association_table).delete()  # 清空联系表
-    db.query(models.User).delete()  # 清空用户表
-    db.query(models.File).delete()  # 清空文件表
+    db.query(models.association_table).delete()
+    db.query(models.User).delete()
+    db.query(models.File).delete()
     db.commit()
-    # if storage_.is_file_exist(config.onfig.UPLOAD_PATH):
-    # shutil.rmtree(config.Config.UPLOAD_PATH)
 
     storage_.remove_path(config.Config.UPLOAD_PATH)
     return schemas.DbOut(
@@ -522,17 +474,17 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     )
 
 
-# 修改文件名
+# modify file name
 @app.post("/file/modifyname", response_model=schemas.FileOut)
 async def modify_file_name(
     file_id: str,
     new_file_name: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
     if not new_file_name:
         raise HTTPException(status_code=405, detail="Invalid file name")
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+
     username = get_current_username(access_token)
     logger.debug(f"new file name: {new_file_name}")
     logger.debug(f"file_id: {file_id}")
@@ -561,15 +513,13 @@ async def modify_file_name(
     )
 
 
-# 获取单个文件信息
+# get single file info
 @app.get("/files/info", response_model=schemas.FileOut)
 async def file_info(
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -605,12 +555,12 @@ async def file_info(
     )
 
 
-# 移动文件位置
+# modify file nodes
 @app.post("/file/modifynodes", response_model=schemas.FileOut)
 async def modify_file_nodes(
     file_id: str,
     file_nodes: Optional[str] = None,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
     if not file_nodes:
@@ -630,8 +580,6 @@ async def modify_file_nodes(
             )
             file_nodes_array = []
             break
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username = get_current_username(access_token)
 
@@ -668,7 +616,7 @@ async def modify_file_nodes(
     )
 
 
-# 直接下载文件，直接链接，实际可能需要生成一个临时链接比较好，待优化
+# direct download file, direct link, actually may need to generate a temporary link, to be optimized
 @app.get("/file/directdownload/{user_id}/{file_id}/{file_name}")
 async def download_file(
     user_id: str, file_id: str, file_name: str, db: Session = Depends(get_db)
@@ -680,9 +628,6 @@ async def download_file(
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
 
-    # file_path = Path(file.file_path)
-    # file_size = file_path.stat().st_size
-
     file_size = storage_.get_file_size(file.file_path)
 
     return FileResponse(
@@ -693,7 +638,7 @@ async def download_file(
     )
 
 
-# 流式下载文件的直接链接
+# download file with stream response
 @app.get("/file/download/{user_id}/{file_id}/{file_name}")
 async def download_file(
     request: Request,
@@ -716,23 +661,8 @@ async def download_file(
     # file_size = storage_.get_file_size(file.file_path)
     file_size = storage_.get_file_size(file.file_path)
     range_header = request.headers.get("Range")
-    if range_header:
-        try:
-            start, end = range_header.replace("bytes=", "").split("-")
-            start = int(start)
-            end = int(end) if end else file_size - 1
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid Range header")
-        except Exception as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid Range header:{str(e)}"
-            )
-    else:
-        start = 0
-        end = file_size - 1
 
-    if start >= file_size or end >= file_size:
-        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+    start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
         utility.file_iterator(file.file_path, start, end),
@@ -745,11 +675,11 @@ async def download_file(
     )
 
 
-# 获取同属于一个节点的文件列表
+# get files of the same node
 @app.get("/files/nodefiles", response_model=schemas.FileList)
 async def list_node_files(
-    file_nodes: str,  # 数组字符串
-    Authorization: Optional[str] = Header(None),
+    file_nodes: str,  # array string , example: "['node1','node2']"
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
     if not file_nodes or len(numpy.array(json.loads(file_nodes)).shape) != 1:
@@ -758,8 +688,6 @@ async def list_node_files(
             status_code=400,
             detail="invalid upload nodes, please input a string array, default: []",
         )
-
-    access_token = auth.get_access_token_from_Authorization(Authorization)
 
     username: str = get_current_username(access_token)
 
@@ -784,15 +712,14 @@ async def list_node_files(
     return dict(files=file_list)
 
 
-# 获取用户头像
+# get user profile image
 @app.get("/users/profileimage", response_model=schemas.UserOut)
 async def get_profile_image(
-    Authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+    access_token: str = Depends(get_access_token), db: Session = Depends(get_db)
 ):
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
-    # if not user.profile_image or not storage_.is_file_exist(user.profile_image):
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
         if storage_.is_file_exist(config.User.DEFAULT_PROFILE_IMAGE):
             user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
@@ -810,21 +737,20 @@ async def get_profile_image(
     )
 
 
-# 上传用户头像
+# upload user profile image
 @app.post("/users/upload/profileimage", response_model=schemas.UserOut)
 async def upload_profile_image(
     file: UploadFile = File(...),
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-    # 获取访问令牌和用户名
-    access_token = auth.get_access_token_from_Authorization(Authorization)
+
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 保存文件
+    # save profile image
     file_path = utility.get_new_path(
         storage_.get_join_path(
             config.Config.STATIC_PATH, username, "profile", file.filename
@@ -835,12 +761,12 @@ async def upload_profile_image(
         total_size = 0
         async with aiofiles.open(file_path, "wb") as buffer:
             while True:
-                chunk = await file.read(1024)  # 每次读取1KB
+                chunk = await file.read(1024)  # read in 1KB chunks
                 if not chunk:
                     break
                 total_size += len(chunk)
                 if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
-                    storage_.remove_file(file_path)  # 删除已保存的文件
+                    storage_.remove_file(file_path)  # remove the file
                     logger.warning("profile image File size exceeds maximum limit")
                     raise HTTPException(
                         status_code=400,
@@ -869,15 +795,14 @@ async def upload_profile_image(
     )
 
 
-# 图片预览
+# prvivew image
 @app.get("/files/img/preview")
 async def preview_file(
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
 
-    access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     file = crud.get_file_by_id(db, file_id=file_id)
@@ -908,17 +833,10 @@ async def preview_file(
                 executor, utility.generate_thumbnail, file.file_path
             )
 
-        # async with aiofiles.open(file.file_preview_path, "wb") as f:
-
-        #     await f.write(thumbnail_data)
-
         await storage_.async_write_file_wb(file.file_preview_path, thumbnail_data)
 
     else:
 
-        # async with aiofiles.open(file.file_preview_path, "rb") as f:
-
-        # thumbnail_data = await f.read()
         thumbnail_data = await storage_.async_read_file_rb(file.file_preview_path)
 
     db.commit()
@@ -934,15 +852,14 @@ async def preview_file(
     )
 
 
-# 视频预览
+# video preview
 @app.get("/files/video/preview")
 async def preview_video_file(
     file_id: str,
-    Authorization: Optional[str] = Header(None),
+    access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
 
-    access_token = auth.get_access_token_from_Authorization(Authorization)
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     file = crud.get_file_by_id(db, file_id=file_id)
@@ -966,8 +883,7 @@ async def preview_video_file(
         file.file_preview_path = storage_.get_join_path(
             config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
         )
-        # storage_.makedirs(os.path.dirname(file.file_preview_path), exist_ok=True)
-        storage_.makedirs(file.file_preview_path)
+        storage_.makedirs(file.file_preview_path, is_file=True)
         utility.generate_preview_video(file.file_path, file.file_preview_path)
 
         db.commit()
@@ -993,7 +909,7 @@ async def preview_video_file(
         )
 
 
-# 获取hls流m3u8文件
+# get hls m3u8 file
 @app.get("/file/video/{file_id}/index.m3u8")
 async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 
@@ -1024,7 +940,7 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
     return FileResponse(index_m3u8_path, media_type="application/vnd.apple.mpegurl")
 
 
-# 获取片段
+# get hls m3u8 segment file
 @app.get("/file/segments/{file_id}/{segment_name}")
 async def get_segment(request: Request, file_id: str, segment_name: str):
     segment_path = storage_.get_join_path(
@@ -1037,23 +953,7 @@ async def get_segment(request: Request, file_id: str, segment_name: str):
 
     range_header = request.headers.get("Range")
 
-    if range_header:
-        try:
-            start, end = range_header.replace("bytes=", "").split("-")
-            start = int(start)
-            end = int(end) if end else file_size - 1
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid Range header")
-        except Exception as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid Range header:{str(e)}"
-            )
-    else:
-        start = 0
-        end = file_size - 1
-
-    if start >= file_size or end >= file_size:
-        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+    start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
         utility.file_iterator(segment_path, start, end),
