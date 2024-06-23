@@ -97,6 +97,8 @@ def generate_preview_video(video_path, output_path):
         # 确定裁剪的时长（最多5秒）
         preview_duration = min(original_duration, 5.0)
 
+        print(os.path.exists(output_path))
+
         try:
 
             # 构建ffmpeg命令
@@ -183,6 +185,8 @@ def generate_hls_playlist(
 
     output_path = os.path.join(output_dir, playlist_name)
 
+    print(os.path.exists(output_path))
+
     ffmpeg_command = [
         "ffmpeg",
         "-i",
@@ -201,6 +205,7 @@ def generate_hls_playlist(
         "hls",
         f"{output_path}",
     ]
+    print(ffmpeg_command)
 
     # try:
     #     subprocess.run(ffmpeg_command, check=True)
@@ -218,3 +223,12 @@ def generate_hls_playlist(
         logger.info(f"HLS playlist and segments generated at {output_dir}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to generate HLS playlist: {e}")
+
+
+# ERROR    | utility:generate_hls_playlist:251 - Failed to generate HLS playlist: Command
+#
+# '['ffmpeg', '-i', 'C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmpvvb97dey.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache/2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709/d8b64e72-b319-4eba-943a-defd6c69164e%d.ts', '-f', 'hls', 'cache/2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709/index.m3u8']'
+# returned non-zero exit status 4294967283.
+
+
+# ['ffmpeg', '-i', 'uploads/2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653a.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709%d.ts', '-f', 'hls', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\index.m3u8']
