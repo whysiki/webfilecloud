@@ -22,7 +22,7 @@ def handle_db_errors(func):
             logger.error(f"Database error in {func.__name__}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Database error occurred")
         except Exception as e:
-            logger.error(f"Unexpected error in {func.__name__}: {str(e)}")
+            logger.warning(f"Unexpected error in {func.__name__}: {str(e)}")
             raise HTTPException(status_code=404, detail=f"{str(e)}")  # ,type；{type(e)}
 
     return wrapper

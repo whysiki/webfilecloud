@@ -23,7 +23,7 @@ def get_join_path(*paths, **kargs):
 
 def is_file_exist(path, *args, **kargs):
     # return Path(path).exists() if path else False
-    return os.path.exists(path)
+    return os.path.exists(path) if path else False
 
 
 def get_path_dirname(path, *args, **kargs):

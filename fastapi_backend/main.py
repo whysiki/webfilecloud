@@ -205,7 +205,7 @@ async def upload_file(
         file_nodes = json.loads(file_nodes)
 
         if len(numpy.array(file_nodes).shape) != 1:
-            logger.error("invalid upload nodes")
+            logger.error(f"invalid upload nodes: {file_nodes   }")
             raise HTTPException(status_code=400, detail="invalid nodes")
         for node in file_nodes:
             if not node.strip():

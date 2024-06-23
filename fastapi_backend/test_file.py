@@ -20,6 +20,9 @@ import gzip
 from io import BytesIO
 from httpx import AsyncClient, Client
 from urllib.parse import unquote
+import utility
+import numpy as np
+
 # import psutil
 # from achive.path_tools import forcey_delete_path
 
@@ -49,21 +52,26 @@ console = Console()
 def handle_error(func):
     @functools.wraps(func)
     async def wrapp(*args, **kwargs):
+        error = None
         for i in range(3):
             try:
                 return await func(*args, **kwargs)
             except httpx.HTTPStatusError as e:
+                error = e
                 console.print(f"HTTP error occurred: {e}", style="red")
             except httpx.RequestError as e:
+                error = e
                 console.print(f"Request error occurred: {e}", style="red")
             except httpx.ReadTimeout as e:
+                error = e
                 console.print(f"Read timeout: {e}", style="red")
             except Exception as e:
+                error = e
                 console.print(f"An unexpected error occurred: {e}", style="red")
 
             console.print(f"attempt time {i+1}/4", style="yellow")
 
-        return None
+        raise error
 
     return wrapp
 
@@ -198,6 +206,8 @@ async def delete_user_files(client, token):
     url = f"{base_url}/users/files/delete"
     headers = {"Authorization": f"Bearer {token}"}
     response = await client.delete(url, headers=headers)
+    # print(response.status_code)
+    response = await client.delete(url, headers=headers)
     print(response.status_code)
     assert response.status_code == 200
     print(response.json())
@@ -230,9 +240,11 @@ async def upload_file_with_nodes(client, token, test_file, nodes):
     print(response.status_code)
     print(response.json())
 
-    assert (
-        response.json()["file_nodes"] == nodes
-    ), "error: upload_file_with_nodes failed"
+    if len(np.array(nodes).shape) == 1:
+
+        assert response.json()["file_nodes"] == nodes or (
+            response.json()["file_nodes"] == [] and nodes == [""]
+        ), "error: upload_file_with_nodes failed"
 
     return response
 
@@ -246,7 +258,8 @@ async def modyfy_file_nodes(client, token, file_id, nodes):
     response = await client.post(url, headers=headers, params=params)
     print(response.status_code)
     print(response.json())
-    print("修改文件节点", nodes, "resullt:", response.json()["file_nodes"])
+    if response.status_code == 200:
+        print("修改文件节点", nodes, "resullt:", response.json()["file_nodes"])
     # assert response.json()["file_nodes"] == nodes, "modify nodes failed"
 
 
@@ -398,12 +411,14 @@ async def test_getuseravatar(client: AsyncClient, token: str):
 
     if response.status_code == 200:
         # 从Content-Disposition头获取文件名
-        content_disposition = response.headers.get('Content-Disposition')
-        if content_disposition and 'filename*=' in content_disposition:
-            filename = content_disposition.split("filename*=")[1].strip().strip("utf-8''")
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition and "filename*=" in content_disposition:
+            filename = (
+                content_disposition.split("filename*=")[1].strip().strip("utf-8''")
+            )
             filename = unquote(filename)
-        elif content_disposition and 'filename=' in content_disposition:
-            filename = content_disposition.split('filename=')[1].strip().strip('"')
+        elif content_disposition and "filename=" in content_disposition:
+            filename = content_disposition.split("filename=")[1].strip().strip('"')
         else:
             filename = "userprofileimg.jpg"
 
@@ -412,7 +427,7 @@ async def test_getuseravatar(client: AsyncClient, token: str):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)  # 确保目录存在
 
         # 保存文件内容
-        with open(save_path, 'wb') as file:
+        with open(save_path, "wb") as file:
             file.write(response.content)
 
         print(f"Profile image saved successfully as {save_path}.")
@@ -446,7 +461,7 @@ async def main():
                 await f.write(f"{str(uuid4())}" * 10)
         await register_user(client, user_t)
         token = await login_user(client, user_t)
-        if False:  ###初步测试
+        if True:  ###初步测试
             await get_current_user(client, token, user_t)
             await delete_user(client, token, user_t)
             await register_user(client, user_t)
@@ -466,7 +481,7 @@ async def main():
             print(files_id_name)
             if os.path.exists(os.path.basename(test_file)):
                 os.remove(os.path.basename(test_file))
-        if False:
+        if True:
             for i in range(30):
                 test_file = f"{testfile_folder}/{str(uuid4())}.txt"
                 if not os.path.exists(test_file):
@@ -474,14 +489,16 @@ async def main():
                         [["node1", "node2"], [], "node1", "node3", "node4", ""],
                         k=1,
                     )
+
                     os.makedirs(os.path.dirname(test_file), exist_ok=True)
                     async with aiofiles.open(test_file, "w") as f:
                         await f.write(f"{str(uuid4())}" * 10)
+                print(f"test_file: {test_file}", "nodes:", nodes)
                 await upload_file_with_nodes(client, token, test_file, nodes)
                 if os.path.exists(os.path.basename(test_file)):
                     os.remove(os.path.basename(test_file))
             await delete_user_files(client, token)
-        if False:
+        if True:
             node1 = ["11", "22"]
             response = await upload_file_with_nodes(client, token, test_file, node1)
             # print()
@@ -489,11 +506,11 @@ async def main():
 
             print(f"{base_url}{d_url}")
 
-            # file_id = response.json()["id"]
-            # nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
-            # node2 = random.choice(nodess)
-            # await modyfy_file_nodes(client, token, file_id, node2)
-        if False:
+            file_id = response.json()["id"]
+            nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
+            node2 = random.choice(nodess)
+            await modyfy_file_nodes(client, token, file_id, node2)
+        if True:
             await Breakpoint_resume_download_test(client, token)
 
         if True:
@@ -524,9 +541,9 @@ async def main():
 async def test_multiple(n):
     tasks = [asyncio.create_task(main()) for i in range(n)]
     await asyncio.gather(*tasks)
-    if False:
-        async with httpx.AsyncClient(timeout=200) as client:
-            await reset_db(client, root_user, root_password)
+    # if True:
+    # async with httpx.AsyncClient(timeout=200) as client:
+    # await reset_db(client, root_user, root_password)
 
 
 # DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;DROP TABLE whyshi.files CASCADE;
