@@ -73,7 +73,9 @@ def generate_preview_video(video_path, output_path):
     try:
         assert storage_.is_file_exist(video_path), "视频路径不存在"
         with tempfile.NamedTemporaryFile(
-            suffix=f".{get_file_extension(video_path)}"
+            suffix=f".{get_file_extension(video_path)}",
+            dir=config.File.PREVIEW_FILES_PATH,
+            delete=False,
         ) as tmp_file:
             tmp_file_path = tmp_file.name
             logger.debug(f"临时文件路径: {tmp_file_path}")
@@ -175,14 +177,14 @@ def generate_hls_playlist(
 
     if not storage_.is_file_exist(input_file):
 
-        logger.error(f"输入视频文件路径 {input_file} not found!")
+        logger.error(f"Enter the video file path {input_file} not found!")
 
         raise ValueError(f"{input_file} not found!")
 
     if not storage_.is_file_exist(output_dir):
 
         logger.warning(
-            f"输出目录，用于保存生成的播放列表和 TS 段 {output_dir} not found! ,will create dir"
+            f"Output directory to hold the generated playlist and TS segment {output_dir} not found! ,will create dir"
         )
 
         storage_.makedirs(output_dir, isfile=False)
@@ -190,18 +192,21 @@ def generate_hls_playlist(
     output_path = storage_.get_join_path(output_dir, playlist_name)
 
     with tempfile.NamedTemporaryFile(
-        suffix=f".{get_file_extension(input_file)}"
+        suffix=f".{get_file_extension(input_file)}",
+        delete=False,
+        dir=config.File.M3U8_INDEX_PATH,
     ) as tmp_file:
 
         tmp_file_path = tmp_file.name
         logger.debug(
-            f"临时文件路径: {tmp_file_path}, 输出m3u8列表路径 ： {output_path}"
+            f"emporary file path: {tmp_file_path}, The path to the m3u8 list is displayed ： {output_path}"
         )
         tmp_file.write(storage_.get_file_bytestream(input_file))
 
-        assert storage_.get_file_size(input_file) == os.path.getsize(
-            tmp_file_path
-        ), "临时文件和原文件大小不一致！"
+        if storage_.get_file_size(input_file) != os.path.getsize(tmp_file_path):
+            logger.error(
+                "The size of the temporary file is different from the original file!"
+            )
 
         ffmpeg_command = [
             "ffmpeg",
@@ -225,6 +230,8 @@ def generate_hls_playlist(
         ]
 
         try:
+
+            # print(ffmpeg_command)
             subprocess.run(
                 ffmpeg_command,
                 check=True,
@@ -233,9 +240,11 @@ def generate_hls_playlist(
             )
             logger.info(f"HLS playlist and segments generated at {output_dir}")
 
-            ts_files_and_index = storage_.get_files_in_sys_dir_one_layer(output_dir)
+            ts_files = storage_.get_files_in_sys_dir_one_layer(
+                output_dir, extension="ts"
+            )
 
-            for file_path in ts_files_and_index:
+            for file_path in ts_files:
 
                 storage_.save_file_from_system_path(
                     file_path,
@@ -249,6 +258,11 @@ def generate_hls_playlist(
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to generate HLS playlist: {e}")
+
+        finally:
+            # tmp_file.delete = True
+            if os.path.exists(tmp_file_path):
+                os.remove(tmp_file_path)
 
 
 def get_start_end_from_range_header(
@@ -297,3 +311,11 @@ def require_double_confirmation(func):
         return result
 
     return wrapper
+
+
+#  Failed to generate HLS playlist: Command
+# '['ffmpeg', '-i', 'C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp7p_b1toy.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\1ff60b82-e884-41c1-a20e-0f41ba0f28b7%d.ts', '-f', 'hls', 'cache\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\index.m3u8']'
+#  returned non-zero exit status 4294967283.
+
+
+# ['ffmpeg', '-i', 'uploads/2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653a.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709%d.ts', '-f', 'hls', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\index.m3u8']

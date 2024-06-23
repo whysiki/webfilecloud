@@ -28,6 +28,9 @@ def get_join_path(*paths, **kargs):
     """
     joined_path = Path(*paths)
     return joined_path.as_posix()
+    # joined_path = os.path.join(*paths)
+    # logger.debug(f"get_join_path: {paths} -> {joined_path}")
+    # return joined_path
 
 
 def get_path_dirname(path, *args, **kargs):
@@ -60,7 +63,15 @@ def get_files_in_sys_dir_one_layer(path, extension=None, *args, **kargs):
         path = Path(path)
         ts_files = list(path.glob(f"*.{extension}"))
 
-        return ts_files
+        ts_files2 = [
+            get_join_path(path, file.name) for file in ts_files if file.is_file()
+        ]
+
+        assert len(ts_files) == len(
+            ts_files2
+        ), f"Error in get_files_in_sys_dir_one_layer: {ts_files} -> {ts_files2}"
+
+        return ts_files2
     else:
         return os.listdir(path)
 
@@ -257,13 +268,14 @@ elif STORE_TYPE == "minio":
             with open(path, "rb") as file_data:
                 file_stat = os.stat(path)
                 client.put_object(bucket_name, save_path, file_data, file_stat.st_size)
-            if delete_original:
-                if os.path.exists(path) and os.path.isfile(path):
-                    os.remove(path)
+                logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
+            # if delete_original:
+            # if os.path.exists(path) and os.path.isfile(path):
+            # os.remove(path)
             logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
         except Exception as e:
             logger.error(
-                f"Failed to save file from system path {path} to {save_path}: {str(e)}"
+                f"Failed to save file from system path {path} to {save_path}: {str(e)}: {type(e)}"
             )
 
     def get_file_bytestream(path, *args, **kargs):
