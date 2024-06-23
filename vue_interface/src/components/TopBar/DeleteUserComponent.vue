@@ -43,7 +43,8 @@ export default {
             id: userId,
           },
         });
-        this.$router.push("/");
+        // this.$router.push("/");
+        window.location.href = "/";
       } catch (error) {
         if (error.response) {
           await alertPopup.value.showAlert(`Error: ${error.response.data.detail}`);

@@ -98,8 +98,8 @@ async def delete_user(
     if not (user.username == current_username):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     crud.delete_user_from_db(db, user)
-
-    storage_.remove_file(user.profile_image)
+    if user.profile_image:
+        storage_.remove_file(user.profile_image)
     logger.warning(f"User {current_username} deleted")
     return schemas.UserOut(
         # id=id,
@@ -926,7 +926,7 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
             file.file_path,
             output_dir=segment_index_path,
             playlist_name=index_m3u8_name,
-            file_id=file.id,
+            file_id=str(uuid4()),  # 随机生成一个uuid
         )
 
     except Exception as e:

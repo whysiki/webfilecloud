@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def remove_file(path, *args, **kargs):
-    if is_file_exist(path):
+    if path and path != "" and is_file_exist(path):
         os.remove(path)
 
 
@@ -22,7 +22,8 @@ def get_join_path(*paths, **kargs):
 
 
 def is_file_exist(path, *args, **kargs):
-    return Path(path).exists()
+    # return Path(path).exists() if path else False
+    return os.path.exists(path)
 
 
 def get_path_dirname(path, *args, **kargs):
