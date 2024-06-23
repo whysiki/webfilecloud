@@ -34,3 +34,4 @@ deploy.bat
 /src/store.js
 /tasklist.md
 /.env
+/.vscode
