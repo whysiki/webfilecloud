@@ -196,6 +196,7 @@ async def upload_file(
         else:
             # otherwise, raise an exception
             logger.warning(f"file_id: {file_id} already exists, upload failed")
+            # raise HTTPException(status_code=400, detail="File already exists")
             filem = crud.get_file_by_id(db, file_id=file_id)
             if storage_.is_file_exist(filem.file_path):
                 raise HTTPException(status_code=400, detail="File already exists")
@@ -217,18 +218,12 @@ async def upload_file(
     else:
         file_nodes = []
 
-    ## I forgot to store the same files at design time 😅😅.
-    # It doesn't matter if you don't store large files for your own  use 🤣
-    ## It should be necessary to directly compute the hash of the file contents as the file id, if present in the file table
-    # Then check if the file is for the current user and if it is, return it exists
-    # If not, add this file in the file relationship above the new user,  and then return ## Forgot the same file redundancy problem at design time 😅😅,  and don't store large files for your own use, it doesn't matter 🤣
-    ## It should be necessary to directly compute the hash of the file contents as the file id, if present in the file table
-    # Then check if the file is for the current user and if it is, return it exists
-    # If not, add the file to the new user's file relationship and return
     file_content: bytes = await file.read()
     # the file content hash + the user name hash + the file node hash 🤣
+
+    file_content_hash = hashlib.sha256(file_content).hexdigest()
     file_hash = (
-        hashlib.sha256(file_content).hexdigest()
+        file_content_hash
         + hashlib.sha1(username.encode()).hexdigest()
         + hashlib.sha1("".join(file_nodes).encode()).hexdigest()
     )
@@ -253,17 +248,22 @@ async def upload_file(
             file_download_link=f"/file/download/{user.id}/{existing_file.id}/{existing_file.filename}",
         )
 
-    ##
+    ## new file
 
-    filename = file.filename
-
-    filename = storage_.get_path_basename(filename)
+    filename = storage_.get_path_basename(file.filename)
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
-    file_path = utility.get_new_path(
-        storage_.get_join_path(config.Config.UPLOAD_PATH, username, file_type, filename)
+    # prepare_file_path = storage_.get_join_path(
+    #     config.Config.UPLOAD_PATH, username, file_type, filename
+    # )
+
+    prepare_file_path = storage_.get_join_path(
+        config.Config.UPLOAD_PATH, f"{file_content_hash}.{file_type}"
     )
+
+    # file_path = utility.get_new_path(prepare_file_path)
+    file_path = prepare_file_path
 
     storage_.makedirs(file_path)
 

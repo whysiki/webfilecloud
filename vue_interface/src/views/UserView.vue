@@ -10,16 +10,9 @@
   <div class="background-box">
     <n-card>
       <n-space vertical align="center" class="user-info-container">
-        <n-avatar
-          class="user-avatar"
-          round
-          :src="userAvatar"
-          alt="User Avatar"
-        />
+        <n-avatar class="user-avatar" round :src="userAvatar" alt="User Avatar" />
         <h2 id="background-username">{{ username }}</h2>
-        <n-button round size="small" @click="uploadAvatar"
-          >Upload Avatar</n-button
-        >
+        <n-button round size="small" @click="uploadAvatar">Upload Avatar</n-button>
         <input
           type="file"
           ref="fileInput"
@@ -31,10 +24,7 @@
     <n-card>
       <h2>Statistics</h2>
       <FileTypeChart :typesCount="typesCount" />
-      <FileSizeChart
-        :allFilesSize="allFilesSize"
-        :typesSizeCount="typesSizeCount"
-      />
+      <FileSizeChart :allFilesSize="allFilesSize" :typesSizeCount="typesSizeCount" />
       <FileSizeColumnChart :typesSizeCount="typesSizeCount" />
     </n-card>
     <n-card>
@@ -67,11 +57,11 @@ export default {
   },
   data() {
     return {
-      userAvatar: localStorage.getItem("userAvatar")
-        ? localStorage.getItem("userAvatar")
-        : null,
-      username:
-        store.state.username || localStorage.getItem("username") || null,
+      // userAvatar: localStorage.getItem("userAvatar")
+      //   ? localStorage.getItem("userAvatar")
+      //   : null,
+      userAvatar: null,
+      username: store.state.username || localStorage.getItem("username") || null,
       // token: store.state.token || localStorage.getItem("token") || null,
     };
   },
@@ -79,6 +69,9 @@ export default {
     await this.fetchAvatar();
   },
   computed: {
+    // userAvatar() {
+    //   return localStorage.getItem("userAvatar") || null;
+    // },
     files() {
       return store.state.files;
     },
@@ -124,13 +117,9 @@ export default {
         localStorage.setItem("userAvatar", this.userAvatar);
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(
-            `Error: ${error.response.data.detail}`
-          );
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert(
-            "Error: No response from server"
-          );
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
@@ -154,13 +143,9 @@ export default {
         await this.$refs.alertPopup.showAlert("Update userAvatar successful");
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(
-            `Error: ${error.response.data.detail}`
-          );
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert(
-            "Error: No response from server"
-          );
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }

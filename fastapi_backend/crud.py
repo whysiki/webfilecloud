@@ -4,13 +4,12 @@ from models import User, File, association_table
 from auth import verify_password
 from schemas import UserIn
 from datetime import datetime
-import os
 from fastapi import HTTPException
 from loguru import logger
 from config import Config
-import shutil
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
+import storage_
 
 
 def handle_db_errors(func):
@@ -70,6 +69,17 @@ def add_user(db: Session, user: User) -> User:
 
 @handle_db_errors
 def delete_file_from_db(db: Session, file: File) -> None:
+    # 一个文件路径可能对应多个文件id
+    # 只有当前文件链接到文件路径才删除（即文件路径对应的文件id只有当前要删除的文件）
+    if (storage_.is_file_exist(file.file_path)) and (
+        # only current file link to the file path
+        len(db.query(File).filter(File.file_path == file.file_path).all())
+        == 1
+    ):
+        storage_.remove_file(file.file_path)  # Now delete the file
+        logger.warning(f"Deleted a file: {file.filename}")
+    else:
+        logger.error("File not found in the store")
     if file.file_owner_name:
         username = file.file_owner_name
         user = get_user_by_username(db, username)
@@ -85,22 +95,6 @@ def delete_file_from_db(db: Session, file: File) -> None:
                 db.commit()
             db.delete(file)  # 删除文件在File表中的记录
             db.commit()  # Commit all changes including cascade deletions
-            if os.path.exists(file.file_path):
-                os.remove(file.file_path)  # Now delete the file
-                logger.warning(f"Deleted a file: {file.filename}")
-            else:
-                logger.error("File not found in the filesystem")
-            # test 开发时使用, 用于检查文件是否被删除 生产环境不需要
-            assert not os.path.exists(file.file_path), "File still exists"
-            if file.file_owner_name:
-                username = file.file_owner_name
-                user = get_user_by_username(db, username)
-                assert file not in user.files, "file in user.files"
-                assert (
-                    not db.query(File).filter(File.id == file.id).first()
-                ), "file in File table"
-            db.commit()
-            # test
         else:
             logger.error("File not associated with the user")
     else:
@@ -110,6 +104,21 @@ def delete_file_from_db(db: Session, file: File) -> None:
 # 从数据库删除用户, 同时删除用户下面所有文件
 @handle_db_errors
 def delete_user_from_db(db: Session, user: User) -> None:
+
+    user_files = db.query(File).filter(File.file_owner_name == user.username).all()
+
+    # delete files from the store
+    for file in user_files:
+        if (
+            storage_.is_file_exist(file.file_path)
+            # and len(db.query(File).filter(File.file_path == file.file_path ).all()) == 1
+        ):
+            storage_.remove_file(file.file_path)
+            logger.warning(f"Deleted a file: {file.filename}")
+        else:
+            # print(storage_.is_file_exist(file.file_path))
+            logger.error(f"File not found in the store : {file.file_path}")
+
     db.query(association_table).filter(
         association_table.c.user_id == user.id
     ).delete()  # 删除用户和文件的关联记录
@@ -130,10 +139,6 @@ def delete_user_from_db(db: Session, user: User) -> None:
         not db.query(File).filter(File.file_owner_name == user.username).first()
     ), "User in File table"
 
-    # 删除用户文件夹
-    user_folder = os.path.join(Config.UPLOAD_PATH, user.username)
-    if os.path.exists(user_folder):
-        shutil.rmtree(user_folder)
     logger.warning(f"Deleted an user : {user.username}")
 
 

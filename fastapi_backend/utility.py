@@ -1,4 +1,4 @@
-import os
+# import os
 from functools import lru_cache
 import subprocess
 import config
@@ -8,6 +8,7 @@ import io
 from PIL import Image
 import aiofiles
 from functools import wraps
+import storage_
 
 
 def get_new_path(path: str):
@@ -16,7 +17,7 @@ def get_new_path(path: str):
     )
 
     def get_path_r(pathr: str, intn: int = 1):
-        if os.path.exists(pathr):
+        if storage_.is_file_exist(pathr):
             # print(pathr)
             # print(os.path.isfile(pathr))
             return get_path_r(
@@ -61,7 +62,7 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
             return img_byte_arr.getvalue()
     except Exception as e:
         LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
-        if os.path.exists(LOAD_ERROR_IMG):
+        if storage_.is_file_exist(LOAD_ERROR_IMG):
             with Image.open(LOAD_ERROR_IMG) as image:
                 img_byte_arr = io.BytesIO()
                 image.save(img_byte_arr, format=image.format)
@@ -77,7 +78,7 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
-        assert os.path.exists(video_path), "视频路径不存在"
+        assert storage_.is_file_exist(video_path), "视频路径不存在"
         # 获取原视频的时长
         duration_command = [
             r"ffprobe",
@@ -171,17 +172,17 @@ def generate_hls_playlist(
     segment_time (int): 每个 TS 段的持续时间（秒），默认为 10 秒
     """
 
-    if not os.path.exists(input_file):
+    if not storage_.is_file_exist(input_file):
 
         logger.error(f"{input_file} not found!")
 
         raise ValueError(f"{input_file} not found!")
 
-    if not os.path.exists(output_dir):
+    if not storage_.is_file_exist(output_dir):
 
-        os.makedirs(output_dir)
+        storage_.makedirs(output_dir, isfile=False)
 
-    output_path = os.path.join(output_dir, playlist_name)
+    output_path = storage_.get_join_path(output_dir, playlist_name)
 
     ffmpeg_command = [
         "ffmpeg",
@@ -196,7 +197,7 @@ def generate_hls_playlist(
         "-hls_list_size",
         "0",
         "-hls_segment_filename",
-        os.path.join(output_dir, f"{file_id}%d.ts"),  # 设置 TS 段文件名格式
+        storage_.get_join_path(output_dir, f"{file_id}%d.ts"),  # 设置 TS 段文件名格式
         "-f",
         "hls",
         f"{output_path}",

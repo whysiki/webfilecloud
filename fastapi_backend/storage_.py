@@ -42,12 +42,18 @@ def get_file_size(path, *args, **kargs):
     return os.path.getsize(path)
 
 
-async def async_write_file_wb(path, content, *args, **kargs):
+async def async_write_file_wb(path, content: bytes, *args, **kargs) -> None:
+    if (
+        is_file_exist(path)
+        and get_file_size(path) == len(content)
+        and content == await async_read_file_rb(path)
+    ):
+        return
     async with aiofiles.open(path, "wb") as buffer:
         await buffer.write(content)
 
 
-async def async_read_file_rb(path, *args, **kargs):
+async def async_read_file_rb(path, *args, **kargs) -> bytes:
 
     async with aiofiles.open(path, "rb") as f:
 
@@ -57,3 +63,8 @@ async def async_read_file_rb(path, *args, **kargs):
 def remove_path(path, *args, **kargs):
     if is_file_exist(path):
         shutil.rmtree(path)
+
+
+def save_file_from_system_path(path, save_path, *args, **kargs):
+    if os.path.exists(path):
+        shutil.copy(path, save_path)
