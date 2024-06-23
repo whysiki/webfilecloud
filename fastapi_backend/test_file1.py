@@ -10,17 +10,21 @@ import os
 import aiofiles
 from uuid import uuid4
 from pathlib import Path
-import time
+
+# import time
 import random
-import subprocess
+
+# import subprocess
 import shutil
 import re
 from tqdm import tqdm
-import gzip
-from io import BytesIO
-from httpx import AsyncClient, Client
+
+# import gzip
+# from io import BytesIO
+from httpx import AsyncClient  # , Client
 from urllib.parse import unquote
-import utility
+
+# import utility
 import numpy as np
 
 # import psutil
@@ -67,7 +71,9 @@ def handle_error(func):
                 console.print(f"Read timeout: {e}", style="red")
             except Exception as e:
                 error = e
-                console.print(f"An unexpected error occurred: {e}", style="red")
+                console.print(
+                    f"An unexpected error occurred: {str(e)} {type(e)}", style="red"
+                )
 
             console.print(f"attempt time {i+1}/4", style="yellow")
 
@@ -397,6 +403,7 @@ async def test_getfilesbynode(client: AsyncClient, token: str, nodes: list):
     )
 
     print(response.status_code)
+
     print(response.json())
 
 
@@ -408,6 +415,7 @@ async def test_getuseravatar(client: AsyncClient, token: str):
     response = await client.get(url, headers=headers)
 
     print(response.status_code)
+    assert response.status_code == 200
 
     if response.status_code == 200:
         # 从Content-Disposition头获取文件名
@@ -446,6 +454,8 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     response = await client.post(url, headers=headers, files=files)
 
     print(response.status_code)
+
+    assert response.status_code == 200
 
     print(response.json())
 
@@ -535,15 +545,15 @@ async def main():
             await test_uploaduseravatar(client, token, "test/image.png")
             # await test_uploaduseravatar(client, token, r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg")
             await test_getuseravatar(client, token)
-        await delete_user(client, token, user_t)
+        # await delete_user(client, token, user_t)
 
 
 async def test_multiple(n):
     tasks = [asyncio.create_task(main()) for i in range(n)]
     await asyncio.gather(*tasks)
-    # if True:
-    # async with httpx.AsyncClient(timeout=200) as client:
-    # await reset_db(client, root_user, root_password)
+    if True:  #  删库测试 🤣
+        async with httpx.AsyncClient(timeout=200) as client:
+            await reset_db(client, root_user, root_password)
 
 
 # DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;DROP TABLE whyshi.files CASCADE;

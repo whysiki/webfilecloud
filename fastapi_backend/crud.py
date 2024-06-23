@@ -6,7 +6,6 @@ from schemas import UserIn
 from datetime import datetime
 from fastapi import HTTPException
 from loguru import logger
-from config import Config
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
 import storage_

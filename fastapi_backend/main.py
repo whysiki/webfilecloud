@@ -14,13 +14,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 # import auth  # authentication functions
-from fastapi.responses import FileResponse
+# from fastapi.responses import FileResponse
 import hashlib
 import config  # costom configuration
 from fastapi.responses import StreamingResponse
 import aiofiles
 from loguru import logger
-from dep import get_db, get_access_token, get_current_userneame  # inject dependency
+from dep import get_db, get_access_token  # inject dependency
 from app import app  # fast app instance
 import json
 import numpy
@@ -30,7 +30,7 @@ import io
 import asyncio
 from urllib.parse import quote
 import mimetypes
-import storage_  # costom storage functions
+import storage_  # separate storage functions
 
 
 # register user
@@ -337,10 +337,15 @@ async def read_file(
 
     logger.debug(f"Download file: {file.file_path}")
 
-    return FileResponse(
-        file.file_path,
+    # return FileResponse(
+    #     file.file_path,
+    #     media_type="application/octet-stream",
+    #     filename=storage_.get_path_basename(file.file_path),
+    # )
+    return StreamingResponse(
+        io.BytesIO(storage_.get_file_bytestream(file.file_path)),
         media_type="application/octet-stream",
-        filename=storage_.get_path_basename(file.file_path),
+        headers={"Content-Disposition": f"attachment; filename={quote(file.filename)}"},
     )
 
 
@@ -373,7 +378,7 @@ async def read_file_stream(
     start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
-        utility.file_iterator(file.file_path, start, end),
+        storage_.file_iterator(file.file_path, start, end),
         status_code=206 if range_header else 200,
         headers={
             "Content-Length": str(end - start + 1),
@@ -465,8 +470,10 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     db.query(models.User).delete()
     db.query(models.File).delete()
     db.commit()
-
     storage_.remove_path(config.Config.UPLOAD_PATH)
+    storage_.remove_path(config.Config.STATIC_PATH)
+    storage_.remove_path(config.File.M3U8_INDEX_PATH)
+    storage_.remove_path(config.File.PREVIEW_FILES_PATH)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),
@@ -630,11 +637,19 @@ async def download_file(
 
     file_size = storage_.get_file_size(file.file_path)
 
-    return FileResponse(
-        file.file_path,
-        filename=file.filename,
+    # return FileResponse(
+    #     file.file_path,
+    #     filename=file.filename,
+    #     media_type="application/octet-stream",
+    #     headers={"Content-Length": str(file_size)},
+    # )
+    return StreamingResponse(
+        io.BytesIO(storage_.get_file_bytestream(file.file_path)),
         media_type="application/octet-stream",
-        headers={"Content-Length": str(file_size)},
+        headers={
+            "Content-Disposition": f"attachment; filename={quote(file.filename)}",
+            "Content-Length": str(file_size) + "bytes",
+        },
     )
 
 
@@ -665,7 +680,7 @@ async def download_file(
     start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
-        utility.file_iterator(file.file_path, start, end),
+        storage_.file_iterator(file.file_path, start, end),
         status_code=206 if range_header else 200,
         headers={
             "Content-Length": str(end - start + 1),
@@ -721,19 +736,27 @@ async def get_profile_image(
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
-        if storage_.is_file_exist(config.User.DEFAULT_PROFILE_IMAGE):
-            user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
+        user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
+        storage_.save_file_from_system_path(
+            user.profile_image, user.profile_image, delete_original=False
+        )
+        if storage_.is_file_exist(user.profile_image):
             logger.warning("default profile_image")
         else:
+            logger.error(
+                "Profile image not found, Server error, no default profile image"
+            )
             raise HTTPException(
                 status_code=404,
                 detail="Profile image not found, Server error, no default profile image",
             )
 
-    return FileResponse(
-        user.profile_image,
-        filename=storage_.get_path_basename(user.profile_image),
+    return StreamingResponse(
+        io.BytesIO(storage_.get_file_bytestream(user.profile_image)),
         media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f"attachment; filename={quote(storage_.get_path_basename(user.profile_image))}"
+        },
     )
 
 
@@ -756,7 +779,7 @@ async def upload_profile_image(
             config.Config.STATIC_PATH, username, "profile", file.filename
         )
     )
-    storage_.makedirs(file_path)
+    storage_.makedirs(file_path, isfile=True)
     try:
         total_size = 0
         async with aiofiles.open(file_path, "wb") as buffer:
@@ -773,10 +796,16 @@ async def upload_profile_image(
                         detail="profile image File size exceeds maximum limit",
                     )
                 await buffer.write(chunk)
+
     except Exception as e:
+        logger.error(
+            f"Profile image save failed, Server error: {str(e)} {type(e)}. file_path: {file_path}. user_profile_image: {user.profile_image}"
+        )
         raise HTTPException(
             status_code=500, detail=f"Profile image save failed, Server error: {e}"
         )
+
+    storage_.save_file_from_system_path(file_path, file_path, delete_original=True)
 
     user.profile_image = file_path
 
@@ -896,8 +925,15 @@ async def preview_video_file(
         storage_.is_file_exist(file.file_preview_path)
         and storage_.get_file_size(file.file_preview_path) > 0
     ):
-        return FileResponse(
-            file.file_preview_path,
+        # return FileResponse(
+        #     file.file_preview_path,
+        #     media_type=mime_type,
+        #     headers={
+        #         "Content-Disposition": f"attachment; filename=preview_{filename}.mp4"
+        #     },
+        # )
+        return StreamingResponse(
+            io.BytesIO(storage_.get_file_bytestream(file.file_preview_path)),
             media_type=mime_type,
             headers={
                 "Content-Disposition": f"attachment; filename=preview_{filename}.mp4"
@@ -937,7 +973,11 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
             status_code=500, detail="Failed to generate HLS playlist and segments"
         )
 
-    return FileResponse(index_m3u8_path, media_type="application/vnd.apple.mpegurl")
+    # return FileResponse(index_m3u8_path, media_type="application/vnd.apple.mpegurl")
+    return StreamingResponse(
+        io.BytesIO(storage_.get_file_bytestream(index_m3u8_path)),
+        media_type="application/vnd.apple.mpegurl",
+    )
 
 
 # get hls m3u8 segment file
@@ -956,7 +996,7 @@ async def get_segment(request: Request, file_id: str, segment_name: str):
     start, end = utility.get_start_end_from_range_header(range_header, file_size)
 
     return StreamingResponse(
-        utility.file_iterator(segment_path, start, end),
+        storage_.file_iterator(segment_path, start, end),
         status_code=206 if range_header else 200,
         headers={
             "Content-Length": str(end - start + 1),

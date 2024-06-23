@@ -9,3 +9,5 @@
 /minio.exe
 /question.md
 /tools.py
+/filecloud
+/test/__pycache__
