@@ -39,3 +39,5 @@ filecloud.rar
 minio_store/test/__pycache__/multipart_download.cpython-312.pyc
 minio_store/test/__pycache__/main.cpython-312.pyc
 testTransPortImprove/question.md
+/fastapi_backend/temp_upload_dir
+/fastapi_backend/script
