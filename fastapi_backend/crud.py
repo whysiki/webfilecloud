@@ -13,8 +13,8 @@ from functools import lru_cache
 
 
 def handle_db_errors(func):
-    @wraps(func)
     @lru_cache(maxsize=128)
+    @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
