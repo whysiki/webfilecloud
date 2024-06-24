@@ -194,11 +194,14 @@ def generate_hls_playlist(
 
         logger.error(f"Enter the video file path {input_file} not found!")
 
-        raise ValueError(f"{input_file} not found!")
+        raise HTTPException(
+            status_code=404,
+            detail="Input file not found, Failed to generate HLS playlist",
+        )
 
     if not storage_.is_file_exist(output_dir):
 
-        logger.warning(
+        logger.debug(
             f"Output directory to hold the generated playlist and TS segment {output_dir} not found! ,will create dir"
         )
 

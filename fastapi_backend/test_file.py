@@ -10,6 +10,11 @@ import os
 import aiofiles
 from uuid import uuid4
 from pathlib import Path
+from PIL import Image
+
+# import io
+import cv2
+import config
 
 # import time
 import random
@@ -149,8 +154,8 @@ async def delete_user(client, token, user_t):
 
 
 @handle_error
-async def upload_file(client, token, test_file):
-    print("上传文件......")
+async def upload_file(client: AsyncClient, token, test_file):
+    print(f"上传文件 {test_file}......")
     url = f"{base_url}/files/upload"
     headers = {"Authorization": f"Bearer {token}"}
     files = {"file": open(test_file, "rb")}
@@ -454,10 +459,154 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     response = await client.post(url, headers=headers, files=files)
 
     print(response.status_code)
-
-    assert response.status_code == 200
+    if os.path.getsize(test_file) <= config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
+        assert response.status_code == 200
+    else:
+        assert response.status_code != 200
 
     print(response.json())
+
+
+def generate_random_image(width, height):
+    # 创建一个新的空白图片
+    image = Image.new("RGB", (width, height))
+    pixels = image.load()
+
+    for x in range(width):
+        for y in range(height):
+            # 生成随机颜色
+            r = random.randint(0, 255)
+            g = random.randint(0, 255)
+            b = random.randint(0, 255)
+            pixels[x, y] = (r, g, b)
+
+    return image
+
+
+def generate_random_frame(width, height):
+    # 生成随机颜色帧
+    frame = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
+    return frame
+
+
+def generate_random_video(width, height, num_frames, fps, output_path):
+    # 使用 VideoWriter 创建视频写入对象
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # 使用MP4V编解码器
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    for _ in range(num_frames):
+        frame = generate_random_frame(width, height)
+        out.write(frame)
+
+    out.release()
+
+
+# 获取图片预览
+@handle_error
+async def test_getimagepreview(client: AsyncClient, token: str):
+
+    # 生成一个随机图片
+    test_image = f"{testfile_folder}/testimage.jpg"
+    if os.path.exists(test_image):
+        os.remove(test_image)
+    os.makedirs(os.path.dirname(test_image), exist_ok=True)
+    image = generate_random_image(random.randint(100, 1000), random.randint(100, 1000))
+    image.save(test_image)
+
+    responsejson = await upload_file(client, token, test_image)
+
+    file_id = responsejson["id"]
+
+    url = f"{base_url}/files/img/preview"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(url, headers=headers, params={"file_id": file_id})
+
+    print(response.status_code)
+
+    assert response.status_code == 200, "error: get image preview failed"
+
+
+# 测试视频预览
+@handle_error
+async def test_getvideopreview(client: AsyncClient, token: str):
+    testvideo = f"{testfile_folder}/testvideo.mp4"
+    if os.path.exists(testvideo):
+        os.remove(testvideo)
+    os.makedirs(os.path.dirname(testvideo), exist_ok=True)
+    width, height = random.randint(100, 1000), random.randint(100, 1000)
+    num_frames = random.randint(10, 100)
+    fps = random.randint(10, 30)
+    generate_random_video(width, height, num_frames, fps, testvideo)
+
+    responsejson = await upload_file(client, token, testvideo)
+
+    file_id = responsejson["id"]
+
+    url = f"{base_url}/files/video/preview"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(url, headers=headers, params={"file_id": file_id})
+
+    print(response.status_code)
+
+    assert response.status_code == 200, "error: get video preview failed"
+
+
+# 测试hls流
+@handle_error
+async def test_gethlsvideostram(client: AsyncClient, token: str):
+
+    testvideo = f"{testfile_folder}/testhls.mp4"
+
+    if os.path.exists(testvideo):
+        os.remove(testvideo)
+
+    os.makedirs(os.path.dirname(testvideo), exist_ok=True)
+
+    width, height = random.randint(100, 400), random.randint(100, 400)
+
+    fps = random.randint(10, 30)
+    num_frames = random.randint(30, 60) * fps
+    generate_random_video(width, height, num_frames, fps, testvideo)
+
+    responsejson = await upload_file(client, token, testvideo)
+
+    file_id = responsejson["id"]
+
+    url = f"{base_url}/file/video/{file_id}/index.m3u8"
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(url, headers=headers)
+
+    print(response.status_code)
+
+    assert response.status_code == 200, "error: get hls video stream failed"
+
+    # print(response.text)
+
+    index_m3u8 = response.text
+
+    pattern = r".*\.ts$"
+
+    segment_names = re.findall(pattern, index_m3u8, flags=re.MULTILINE)
+
+    # print(segment_names)
+
+    for seg in segment_names:
+
+        url = f"{base_url}/file/segments/{file_id}/{seg}"
+
+        response = await client.get(url, headers=headers)
+
+        print(response.status_code)
+
+        assert response.status_code == 200, f"error: get hls video segment {seg} failed"
+
+        print(f"segment {seg} downloaded successfully")
 
 
 async def main():
@@ -491,7 +640,7 @@ async def main():
             print(files_id_name)
             if os.path.exists(os.path.basename(test_file)):
                 os.remove(os.path.basename(test_file))
-        if True:
+        if True:  ###多文件测试
             for i in range(30):
                 test_file = f"{testfile_folder}/{str(uuid4())}.txt"
                 if not os.path.exists(test_file):
@@ -508,7 +657,7 @@ async def main():
                 if os.path.exists(os.path.basename(test_file)):
                     os.remove(os.path.basename(test_file))
             await delete_user_files(client, token)
-        if True:
+        if True:  # 路径测试
             node1 = ["11", "22"]
             response = await upload_file_with_nodes(client, token, test_file, node1)
             # print()
@@ -520,10 +669,10 @@ async def main():
             nodess = [["11", "22", "33"], ["11"], [], ["11", "22"]]
             node2 = random.choice(nodess)
             await modyfy_file_nodes(client, token, file_id, node2)
-        if True:
+        if True:  ###断点续传测试
             await Breakpoint_resume_download_test(client, token)
 
-        if True:
+        if True:  ###其他测试 刷新token 修改文件名 获取文件列表
             token = await test_refreshtoken(client, token)
             await upload_file_with_nodes(
                 client, token, test_file, ["11", "22", "testetst", "11111"]
@@ -543,22 +692,30 @@ async def main():
             await test_getfilesbynode(client, token, ["11", "22", "testetst"])
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
-            # await test_uploaduseravatar(client, token, r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg")
+            # 大图片头像测试
+            await test_uploaduseravatar(
+                client,
+                token,
+                r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg",
+            )
             await test_getuseravatar(client, token)
+        if True:  # 预览和hls测试
+            await register_user(client, user_t)
+            token = await login_user(client, user_t)
+            await test_getimagepreview(client, token)
+            await test_getvideopreview(client, token)
+            await test_gethlsvideostram(client, token)
         # await delete_user(client, token, user_t)
+        if True:  #  删库测试 🤣
+            async with httpx.AsyncClient(timeout=200) as client2:
+                await reset_db(client2, root_user, root_password)
 
 
 async def test_multiple(n):
     tasks = [asyncio.create_task(main()) for i in range(n)]
     await asyncio.gather(*tasks)
-    if True:  #  删库测试 🤣
-        async with httpx.AsyncClient(timeout=200) as client:
-            await reset_db(client, root_user, root_password)
 
 
-# DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;DROP TABLE whyshi.files CASCADE;
-# DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;
-#  SELECT * FROM whyshi.files;SELECT * FROM whyshi.users;SELECT * FROM whyshi.association;
 if __name__ == "__main__":
 
     asyncio.run(test_multiple(1))
@@ -574,17 +731,14 @@ if __name__ == "__main__":
                         f_path = Path(r) / Path(f)
                         try:
                             os.remove(f_path)
-                            # print(f"Deleted file: {f_path}")
                         except Exception as e:
-                            # forcey_delete_path(f_path)
                             pass
-                            # console.print(f"Error deleting file {f_path}: {e}",style="red")
             if i != 0:
                 pass
-                # if os.name == "nt":
-                # subprocess.run(["rmdir","/S","/Q",folder_to_delete],shell=True)
-                # else:
-                # subprocess.run(["rm","-rf",folder_to_delete],shell=True)
-                # time.sleep(5)
 
     delete_test_folder(testfile_folder)
+
+
+# DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;DROP TABLE whyshi.files CASCADE;
+# DROP TABLE whyshi.association CASCADE; DROP TABLE whyshi.users CASCADE;
+#  SELECT * FROM whyshi.files;SELECT * FROM whyshi.users;SELECT * FROM whyshi.association;

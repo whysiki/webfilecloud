@@ -474,6 +474,11 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     storage_.remove_path(config.Config.STATIC_PATH)
     storage_.remove_path(config.File.M3U8_INDEX_PATH)
     storage_.remove_path(config.File.PREVIEW_FILES_PATH)
+    if config.Config.STORE_TYPE == "minio":
+        if storage_.is_file_exist(config.User.DEFAULT_PROFILE_IMAGE):
+            storage_.remove_file(config.User.DEFAULT_PROFILE_IMAGE)
+        if storage_.is_file_exist(config.File.LOAD_ERROR_IMG):
+            storage_.remove_file(config.File.LOAD_ERROR_IMG)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),

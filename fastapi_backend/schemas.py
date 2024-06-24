@@ -5,13 +5,30 @@ from pydantic import BaseModel, Field
 # from typing import Set
 
 
+# 使类可哈希化  类装饰器
+def make_hashable(cls):
+    def __hash__(self):
+        return hash((type(self),) + tuple(self.__dict__.values()))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        return False
+
+    cls.__hash__ = __hash__
+    cls.__eq__ = __eq__
+    return cls
+
+
 # 用户输入模型, Pydantic 模型
+@make_hashable
 class UserIn(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, title="username")
     password: str = Field(..., min_length=8, max_length=100, title="password")
 
 
 # 用户输出模型, Pydantic 模型
+@make_hashable
 class UserOut(BaseModel):
     message: str
     id: str = Field("", title="id")  # 设置默认值
@@ -21,6 +38,7 @@ class UserOut(BaseModel):
     role: str = Field("", title="role")  # 设置默认值
 
 
+@make_hashable
 class UserShow(BaseModel):
     username: str
     register_time: str
@@ -30,14 +48,16 @@ class UserShow(BaseModel):
 
 
 # 文件输入模型, Pydantic 模型
+@make_hashable
 class Token(BaseModel):
     access_token: str
     token_type: str
-    refresh_token : str = Field("", title="refresh_token")
+    refresh_token: str = Field("", title="refresh_token")
 
 
 # 文件模型, SQLAlchemy 模型
 # 文件模型, SQLAlchemy 模型
+@make_hashable
 class FileOut(BaseModel):
     id: str
     filename: str
@@ -52,10 +72,12 @@ class FileOut(BaseModel):
     file_nodes: list[str] = Field(default_factory=list)
 
 
+@make_hashable
 class FileList(BaseModel):
     files: list[FileOut]
 
 
+@make_hashable
 class DbOut(BaseModel):
     message: str
     user_count: int

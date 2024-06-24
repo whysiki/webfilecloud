@@ -12,39 +12,31 @@ from functools import lru_cache
 
 STORE_TYPE = config.Config.STORE_TYPE
 
+if STORE_TYPE not in ["local", "minio"]:
+
+    logger.critical("Invalid STORE_TYPE value in config.py")
+    raise ValueError("Invalid STORE_TYPE value in config.py")
+
+
 # basic file operations
-
-
 @lru_cache(maxsize=128)
 def get_path_basename(path, *args, **kargs):
-    """
-    get the file name from the path
-    """
-
     return os.path.basename(path)
 
 
 @lru_cache(maxsize=128)
 def get_join_path(*paths, **kargs):
-    """
-    get the joined path from the paths
-    """
     joined_path = Path(*paths)
     return joined_path.as_posix()  # 😢
-    # joined_path = os.path.join(*paths)
-    # logger.debug(f"get_join_path: {paths} -> {joined_path}")
-    # return joined_path
 
 
 @lru_cache(maxsize=128)
 def get_path_dirname(path, *args, **kargs):
-    """
-    get the directory name from the path
-    """
 
     return str(Path(path).parent)
 
 
+@lru_cache(maxsize=128)
 def get_files_in_sys_dir_one_layer(path, extension=None, *args, **kargs):
     """
 
@@ -85,6 +77,42 @@ def makedirs(path, isfile: bool = True, *args, **kargs):
     if not is_file_exist(path):
         pathd = path.parent if isfile else path
         pathd.mkdir(parents=True, exist_ok=True)
+
+
+def remove_file(path, *args, **kwargs):
+    pass
+
+
+def is_file_exist(path, *args, **kwargs):
+    pass
+
+
+def get_file_size(path, *args, **kwargs):
+    pass
+
+
+async def async_write_file_wb(path, content: bytes, *args, **kwargs):
+    pass
+
+
+async def async_read_file_rb(path, *args, **kwargs):
+    pass
+
+
+def remove_path(path, *args, **kwargs):
+    pass
+
+
+def save_file_from_system_path(path, save_path, delete_original=True, *args, **kwargs):
+    pass
+
+
+def get_file_bytestream(path, *args, **kwargs):
+    pass
+
+
+async def file_iterator(file_path, start, end, chunk_size=1024 * 1024, *args, **kwargs):
+    pass
 
 
 if STORE_TYPE == "local":
@@ -168,6 +196,7 @@ if STORE_TYPE == "local":
 elif STORE_TYPE == "minio":
 
     client: Minio = config.Config.MinioClient
+
     bucket_name: str = config.Config.MINIO_BUCKET
 
     found = client.bucket_exists(bucket_name)
@@ -193,6 +222,7 @@ elif STORE_TYPE == "minio":
             logger.debug(f"Failed to check file existence for {path}: {str(e)}")
             return False
 
+    @lru_cache(maxsize=128)
     def get_file_size(path, *args, **kargs):
         try:
             stat = client.stat_object(bucket_name, path)
