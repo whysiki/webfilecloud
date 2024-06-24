@@ -73,7 +73,7 @@ class FileSystemHandler:
         else:
             return os.listdir(path)
 
-    # 以下方法子类中实现 , 函数签名保持一致
+    # 以下方法由子类基础实现 , 函数签名保持一致 ，实现存储的抽象和解耦
 
     def is_file_exist(self, path: str, *args, **kwargs) -> bool:
         raise NotImplementedError
@@ -112,6 +112,9 @@ class FileSystemHandler:
         *args,
         **kwargs,
     ) -> AsyncGenerator[bytes, None]:
+        """
+        async generator to read file in chunks
+        """
         raise NotImplementedError
 
     def get_dir_files(self, path: str, *args, **kwargs):
@@ -120,6 +123,7 @@ class FileSystemHandler:
         path is directory or dirprefix
 
         will return all files in the directory, not just a filebasename.
+
         """
         raise NotImplementedError
 
