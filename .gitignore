@@ -43,3 +43,4 @@ testTransPortImprove/question.md
 /fastapi_backend/script
 /filecloud
 /minio_storage
+**/*.exe
