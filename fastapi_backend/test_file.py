@@ -244,14 +244,17 @@ async def delete_user_files(client, token):
 
 @handle_error
 async def reset_db(client, root, rootpassword):
-    print("重置数据库......")
-    url = f"{base_url}/db/reset"
-    headers = {"Content-Type": "application/json"}
-    data = {"username": root, "password": rootpassword}
-    response = await client.post(url, headers=headers, json=data)
-    print(response.status_code)
-    assert response.status_code == 200, "error: reset_db failed"
-    print(response.json())
+    if is_delete_db_test:
+        print("重置数据库......")
+        url = f"{base_url}/db/reset"
+        headers = {"Content-Type": "application/json"}
+        data = {"username": root, "password": rootpassword}
+        response = await client.post(url, headers=headers, json=data)
+        print(response.status_code)
+        assert response.status_code == 200, "error: reset_db failed"
+        print(response.json())
+    else:
+        print("未删除数据库测试")
 
 
 @handle_error

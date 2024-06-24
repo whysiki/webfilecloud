@@ -180,7 +180,10 @@ def is_not_valid_user(db: Session, userin: UserIn) -> bool:
 def add_file_id_to_user(db: Session, user: User, file_id: str) -> None:
     file = get_file_by_id(db, file_id)
     user.files.append(file)
+    # 加到文件表
+    db.add(file)
     db.commit()
+    assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
     assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
 
@@ -205,14 +208,16 @@ def is_user_files_empty(db: Session, user: User) -> bool:
     )
     if f:
         logger.warning("not empty user files")
-        # logger.debug()
     return False if f else True
 
 
 @handle_db_errors
 def add_file_to_user(db: Session, file: File, user: User) -> User:
     user.files.append(file)
+    # 加到文件表
+    db.add(file)
     db.commit()
+    assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
     assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
     return user

@@ -14,6 +14,8 @@ from typing import Optional, Union, AsyncGenerator
 
 class FileSystemHandler:
 
+    # 基本文件操作方法
+
     @lru_cache(maxsize=128)
     def get_path_basename(self, path: str, *args: str, **kargs: str) -> str:
         return os.path.basename(path)
@@ -71,6 +73,8 @@ class FileSystemHandler:
             return ts_files2
         else:
             return os.listdir(path)
+
+    # 以下方法子类中实现 , 函数签名保持一致
 
     def is_file_exist(self, path: str, *args, **kwargs) -> bool:
         raise NotImplementedError
@@ -226,6 +230,7 @@ class MinioFileSystemHandler(FileSystemHandler):
             response.close()
 
     def remove_path(self, path, *args, **kwargs):
+        # MinIO 不支持递归删除🥲
         try:
             objects_to_delete = self.client.list_objects(
                 self.bucket_name, prefix=path, recursive=True
@@ -287,6 +292,7 @@ class MinioFileSystemHandler(FileSystemHandler):
                 f"bytes={current_position}-{current_position + read_size - 1}"
             )
 
+            print(range_header)
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
