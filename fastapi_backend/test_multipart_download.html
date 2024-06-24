@@ -44,16 +44,20 @@
     <div class="container">
       <h1>Multi-Threaded Download Test</h1>
       <input type="text" id="bucket_name" placeholder="Bucket Name" />
-      <input type="text" id="object_name" placeholder="Object Name" />
+      <input
+        type="text"
+        id="object_name"
+        placeholder="Object Name (default: filecloud)"
+      />
       <input
         type="text"
         id="api_address"
-        placeholder="API Address (e.g., http://localhost:8000)"
+        placeholder="API Address (default http://localhost:8000)"
       />
       <input
         type="number"
         id="thread_count"
-        placeholder="Number of Threads"
+        placeholder="Number of Threads (default 10)"
         min="1"
       />
       <button id="start_button">Start Download</button>
@@ -65,13 +69,14 @@
       document
         .getElementById("start_button")
         .addEventListener("click", async () => {
-          const bucketName = document.getElementById("bucket_name").value;
+          const bucketName =
+            document.getElementById("bucket_name").value || "filecloud";
           const objectName = document.getElementById("object_name").value;
-          const apiAddress = document.getElementById("api_address").value;
-          const threadCount = parseInt(
-            document.getElementById("thread_count").value,
-            10
-          );
+          const apiAddress =
+            document.getElementById("api_address").value ||
+            "http://localhost:8000";
+          const threadCount =
+            parseInt(document.getElementById("thread_count").value, 10) || 10;
           const output = document.getElementById("output");
           const totalProgress = document.getElementById("total_progress");
 
