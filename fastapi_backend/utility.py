@@ -14,7 +14,16 @@ import shutil
 from pathlib import Path
 
 
-def get_new_path(path: str):
+def get_new_path(path: str) -> str:
+    """
+    Generates a new file path by appending a number in parentheses if necessary.
+
+    Args:
+        path (str): Original file path.
+
+    Returns:
+        str: New file path.
+    """
     name, extension = path.split(".")[-2], (
         path.split(".")[-1] if len(path.split(".")) > 1 else [path, ""]
     )
@@ -33,6 +42,15 @@ def get_new_path(path: str):
 
 @lru_cache(maxsize=128)
 def get_file_extension(filepath):
+    """
+    Get the file extension from the given file path.
+
+    Args:
+        filepath (str): File path.
+
+    Returns:
+        str: File extension. example: "jpg", "mp4", "pdf", "txt", etc.
+    """
     try:
         path_obj = Path(filepath)
         _, extension = os.path.splitext(path_obj.name)
@@ -46,6 +64,16 @@ def get_file_extension(filepath):
 
 @lru_cache(maxsize=128)
 def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
+    """
+    Generates a thumbnail image from the given file path.
+
+    Args:
+        file_path (str): Path to the image file.
+        size (tuple, optional): Size of the thumbnail (width, height). Defaults to (200, 200).
+
+    Returns:
+        bytes: Thumbnail image bytes.
+    """
     try:
         image = Image.open(io.BytesIO(storage_.get_file_bytestream(file_path)))
         image.thumbnail(size)
@@ -80,6 +108,16 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
 
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
+    """
+    Generates a preview video from the given video file path.
+
+    Args:
+        video_path (str): Input video file path.
+        output_path (str): Output preview video file path.
+
+    Returns:
+        str: Output preview video file path.
+    """
     try:
         assert storage_.is_file_exist(video_path), "The video path does not exist"
         with tempfile.NamedTemporaryFile(
@@ -182,6 +220,7 @@ def generate_hls_playlist(
     playlist_name: str,
     file_id: str,
     segment_time: int = 10,
+    # threshold_size_mb: int = 400,
 ):
     """
     input_file (str): 输入视频文件路径
@@ -225,7 +264,6 @@ def generate_hls_playlist(
             logger.error(
                 "The size of the temporary file is different from the original file!"
             )
-
         ffmpeg_command = [
             "ffmpeg",
             "-i",
@@ -295,6 +333,20 @@ def get_start_end_from_range_header(
     file_size: int,
     headers: dict = None,  # range_header = request.headers.get("Range")
 ) -> tuple[int, int]:
+    """
+    Calculates the start and end positions from the given range header.
+
+    Args:
+        range_header (str): The range header string, e.g., "bytes=0-1023".
+        file_size (int): The size of the file in bytes.
+        headers (dict, optional): Additional headers. Defaults to None.
+
+    Returns:
+        tuple[int, int]: A tuple containing the start and end positions.
+
+    Raises:
+        HTTPException: If the file is not found or the range header is invalid.
+    """
     if headers and headers.get("Range"):
         range_header = headers.get("Range")
     if not file_size:

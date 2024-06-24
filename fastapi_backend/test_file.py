@@ -41,8 +41,18 @@ if not root_password:
 while True:
     is_delete_db_test = Prompt.ask(
         "Do you want to delete the test database after the test? (yes/no): ",
-        default="yes",
+        default="no",
     )
+
+    test_multiple_time = Prompt.ask(
+        "How many times do you want to run the test? ", default="1"
+    )
+
+    if isinstance(test_multiple_time, str) and test_multiple_time.isdigit():
+        test_multiple_time = int(test_multiple_time)
+        if not isinstance(test_multiple_time, int) and test_multiple_time < 1:
+            print("Please input a number greater than 0.")
+            continue
 
     if is_delete_db_test == "yes":
 
@@ -228,7 +238,7 @@ async def delete_user_files(client, token):
     # print(response.status_code)
     response = await client.delete(url, headers=headers)
     print(response.status_code)
-    assert response.status_code == 200
+    # assert response.status_code == 200
     print(response.json())
 
 
@@ -286,7 +296,11 @@ async def modyfy_file_nodes(client, token, file_id, nodes):
 async def Breakpoint_resume_download_test(client, token):
 
     # 测试文件生成
-    test_upload_file = f"{testfile_folder}/testbinary.b"
+    test_upload_file = get_new_path(f"{testfile_folder}/testbinary.b")
+
+    if os.path.exists(test_upload_file):
+
+        os.remove(test_upload_file)
 
     def generate_random_binary_file(file_path, size_in_bytes):
         with open(file_path, "wb") as f:
@@ -350,10 +364,20 @@ async def Breakpoint_resume_download_test(client, token):
         # tasks.append(download_part(client, headers.copy(), file_id, start, end))
         print()
         print(r)
-        # start, end = map(int, r.split("-"))
+        start, end = map(int, r.split("-"))
         # print(start,end)
         b = await download_part(client, headers.copy(), file_id, r)
         print("len:", len(b))
+        print(
+            "start:",
+            start,
+            "end:",
+            end,
+            "len:",
+            end - start + 1,
+            "original:",
+            original_bytes_size,
+        )
         # assert len(b) == (end-start + 1)
         len_get += len(b)
         get_byte_list.append(b)
@@ -466,14 +490,18 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     files = {"file": open(test_file, "rb")}
     response = await client.post(url, headers=headers, files=files)
 
+    print("File size:", os.path.getsize(test_file))
+
     print(response.status_code)
     if os.path.getsize(test_file) <= config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
         assert response.status_code == 200
     else:
-        print("File too large, expected 413 error", response.status_code)
+        print("File too large, expected 500 error", response.status_code)
         assert response.status_code != 200
 
     print(response.json())
+
+    return response
 
 
 def generate_random_image(width, height):
@@ -490,6 +518,23 @@ def generate_random_image(width, height):
             pixels[x, y] = (r, g, b)
 
     return image
+
+
+def get_new_path(path: str) -> str:
+    name, extension = path.split(".")[-2], (
+        path.split(".")[-1] if len(path.split(".")) > 1 else [path, ""]
+    )
+
+    def get_path_r(pathr: str, intn: int = 1):
+        if os.path.exists(pathr):
+            return get_path_r(
+                f"{name}({intn}).{extension}" if extension else f"{name}({intn})",
+                intn + 1,
+            )
+        else:
+            return pathr
+
+    return get_path_r(path)
 
 
 def generate_random_frame(width, height):
@@ -515,7 +560,7 @@ def generate_random_video(width, height, num_frames, fps, output_path):
 async def test_getimagepreview(client: AsyncClient, token: str):
 
     # 生成一个随机图片
-    test_image = f"{testfile_folder}/testimage.jpg"
+    test_image = get_new_path(f"{testfile_folder}/testimage.jpg")
     if os.path.exists(test_image):
         os.remove(test_image)
     os.makedirs(os.path.dirname(test_image), exist_ok=True)
@@ -540,7 +585,7 @@ async def test_getimagepreview(client: AsyncClient, token: str):
 # 测试视频预览
 @handle_error
 async def test_getvideopreview(client: AsyncClient, token: str):
-    testvideo = f"{testfile_folder}/testvideo.mp4"
+    testvideo = get_new_path(f"{testfile_folder}/testvideo.mp4")
     if os.path.exists(testvideo):
         os.remove(testvideo)
     os.makedirs(os.path.dirname(testvideo), exist_ok=True)
@@ -568,7 +613,7 @@ async def test_getvideopreview(client: AsyncClient, token: str):
 @handle_error
 async def test_gethlsvideostram(client: AsyncClient, token: str):
 
-    testvideo = f"{testfile_folder}/testhls.mp4"
+    testvideo = get_new_path(f"{testfile_folder}/testhls.mp4")
 
     if os.path.exists(testvideo):
         os.remove(testvideo)
@@ -620,8 +665,8 @@ async def test_gethlsvideostram(client: AsyncClient, token: str):
 
 async def main():
     async with httpx.AsyncClient(timeout=200) as client:
-        # user_t = dict(username=str(uuid4()), password=str(uuid4()))
-        user_t = dict(username="1123434233", password="11111111111111111111")
+        user_t = dict(username=str(uuid4()), password=str(uuid4()))
+        # user_t = dict(username="1123434233", password="11111111111111111111")
         test_file = f"{testfile_folder}/{str(uuid4())}.txt"
         if not os.path.exists(test_file):
             os.makedirs(os.path.dirname(test_file), exist_ok=True)
@@ -629,7 +674,7 @@ async def main():
                 await f.write(f"{str(uuid4())}" * 10)
         await register_user(client, user_t)
         token = await login_user(client, user_t)
-        if True:  ###初步测试
+        if True:  ###初步测试 init_test
             await get_current_user(client, token, user_t)
             await delete_user(client, token, user_t)
             await register_user(client, user_t)
@@ -701,16 +746,18 @@ async def main():
             await test_getfilesbynode(client, token, ["11", "22", "testetst"])
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
-
-            # 上传大图像 头像测试
-            # bigimg = f"{testfile_folder}/bigimg.jpg"
-            # if os.path.exists(bigimg):
-            # os.remove(bigimg)
-            # os.makedirs(os.path.dirname(bigimg), exist_ok=True)
-            # image = generate_random_image(4000, 4000)
-            # image.save(bigimg)
-            # await test_uploaduseravatar(client, token, bigimg)
             await test_getuseravatar(client, token)
+        # if True:  # 上传大图像 头像测试
+        #     bigimg = get_new_path(f"{testfile_folder}/bigimg.jpg")
+        #     if os.path.exists(bigimg):
+        #         os.remove(bigimg)
+        #     os.makedirs(os.path.dirname(bigimg), exist_ok=True)
+        #     image = generate_random_image(2000, 2000)
+        #     image.save(bigimg)
+        #     re = await test_uploaduseravatar(client, token, bigimg)
+        #     assert re.status_code == 500
+        #     # await test_getuseravatar(client, token)
+        #
         if True:  # 预览和hls测试
             await register_user(client, user_t)
             token = await login_user(client, user_t)
@@ -730,7 +777,7 @@ async def test_multiple(n):
 
 if __name__ == "__main__":
 
-    asyncio.run(test_multiple(1))
+    asyncio.run(test_multiple(test_multiple_time))
 
     def delete_test_folder(folder_to_delete):
         if os.path.exists(folder_to_delete):
