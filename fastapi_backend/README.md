@@ -73,6 +73,7 @@ MINIO_BUCKET=filecloud
   - 创建数据库 `CREATE DATABASE filecloud;`
 
 - ffmpeg 安装 配置环境变量 略
+- minio 安装 配置环境变量 略
 
 - 数据库驱动
 
