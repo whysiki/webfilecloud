@@ -27,7 +27,7 @@ def get_join_path(*paths, **kargs):
     get the joined path from the paths
     """
     joined_path = Path(*paths)
-    return joined_path.as_posix()
+    return joined_path.as_posix()  # 😢
     # joined_path = os.path.join(*paths)
     # logger.debug(f"get_join_path: {paths} -> {joined_path}")
     # return joined_path
@@ -218,7 +218,7 @@ elif STORE_TYPE == "minio":
         except S3Error:
             return False
         except Exception as e:
-            logger.error(f"Failed to check file existence for {path}: {str(e)}")
+            logger.debug(f"Failed to check file existence for {path}: {str(e)}")
             return False
 
     def get_file_size(path, *args, **kargs):
@@ -269,9 +269,9 @@ elif STORE_TYPE == "minio":
                 file_stat = os.stat(path)
                 client.put_object(bucket_name, save_path, file_data, file_stat.st_size)
                 logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
-            # if delete_original:
-            # if os.path.exists(path) and os.path.isfile(path):
-            # os.remove(path)
+            if delete_original:
+                if os.path.exists(path) and os.path.isfile(path):
+                    os.remove(path)
             logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
         except Exception as e:
             logger.error(

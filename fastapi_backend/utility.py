@@ -7,11 +7,10 @@ from fastapi import HTTPException
 import io
 from PIL import Image
 from functools import wraps
-import storage_
+import storage_  # 存储层的一些自定义封装函数
 import tempfile
 import os
-
-# import os
+import shutil
 from pathlib import Path
 
 
@@ -32,6 +31,7 @@ def get_new_path(path: str):
     return get_path_r(path)
 
 
+@lru_cache(maxsize=128)
 def get_file_extension(filepath):
     try:
         path_obj = Path(filepath)
@@ -40,7 +40,7 @@ def get_file_extension(filepath):
             return "binary"
         return extension.lstrip(".")
     except Exception as e:
-        logger.warning(f"获取文件后缀时出错: {e}")
+        logger.warning(f"Error obtaining file suffix: {e}")
         return "binary"
 
 
@@ -54,33 +54,40 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
         img_byte_arr.seek(0)
         return img_byte_arr.getvalue()
     except Exception as e:
-        LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
-        if storage_.is_file_exist(LOAD_ERROR_IMG):
-            image = Image.open(storage_.get_file_bytestream(LOAD_ERROR_IMG))
+        logger.warning(f"Error generating thumbnail: {str(e)} {type(e)}")
+        try:
+            LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
+            storage_.save_file_from_system_path(
+                LOAD_ERROR_IMG, LOAD_ERROR_IMG, delete_original=False
+            )
+            if storage_.is_file_exist(LOAD_ERROR_IMG):
+                image = Image.open(storage_.get_file_bytestream(LOAD_ERROR_IMG))
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format=image.format)
+                img_byte_arr.seek(0)
+                return img_byte_arr.getvalue()
+            white_image = Image.new("RGB", size, (255, 255, 255))
             img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format=image.format)
+            white_image.save(img_byte_arr, format="JPEG")
             img_byte_arr.seek(0)
             return img_byte_arr.getvalue()
-        white_image = Image.new("RGB", size, (255, 255, 255))
-        img_byte_arr = io.BytesIO()
-        white_image.save(img_byte_arr, format="JPEG")
-        img_byte_arr.seek(0)
-        return img_byte_arr.getvalue()
+        except Exception as e:
+            logger.error(f"Error generating default thumbnail: {str(e)} {type(e)}")
+            raise HTTPException(status_code=500, detail="Error generating thumbnail")
 
 
 @lru_cache(maxsize=128)
 def generate_preview_video(video_path, output_path):
     try:
-        assert storage_.is_file_exist(video_path), "视频路径不存在"
+        assert storage_.is_file_exist(video_path), "The video path does not exist"
         with tempfile.NamedTemporaryFile(
             suffix=f".{get_file_extension(video_path)}",
             dir=config.File.PREVIEW_FILES_PATH,
             delete=False,
         ) as tmp_file:
             tmp_file_path = tmp_file.name
-            logger.debug(f"临时文件路径: {tmp_file_path}")
+            logger.debug(f"Temporary file path: {tmp_file_path}")  # 🤣
             tmp_file.write(storage_.get_file_bytestream(video_path))
-            # 获取原视频的时长
             duration_command = [
                 r"ffprobe",
                 "-v",
@@ -93,15 +100,9 @@ def generate_preview_video(video_path, output_path):
             ]
             result = subprocess.run(duration_command, capture_output=True, text=True)
             original_duration = float(result.stdout.strip())
-
-            logger.debug(f"原视频时长: {original_duration}秒")
-
-            # 确定裁剪的时长（最多5秒）
+            logger.debug(f"Original video duration: {original_duration}秒")
             preview_duration = min(original_duration, 5.0)
-
             try:
-
-                # 构建ffmpeg命令
                 command = [
                     r"ffmpeg",
                     "-i",
@@ -120,13 +121,9 @@ def generate_preview_video(video_path, output_path):
                     "-y",  # 覆盖已存在的输出文件
                     f"{output_path}",  # 输出视频文件路径
                 ]
-                # 执行ffmpeg命令
                 subprocess.run(command, check=True)
             except:
-
                 logger.warning("default video width ..")
-
-                # 构建ffmpeg命令
                 command = [
                     r"ffmpeg",
                     "-i",
@@ -145,22 +142,38 @@ def generate_preview_video(video_path, output_path):
                     "-y",  # 覆盖已存在的输出文件
                     f"{output_path}",  # 输出视频文件路径
                 ]
-                # 执行ffmpeg命令
                 subprocess.run(command, check=True)
+
+            finally:
+
+                tmp_file.close()
 
             storage_.save_file_from_system_path(output_path, output_path)
 
+        if os.path.exists(tmp_file_path):
+            os.remove(tmp_file_path)
+
+        assert storage_.is_file_exist(output_path), "failed to save preview video"
+
+        if config.Config.STORE_TYPE == "minio":
+
+            if os.path.exists(output_path):
+
+                os.remove(output_path)
+
         return output_path
+
     except subprocess.CalledProcessError as e:
         logger.error(f"ffmpeg command failed with exit status {e.returncode}")
         logger.error(f"ffmpeg output: {e.output}")
         logger.error(f"ffmpeg error: {e.stderr}")
         raise HTTPException(status_code=500, detail="Error generating video preview")
     except Exception as e:
-        logger.error(f"Error generating video preview: {e}")
+        logger.error(f"Error generating video preview: {str(e)},type:{type(e)}")
         raise HTTPException(status_code=500, detail="Error generating video preview")
 
 
+@lru_cache(maxsize=128)
 def generate_hls_playlist(
     input_file: str,
     output_dir: str,
@@ -231,14 +244,12 @@ def generate_hls_playlist(
 
         try:
 
-            # print(ffmpeg_command)
             subprocess.run(
                 ffmpeg_command,
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            logger.info(f"HLS playlist and segments generated at {output_dir}")
 
             ts_files = storage_.get_files_in_sys_dir_one_layer(
                 output_dir, extension="ts"
@@ -251,18 +262,27 @@ def generate_hls_playlist(
                     file_path,
                 )
 
+                assert storage_.is_file_exist(file_path), "Failed to save ts file"
+
             storage_.save_file_from_system_path(
                 output_path,
                 output_path,
             )
 
+            assert storage_.is_file_exist(output_path), "Failed to save m3u8 index file"
+
+            logger.success(f"HLS playlist and segments generated at {output_dir}")
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to generate HLS playlist: {e}")
 
         finally:
-            # tmp_file.delete = True
-            if os.path.exists(tmp_file_path):
-                os.remove(tmp_file_path)
+            tmp_file.close()
+    if os.path.exists(tmp_file_path):
+        os.remove(tmp_file_path)
+    if config.Config.STORE_TYPE == "minio":
+        if output_dir and os.path.exists(output_dir):
+            shutil.rmtree(output_dir, ignore_errors=True)
 
 
 def get_start_end_from_range_header(
@@ -311,11 +331,3 @@ def require_double_confirmation(func):
         return result
 
     return wrapper
-
-
-#  Failed to generate HLS playlist: Command
-# '['ffmpeg', '-i', 'C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp7p_b1toy.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\1ff60b82-e884-41c1-a20e-0f41ba0f28b7%d.ts', '-f', 'hls', 'cache\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\index.m3u8']'
-#  returned non-zero exit status 4294967283.
-
-
-# ['ffmpeg', '-i', 'uploads/2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653a.mkv', '-c', 'copy', '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-hls_segment_filename', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709%d.ts', '-f', 'hls', 'cache\\m3u8\\2ad84c30b057e07fac76bb0e78f391377bd4f79e72b8f6453d6d7520b483653ae47b7f69ffee819e2747bdc26025e8ee0ff56f5dda39a3ee5e6b4b0d3255bfef95601890afd80709\\index.m3u8']
