@@ -693,11 +693,11 @@ async def main():
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
             # 大图片头像测试
-            await test_uploaduseravatar(
-                client,
-                token,
-                r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg",
-            )
+            # await test_uploaduseravatar(
+            #     client,
+            #     token,
+            #     r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg",
+            # )
             await test_getuseravatar(client, token)
         if True:  # 预览和hls测试
             await register_user(client, user_t)

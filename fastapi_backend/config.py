@@ -88,6 +88,9 @@ class Config:
 
         assert MINIO_BUCKET, "MINIO_BUCKET is missing, please check your .env file."
 
+        # 分片上传临时目录
+        TEMP_UPLOAD_DIR = "temp_upload_dir"
+
 
 class User(Config):
     # Default profile image path
