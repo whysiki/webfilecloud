@@ -851,7 +851,7 @@ async def preview_file(
     if (
         not file.file_preview_path
         or not storage_.is_file_exist(file.file_preview_path)
-        or storage_.get_file_size(file.file_preview_path) < 100
+        or storage_.get_file_size(file.file_preview_path) <= 1.3 * 1024
     ):
 
         logger.debug(f"generate preview img :{file.filename}")
@@ -925,13 +925,7 @@ async def preview_video_file(
         storage_.is_file_exist(file.file_preview_path)
         and storage_.get_file_size(file.file_preview_path) > 0
     ):
-        # return FileResponse(
-        #     file.file_preview_path,
-        #     media_type=mime_type,
-        #     headers={
-        #         "Content-Disposition": f"attachment; filename=preview_{filename}.mp4"
-        #     },
-        # )
+
         return StreamingResponse(
             io.BytesIO(storage_.get_file_bytestream(file.file_preview_path)),
             media_type=mime_type,

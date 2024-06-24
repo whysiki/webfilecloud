@@ -8,12 +8,14 @@ import asyncio
 from minio import Minio
 from minio.error import S3Error
 import io
+from functools import lru_cache
 
 STORE_TYPE = config.Config.STORE_TYPE
 
 # basic file operations
 
 
+@lru_cache(maxsize=128)
 def get_path_basename(path, *args, **kargs):
     """
     get the file name from the path
@@ -22,6 +24,7 @@ def get_path_basename(path, *args, **kargs):
     return os.path.basename(path)
 
 
+@lru_cache(maxsize=128)
 def get_join_path(*paths, **kargs):
     """
     get the joined path from the paths
@@ -33,6 +36,7 @@ def get_join_path(*paths, **kargs):
     # return joined_path
 
 
+@lru_cache(maxsize=128)
 def get_path_dirname(path, *args, **kargs):
     """
     get the directory name from the path
@@ -83,42 +87,6 @@ def makedirs(path, isfile: bool = True, *args, **kargs):
         pathd.mkdir(parents=True, exist_ok=True)
 
 
-def remove_file(path, *args, **kwargs):
-    pass
-
-
-def is_file_exist(path, *args, **kwargs):
-    pass
-
-
-def get_file_size(path, *args, **kwargs):
-    pass
-
-
-async def async_write_file_wb(path, content: bytes, *args, **kwargs):
-    pass
-
-
-async def async_read_file_rb(path, *args, **kwargs):
-    pass
-
-
-def remove_path(path, *args, **kwargs):
-    pass
-
-
-def save_file_from_system_path(path, save_path, delete_original=True, *args, **kwargs):
-    pass
-
-
-def get_file_bytestream(path, *args, **kwargs):
-    pass
-
-
-async def file_iterator(file_path, start, end, chunk_size=1024 * 1024, *args, **kwargs):
-    pass
-
-
 if STORE_TYPE == "local":
 
     def remove_file(path, *args, **kargs):
@@ -128,6 +96,7 @@ if STORE_TYPE == "local":
     def is_file_exist(path, *args, **kargs):
         return os.path.exists(path) if path else False
 
+    @lru_cache(maxsize=128)
     def get_file_size(path, *args, **kargs):
 
         return os.path.getsize(path)
@@ -161,8 +130,11 @@ if STORE_TYPE == "local":
             if delete_original:
                 if os.path.exists(path) and os.path.isfile(path):
                     os.remove(path)
-        logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
+            logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
 
+        return
+
+    @lru_cache(maxsize=128)
     def get_file_bytestream(path, *args, **kargs):
         assert is_file_exist(path), f"File not found: {path}"
         with open(path, "rb") as f:
@@ -265,6 +237,9 @@ elif STORE_TYPE == "minio":
     ):
         try:
             assert os.path.exists(path), f"Path not found: {path}"
+            if is_file_exist(save_path):
+                logger.debug(f"File already exists: {save_path}")
+                return
             with open(path, "rb") as file_data:
                 file_stat = os.stat(path)
                 client.put_object(bucket_name, save_path, file_data, file_stat.st_size)
@@ -278,6 +253,7 @@ elif STORE_TYPE == "minio":
                 f"Failed to save file from system path {path} to {save_path}: {str(e)}: {type(e)}"
             )
 
+    @lru_cache(maxsize=128)
     def get_file_bytestream(path, *args, **kargs):
         try:
             response = client.get_object(bucket_name, path)

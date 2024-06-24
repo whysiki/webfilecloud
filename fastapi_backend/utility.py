@@ -44,10 +44,10 @@ def get_file_extension(filepath):
         return "binary"
 
 
-@lru_cache(maxsize=256)
+@lru_cache(maxsize=128)
 def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
     try:
-        image = Image.open(storage_.get_file_bytestream(file_path))
+        image = Image.open(io.BytesIO(storage_.get_file_bytestream(file_path)))
         image.thumbnail(size)
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format=image.format)
@@ -61,12 +61,14 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
                 LOAD_ERROR_IMG, LOAD_ERROR_IMG, delete_original=False
             )
             if storage_.is_file_exist(LOAD_ERROR_IMG):
-                image = Image.open(storage_.get_file_bytestream(LOAD_ERROR_IMG))
+                image = Image.open(
+                    io.BytesIO(storage_.get_file_bytestream(LOAD_ERROR_IMG))
+                )
                 img_byte_arr = io.BytesIO()
                 image.save(img_byte_arr, format=image.format)
                 img_byte_arr.seek(0)
                 return img_byte_arr.getvalue()
-            white_image = Image.new("RGB", size, (255, 255, 255))
+            white_image = Image.new("RGB", (size[0] / 2, size[1] / 2), (255, 255, 255))
             img_byte_arr = io.BytesIO()
             white_image.save(img_byte_arr, format="JPEG")
             img_byte_arr.seek(0)
