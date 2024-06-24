@@ -4,6 +4,7 @@ import httpx
 import json
 from rich import print
 from rich.console import Console
+from rich.prompt import Prompt
 import functools
 from dotenv import load_dotenv
 import os
@@ -11,29 +12,15 @@ import aiofiles
 from uuid import uuid4
 from pathlib import Path
 from PIL import Image
-
-# import io
 import cv2
 import config
-
-# import time
 import random
-
-# import subprocess
 import shutil
 import re
 from tqdm import tqdm
-
-# import gzip
-# from io import BytesIO
-from httpx import AsyncClient  # , Client
+from httpx import AsyncClient
 from urllib.parse import unquote
-
-# import utility
 import numpy as np
-
-# import psutil
-# from achive.path_tools import forcey_delete_path
 
 load_dotenv()
 
@@ -51,9 +38,30 @@ if not root_user:
 if not root_password:
     root_password = input("Please input the root password: ")
 
+while True:
+    is_delete_db_test = Prompt.ask(
+        "Do you want to delete the test database after the test? (yes/no): ",
+        default="yes",
+    )
+
+    if is_delete_db_test == "yes":
+
+        is_delete_db_test = True
+        break
+
+    elif is_delete_db_test == "no":
+
+        is_delete_db_test = False
+        break
+
+    else:
+        print("Please input yes or no.")
+        continue
+
 
 base_url = f"http://localhost:{startport}"
 testfile_folder = "../testfile_folder"
+os.makedirs(testfile_folder, exist_ok=True)
 
 console = Console()
 
@@ -462,6 +470,7 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     if os.path.getsize(test_file) <= config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
         assert response.status_code == 200
     else:
+        print("File too large, expected 413 error", response.status_code)
         assert response.status_code != 200
 
     print(response.json())
@@ -692,12 +701,15 @@ async def main():
             await test_getfilesbynode(client, token, ["11", "22", "testetst"])
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
-            # 大图片头像测试
-            # await test_uploaduseravatar(
-            #     client,
-            #     token,
-            #     r"D:\Backup\Downloads\Konachan.com - 375648 2girls barefoot fang gloves green_hair hat long_hair panties shorts skirt sp_(8454) tail twintails underwear uniform upskirt white yellow_eyes.jpg",
-            # )
+
+            # 上传大图像 头像测试
+            # bigimg = f"{testfile_folder}/bigimg.jpg"
+            # if os.path.exists(bigimg):
+            # os.remove(bigimg)
+            # os.makedirs(os.path.dirname(bigimg), exist_ok=True)
+            # image = generate_random_image(4000, 4000)
+            # image.save(bigimg)
+            # await test_uploaduseravatar(client, token, bigimg)
             await test_getuseravatar(client, token)
         if True:  # 预览和hls测试
             await register_user(client, user_t)
@@ -706,7 +718,7 @@ async def main():
             await test_getvideopreview(client, token)
             await test_gethlsvideostram(client, token)
         # await delete_user(client, token, user_t)
-        if True:  #  删库测试 🤣
+        if is_delete_db_test:  #  删库测试 🤣
             async with httpx.AsyncClient(timeout=200) as client2:
                 await reset_db(client2, root_user, root_password)
 

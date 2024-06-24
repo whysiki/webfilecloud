@@ -5,8 +5,6 @@ from config import Config
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-# from prometheus_client import make_asgi_app
-
 origins = Config.CROS_ORIGINS
 
 minimum_size = Config.GZIP_MINIMUM_SIZE

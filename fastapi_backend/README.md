@@ -14,7 +14,7 @@
 - `utility.py`为工具函数
 - `dep.py`为依赖注入
 - `auth.py`为认证函数
-- `test_files.py`为测试文件
+- `test_files.py`为测试文件 可以看一些接口调用的示例
 - `env.py` 生成`.env`文件
 - `start.py`自用部署脚本
 - `storage_.py` 为封装的文件存储函数
@@ -40,10 +40,11 @@ ROOT_USER=whysiki
 # 管理员密码
 ROOT_PASSWORD=180cfgadd88-e429-40db-f9edfg49-c080cd629af1 
 # 数据库连接信息 数据库必须要支持Column, String, Table, ForeignKey, ARRAY 类型
-DATABASE_URL=postgresql://postgres:778899vvbbnnmm@localhost:61111/filecloud
+# DATABASE_URL=postgresql://username:password@localhost:port/database
+DATABASE_URL=postgresql://postgres:whysiki@localhost:61111/filecloud
 # 启动端口 测试时使用 实际服务启动端口还是看gunicorn或者uvicorn的启动端口
 START_PORT=8000
-# 存储类型 minio / local , local为本地存储
+# 存储类型 minio / local , local为本地存储, minio为minio服务器存储
 STORE_TYPE=minio
 # minio服务器地址 不需要http://
 MINIO_ENDPOINT=localhost:9000
@@ -62,11 +63,16 @@ MINIO_BUCKET=filecloud
 
 ### 依赖安装
 
-基础依赖
+- 基础依赖
 
 `pip install -r requirements.txt`
 
-数据库驱动
+- 数据库安装和配置 
+  - 下载 配置环境变量 略
+  - 登录 `psql -U postgres -p 61111`  -p 61111 是端口号 -U postgres  用户名
+  - 创建数据库 `CREATE DATABASE filecloud;`
+
+- 数据库驱动
 
 - `pip install psycopg2` in windows
 - `sudo apt install python3-psycopg2`, `sudo apt install libpq-dev` in ubuntu
@@ -80,7 +86,6 @@ or
 `python3 -m hypercorn main:app --reload`
 
 默认启动端口为8000。
-
 
 ### 部署
 

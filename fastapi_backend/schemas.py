@@ -2,8 +2,6 @@
 
 from pydantic import BaseModel, Field
 
-# from typing import Set
-
 
 # 使类可哈希化  类装饰器
 def make_hashable(cls):

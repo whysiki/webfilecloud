@@ -13,9 +13,6 @@ association_table = Table(
     Base.metadata,
     Column("user_id", String, ForeignKey("users.id")),
     Column("file_id", String, ForeignKey("files.id")),
-    # Column("user_id", String, ForeignKey("whyshi.users.id")),  # Ensure type is String
-    # Column("file_id", String, ForeignKey("whyshi.files.id")),  # Ensure type is String
-    # schema="whyshi",  # 配置了schema迁移时比较麻烦，不配置的话默认为public，但需要有权限。生产环境建议不建议配置schema，授予public权限即可
 )
 
 

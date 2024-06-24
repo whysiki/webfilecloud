@@ -7,12 +7,29 @@ import os
 import uuid
 import getpass
 import re
-
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 # THis file is used to generate the .env file for the project
 # It will ask the user for the configuration values and write them to the .env file
 
+
 console = Console()
+
+
+def test_postgresql_connection(connection_string):
+    try:
+        if not connection_string:
+            console.print("Invalid PostgreSQL connection string", style="red")
+            return False
+        connection_string = connection_string.strip()
+        engine = create_engine(connection_string)
+        with engine.connect():
+            console.print("Connection to PostgreSQL successful!", style="green")
+            return True
+    except OperationalError as e:
+        console.print(f"Failed to connect to PostgreSQL: {e}", style="red")
+        return False
 
 
 def get_valid_password(number_of_characters: int = 8):
@@ -52,8 +69,49 @@ def generate_env_file():
     root_password = get_valid_password()
 
     database_url = Prompt.ask(
-        "Enter the database URL (default: sqlite:///./fileserver.db): ",
-        default="sqlite:///./fileserver.db",
+        "Enter the database URL (example: postgresql://postgres:whysiki@localhost:61111/filecloud): "
+    )
+
+    while not test_postgresql_connection(database_url):
+
+        database_url = Prompt.ask(
+            "Enter the database URL (example: postgresql://postgres:whysiki@localhost:61111/filecloud): "
+        )
+
+    while True:
+
+        store_type = Prompt.ask(
+            "Enter the store type (default: local) [local/minio]: ", default="local"
+        )
+
+        if store_type not in ["local", "minio"]:
+
+            console.print("Invalid store type", style="red")
+        else:
+
+            break
+
+    # if store_type == "minio":
+
+    minio_endpoint = Prompt.ask(
+        "Enter the minio endpoint (default: localhost:9000): ",
+        default="localhost:9000",
+    )
+
+    minio_access_key = Prompt.ask(
+        "Enter the minio access key (default: minioadmin): ", default="minioadmin"
+    )
+
+    minio_secret_key = Prompt.ask(
+        "Enter the minio secret key (default: minioadmin): ", default="minioadmin"
+    )
+
+    minio_secure = Prompt.ask(
+        "Enter the minio secure (default: False) [False/True]: ", default="False"
+    )
+
+    minio_bucket = Prompt.ask(
+        "Enter the minio bucket (default: filecloud): ", default="filecloud"
     )
 
     env_content = f"""
@@ -64,6 +122,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES={expire_minutes}
 ROOT_USER={root_user}
 ROOT_PASSWORD={root_password}
 DATABASE_URL={database_url}
+STORE_TYPE={store_type}
+MINIO_ENDPOINT={minio_endpoint}
+MINIO_ACCESS_KEY={minio_access_key}
+MINIO_SECRET_KEY={minio_secret_key}
+MINIO_SECURE={minio_secure}
+MINIO_BUCKET={minio_bucket}
 """.strip()
     with open(".env", "w") as file:
         file.write(env_content)
