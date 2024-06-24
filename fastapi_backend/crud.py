@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
-import storage_
+from storage_ import handler as storage_
 from functools import lru_cache
 
 

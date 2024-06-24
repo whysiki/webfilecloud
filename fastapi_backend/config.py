@@ -39,7 +39,7 @@ class Config:
     assert DATABASE_URL, "DATABASE_URL is missing, please check your .env file."
 
     # CORS origins
-    CROS_ORIGINS: list = ["*"]
+    CROS_ORIGINS: list[str] = ["*"]
 
     # GZIP response minimum size
     GZIP_MINIMUM_SIZE: int = 500

@@ -29,7 +29,9 @@ import io
 import asyncio
 from urllib.parse import quote
 import mimetypes
-import storage_  # separate storage functions
+from storage_ import (
+    handler as storage_,
+)  # separate storage functions 别问我为什么这么导入🤣
 
 
 # register user
@@ -43,9 +45,12 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     )
     crud.add_user(db, user)
     return schemas.UserOut(
+        id="",
         username=user_in.username,
         message="User created successfully",
-        # id=user.id,
+        profile_image="",
+        profile="",
+        role="",
     )
 
 
@@ -94,10 +99,10 @@ async def delete_user(
 
     current_username: str = get_current_username(access_token)
     user = crud.get_user_by_id(db, id)
-    if not (user.username == current_username):
+    if not (str(user.username) == str(current_username)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     crud.delete_user_from_db(db, user)
-    if user.profile_image:
+    if str(user.profile_image):
         storage_.remove_file(user.profile_image)
     logger.warning(f"User {current_username} deleted")
     return schemas.UserOut(

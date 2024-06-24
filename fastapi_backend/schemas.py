@@ -1,20 +1,22 @@
 # encoding: utf-8
 
+from typing import Any, Type
 from pydantic import BaseModel, Field
 
 
-# 使类可哈希化  类装饰器
-def make_hashable(cls):
-    def __hash__(self):
+def make_hashable(cls: Type[Any]) -> Type[Any]:
+    def __hash__(self: Type[Any]) -> int:
         return hash((type(self),) + tuple(self.__dict__.values()))
 
-    def __eq__(self, other):
+    def __eq__(self: Type[Any], other: Type[Any]) -> bool:
         if isinstance(other, self.__class__):
             return self.__dict__ == other.__dict__
         return False
 
-    cls.__hash__ = __hash__
-    cls.__eq__ = __eq__
+    if "__hash__" not in cls.__dict__:
+        setattr(cls, "__hash__", __hash__)
+    if "__eq__" not in cls.__dict__:
+        setattr(cls, "__eq__", __eq__)
     return cls
 
 

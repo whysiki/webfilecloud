@@ -7,7 +7,7 @@ from fastapi import HTTPException
 import io
 from PIL import Image
 from functools import wraps
-import storage_  # 存储层的一些自定义封装函数
+from storage_ import handler as storage_  # 存储层的一些自定义封装函数 
 import tempfile
 import os
 import shutil
