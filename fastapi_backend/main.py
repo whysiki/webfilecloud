@@ -3,35 +3,32 @@ from fastapi import HTTPException, Depends
 from uuid import uuid4
 from starlette.requests import Request
 from sqlalchemy.orm import Session
-import models  # model definition
-import schemas
-import crud  # database operations
-from auth import pwd_context, create_access_token, get_current_username
 from fastapi import File, UploadFile
 from datetime import datetime, timedelta
 from minio import Minio
 from minio.error import S3Error
-import os
 from typing import Optional
-import shutil
 import hashlib
-import config  # costom configuration
 from fastapi.responses import StreamingResponse, Response
-import aiofiles
 from loguru import logger
-from dep import get_db, get_access_token  # inject dependency
-from app import app  # fast app instance
 import json
 import numpy
-import utility  # costom utility functions
 from concurrent.futures import ThreadPoolExecutor
 import io
 import asyncio
 from urllib.parse import quote
 import mimetypes
+from auth import pwd_context, create_access_token, get_current_username  # auth
+import config  # costom configuration
+from dep import get_db, get_access_token  # inject dependency
+from app import app  # fast app instance
+import utility  # costom utility functions
+import models  # model definition
+import schemas  # pydantic schemas
+import crud  # database operations
 from storage_ import (
     handler as storage_,
-)  # separate storage functions 别问我为什么这么导入🤣
+)  # separate storage functions 别问我为什么这么导入🥲
 
 
 # register user
@@ -199,8 +196,6 @@ async def upload_file(
             # pass
         else:
             # otherwise, raise an exception
-            # logger.warning(f"file_id: {file_id} already exists, upload failed")
-            # raise HTTPException(status_code=400, detail="File already exists")
             filem = crud.get_file_by_id(db, file_id=file_id)
             if storage_.is_file_exist(filem.file_path):
                 raise HTTPException(status_code=400, detail="File already exists")
@@ -258,15 +253,10 @@ async def upload_file(
 
     file_type = filename.split(".")[-1] if "." in filename else "binary"
 
-    # prepare_file_path = storage_.get_join_path(
-    #     config.Config.UPLOAD_PATH, username, file_type, filename
-    # )
-
     prepare_file_path = storage_.get_join_path(
         config.Config.UPLOAD_PATH, f"{file_content_hash}.{file_type}"
     )
 
-    # file_path = utility.get_new_path(prepare_file_path)
     file_path = prepare_file_path
 
     storage_.makedirs(file_path)
@@ -341,11 +331,6 @@ async def read_file(
 
     logger.debug(f"Download file: {file.file_path}")
 
-    # return FileResponse(
-    #     file.file_path,
-    #     media_type="application/octet-stream",
-    #     filename=storage_.get_path_basename(file.file_path),
-    # )
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(file.file_path)),
         media_type="application/octet-stream",
@@ -644,14 +629,12 @@ async def download_file(
     if file.file_owner_name != user.username or file.filename != file_name:
         raise HTTPException(status_code=403, detail="Permission denied")
 
+    if not storage_.is_file_exist(file.file_path):
+
+        raise HTTPException(status_code=404, detail="File path not found")
+
     file_size = storage_.get_file_size(file.file_path)
 
-    # return FileResponse(
-    #     file.file_path,
-    #     filename=file.filename,
-    #     media_type="application/octet-stream",
-    #     headers={"Content-Length": str(file_size)},
-    # )
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(file.file_path)),
         media_type="application/octet-stream",
@@ -745,10 +728,10 @@ async def get_profile_image(
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
-        user.profile_image = config.User.DEFAULT_PROFILE_IMAGE
+        user.profile_image = config.User.DEFAULT_PROFILE_IMAGE  # this ia a system path
         storage_.save_file_from_system_path(
             user.profile_image, user.profile_image, delete_original=False
-        )
+        )  # save the default profile image to the storage layer
         if storage_.is_file_exist(user.profile_image):
             logger.warning("default profile_image")
         else:
@@ -759,6 +742,11 @@ async def get_profile_image(
                 status_code=404,
                 detail="Profile image not found, Server error, no default profile image",
             )
+
+    if not user.profile_image or not storage_.is_file_exist(user.profile_image):
+        raise HTTPException(
+            status_code=404, detail="Profile image not found, Server error"
+        )
 
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(user.profile_image)),
@@ -789,32 +777,35 @@ async def upload_profile_image(
         )
     )
     storage_.makedirs(file_path, isfile=True)
-    try:
-        total_size = 0
-        async with aiofiles.open(file_path, "wb") as buffer:
-            while True:
-                chunk = await file.read(1024)  # read in 1KB chunks
-                if not chunk:
-                    break
-                total_size += len(chunk)
-                if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
-                    storage_.remove_file(file_path)  # remove the file
-                    logger.warning("profile image File size exceeds maximum limit")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="profile image File size exceeds maximum limit",
-                    )
-                await buffer.write(chunk)
 
-    except Exception as e:
-        logger.error(
-            f"Profile image save failed, Server error: {str(e)} {type(e)}. file_path: {file_path}. user_profile_image: {user.profile_image}"
-        )
-        raise HTTPException(
-            status_code=500, detail=f"Profile image save failed, Server error: {e}"
-        )
+    total_size = 0
 
-    storage_.save_file_from_system_path(file_path, file_path, delete_original=True)
+    file_content: bytearray = bytearray()
+
+    while True:
+
+        chunk = await file.read(1024)
+
+        if not chunk:
+            break
+
+        total_size += len(chunk)
+
+        if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
+
+            if storage_.is_file_exist(file_path):
+                storage_.remove_file(file_path)
+
+            logger.warning("profile image File size exceeds maximum limit")
+
+            raise HTTPException(
+                status_code=400,
+                detail="profile image File size exceeds maximum limit",
+            )
+
+        file_content.extend(chunk)
+
+    await storage_.async_write_file_wb(file_path, file_content)
 
     user.profile_image = file_path
 
@@ -826,10 +817,10 @@ async def upload_profile_image(
         )
 
     return schemas.UserOut(
-        # id=user.id,
         username=user.username,
         profile_image=user.profile_image,
         message="Profile image uploaded successfully",
+        id="",
     )
 
 
@@ -1020,13 +1011,8 @@ if config.Config.STORE_TYPE == "minio":
     TEMP_UPLOAD_DIR = config.Config.TEMP_UPLOAD_DIR
 
     def get_minio_client():
-        client = Minio(
-            endpoint="localhost:9000",
-            access_key="minioadmin",
-            secret_key="minioadmin",
-            secure=False,  # use http
-        )
-        return client
+
+        return config.Config.MinioClient
 
     async def minio_file_iterator(
         client: Minio,
@@ -1065,7 +1051,7 @@ if config.Config.STORE_TYPE == "minio":
             finally:
                 response.close()
 
-    def get_file_size(
+    def minio_get_file_size(
         client: Minio, bucket_name: str, object_name: str, *args, **kwargs
     ) -> int:
         try:
@@ -1077,13 +1063,13 @@ if config.Config.STORE_TYPE == "minio":
 
     @app.get("/file/download/{bucket_name}/{object_name}")
     @app.head("/file/download/{bucket_name}/{object_name}")
-    async def download_file(
+    async def minio_download_file(
         request: Request,
         object_name: str,
         bucket_name: str,
         client: Minio = Depends(get_minio_client),
     ):
-        file_size = get_file_size(
+        file_size = minio_get_file_size(
             client=client, bucket_name=bucket_name, object_name=object_name
         )
 
@@ -1120,22 +1106,26 @@ if config.Config.STORE_TYPE == "minio":
 
     # file_id is not object_name
     @app.post("/upload/")
-    async def upload_file(
+    async def minio_upload_file(
         file_id: str, order: str, upload_file: UploadFile = File(...)
     ):
         try:
-            print(file_id, order)
+            logger.info(file_id, order)
             # 创建临时文件目录
-            temp_upload_dir = os.path.join(TEMP_UPLOAD_DIR, file_id)
-            os.makedirs(temp_upload_dir, exist_ok=True)
+            temp_upload_dir = storage_.get_join_path(TEMP_UPLOAD_DIR, file_id)
+            storage_.makedirs(temp_upload_dir, exist_ok=True)
 
-            temp_file_path = os.path.join(temp_upload_dir, order)
+            temp_file_path = storage_.get_join_path(temp_upload_dir, order)
 
-            # 写入文件
-            async with aiofiles.open(temp_file_path, "wb") as f:
-                await f.write(await upload_file.read())
+            await storage_.async_write_file_wb(temp_file_path, await upload_file.read())
 
-            print(f"successfully upload chunck : {file_id} : {order}")
+            if not storage_.is_file_exist(temp_file_path):
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error occurred during upload: File not found",
+                )
+
+            logger.success(f"successfully upload chunck : {file_id} : {order}")
 
             # 返回临时文件目录和文件名以备后续合并
             return {"temp_upload_dir": temp_upload_dir, "filename": order, "code": 200}
@@ -1147,24 +1137,57 @@ if config.Config.STORE_TYPE == "minio":
             )
 
     @app.post("/merge/")
-    async def merge_files(
+    async def minio_merge_files(
         bucket_name: str,
         filename: str,  # is object_name
         file_id: str,
         client: Minio = Depends(get_minio_client),
     ):
 
-        print(filename, file_id, bucket_name)
+        logger.debug(
+            f"mergefilename: {filename}, mergefile_id: {file_id}, mergebucket_name: {bucket_name}"
+        )
         found = client.bucket_exists(bucket_name)
         if not found:
             client.make_bucket(bucket_name)
-            print("Created bucket", bucket_name)
+            logger.debug(f"Created bucket:{bucket_name}")
         else:
-            # pass
-            print("Bucket", bucket_name, "already exists")
-        temp_upload_dir = os.path.join(TEMP_UPLOAD_DIR, file_id)
+            logger.debug(f"Bucket {bucket_name} already exists")
+
+        temp_upload_dir = storage_.get_join_path(TEMP_UPLOAD_DIR, file_id)
+
         # 找到所有分片文件
-        parts = sorted(os.listdir(temp_upload_dir))
+        parts = sorted(
+            set(storage_.get_dir_files(temp_upload_dir)),
+            key=lambda x: int(storage_.get_path_basename(x)),  # sort by order
+        )
+
+        order_int_last = -1
+        for part in parts:
+            order = storage_.get_path_basename(part)
+            print(order, part)
+            order_int = int(order)
+            if order_int_last > 0 and order_int - order_int_last != 1:
+                logger.error(f"invalid part file: {order_int_last+1}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"missing part file: {part}",
+                )
+            if order_int < 0:
+                logger.error(f"invalid part file: {part}")
+                raise HTTPException(
+                    status_code=404,
+                    detail="invalid part file",
+                )
+            order_int_last = order_int
+
+        # logger.debug(f"merge file: {file_id}")
+
+        if parts.__len__() == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="No file to merge, please upload file first",
+            )
 
         headers = {"Content-Type": "application/octet-stream"}
 
@@ -1177,18 +1200,24 @@ if config.Config.STORE_TYPE == "minio":
 
         # 逐个上传分片
         for i, part in enumerate(parts):
-            part_path = os.path.join(temp_upload_dir, part)
-            part_number = i + 1
-            async with aiofiles.open(part_path, "rb") as data:
-                data = await data.read()
-                client._upload_part(
-                    bucket_name=bucket_name,
-                    object_name=filename,
-                    part_number=part_number,  # 分片编号从 1 开始
-                    upload_id=upload_id,
-                    data=data,
-                    headers=None,
+            part_path = part
+            if not storage_.is_file_exist(part_path):
+                logger.error(f"missing part file, merge failed: {part_path}")
+                raise HTTPException(
+                    status_code=404,
+                    detail="missing part file, merge failed",
                 )
+            part_number = i + 1
+            data = await storage_.async_read_file_rb(part_path)
+            client._upload_part(
+                bucket_name=bucket_name,
+                object_name=filename,
+                part_number=part_number,  # 分片编号从 1 开始
+                upload_id=upload_id,
+                data=data,
+                headers=None,
+            )
+            print(f"Merged part {part_path}")
 
         list_parts = client._list_parts(
             bucket_name=bucket_name,
@@ -1200,14 +1229,25 @@ if config.Config.STORE_TYPE == "minio":
 
             print(p.size, p.part_number)
 
-        client._complete_multipart_upload(
-            bucket_name=bucket_name,
-            object_name=filename,
-            upload_id=upload_id,
-            parts=list_parts,
-        )
+        try:
 
-        # 删除临时分片文件目录
-        shutil.rmtree(temp_upload_dir, ignore_errors=True)
+            client._complete_multipart_upload(
+                bucket_name=bucket_name,
+                object_name=filename,
+                upload_id=upload_id,
+                parts=list_parts,
+            )
 
-        return {"message": "File uploaded successfully", "code": 200}
+            # 删除临时分片文件目录
+
+            return {"message": "File uploaded successfully", "code": 200}
+        except Exception as e:
+            logger.error(f"merge failed: {type(e)}{str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"merge failed: {type(e)}{str(e)}",
+            )
+
+        finally:
+
+            storage_.remove_path(temp_upload_dir)

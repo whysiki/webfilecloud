@@ -54,12 +54,12 @@ while True:
             print("Please input a number greater than 0.")
             continue
 
-    if is_delete_db_test == "yes":
+    if is_delete_db_test == "yes" or is_delete_db_test == "1":
 
         is_delete_db_test = True
         break
 
-    elif is_delete_db_test == "no":
+    elif is_delete_db_test == "no" or is_delete_db_test == "0":
 
         is_delete_db_test = False
         break

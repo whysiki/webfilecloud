@@ -48,6 +48,8 @@ class Config:
 
     STORE_TYPE: str = os.getenv("STORE_TYPE", "local").strip().lower()
 
+    # STORE_TYPE = "minio"
+
     assert STORE_TYPE in [
         "local",
         "minio",

@@ -18,7 +18,11 @@ class FileSystemHandler:
 
     @lru_cache(maxsize=128)
     def get_path_basename(self, path: str, *args: str, **kargs: str) -> str:
-        return os.path.basename(path)
+        if path:
+            return os.path.basename(path)
+        else:
+            logger.error("Path is empty")
+            return ""
 
     @lru_cache(maxsize=128)
     def get_join_path(self, *paths: Union[str, Path], **kargs: str) -> str:
@@ -42,17 +46,12 @@ class FileSystemHandler:
         self, path: str, extension: Optional[str] = None, *args: str, **kargs: str
     ):
         """
+        path is a system directory
 
-        dir is a system path.
+        if extension is None, return all files in the directory, just as os.listdir.only contain basename.
 
-        will contain relatave path of files, not just a file name
-
-        extension: str, file extension to filter files . example: 'ts'
-
-        path: str, path to directory
-
-        return: list of files in the directory.
-
+        if extension is not None, return all files with the extension in the directory.will contain relative file path.contain dir/filebasename.\
+        
         """
         assert os.path.exists(path), f"Path not found: {path}"
 
@@ -115,8 +114,29 @@ class FileSystemHandler:
     ) -> AsyncGenerator[bytes, None]:
         raise NotImplementedError
 
+    def get_dir_files(self, path: str, *args, **kwargs):
+        """
+
+        path is directory or dirprefix
+
+        will return all files in the directory, not just a filebasename.
+        """
+        raise NotImplementedError
+
 
 class LocalFileSystemHandler(FileSystemHandler):
+
+    def get_dir_files(self, path, *args, **kwargs):
+
+        assert os.path.exists(path), f"Path not found: {path}"
+
+        assert os.path.isdir(path), f"Path is not a directory: {path}"
+
+        return [
+            os.path.join(path, file)
+            for file in os.listdir(path)
+            if os.path.isfile(os.path.join(path, file))  # os.path.isfile
+        ]
 
     def is_file_exist(self, path, *args, **kwargs):
         return os.path.exists(path) if path else False
@@ -183,6 +203,17 @@ class MinioFileSystemHandler(FileSystemHandler):
     def __init__(self, client: Minio, bucket_name: str):
         self.client: Minio = client
         self.bucket_name: str = bucket_name
+
+    def get_dir_files(self, path, *args, **kwargs):
+        try:
+            objects = self.client.list_objects(
+                self.bucket_name, prefix=path, recursive=True
+            )
+            return [obj.object_name for obj in objects if obj.is_dir == False]
+        except S3Error as e:
+            logger.error(f"Failed to get dir files for {path}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Failed to get dir files for {path}: {str(e)}")
 
     def is_file_exist(self, path, *args, **kwargs):
         try:
