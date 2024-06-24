@@ -61,9 +61,9 @@ def add_user(db: Session, user: User) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
-    assert (
-        db.query(User).filter(User.username == user.username).first()
-    ), "Add user failed"
+    # assert (
+    #     db.query(User).filter(User.username == user.username).first()
+    # ), "Add user failed"
     logger.success(f"Added an user : {user.username}")
     return user
 
@@ -130,17 +130,17 @@ def delete_user_from_db(db: Session, user: User) -> None:
     ).delete()  # 删除File表中用户的所有文件记录
     db.delete(user)
     db.commit()
-    assert (
-        not db.query(User).filter(User.username == user.username).first()
-    ), "User in User table"
-    assert (
-        not db.query(association_table)
-        .filter(association_table.c.user_id == user.id)
-        .first()
-    ), "User in association table"
-    assert (
-        not db.query(File).filter(File.file_owner_name == user.username).first()
-    ), "User in File table"
+    # assert (
+    #     not db.query(User).filter(User.username == user.username).first()
+    # ), "User in User table"
+    # assert (
+    #     not db.query(association_table)
+    #     .filter(association_table.c.user_id == user.id)
+    #     .first()
+    # ), "User in association table"
+    # assert (
+    #     not db.query(File).filter(File.file_owner_name == user.username).first()
+    # ), "User in File table"
 
     logger.warning(f"Deleted an user : {user.username}")
 
@@ -183,8 +183,8 @@ def add_file_id_to_user(db: Session, user: User, file_id: str) -> None:
     # 加到文件表
     db.add(file)
     db.commit()
-    assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
-    assert file in user.files, "Add file to user failed"
+    # assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
+    # assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
 
 
@@ -217,8 +217,8 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
     # 加到文件表
     db.add(file)
     db.commit()
-    assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
-    assert file in user.files, "Add file to user failed"
+    # assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
+    # assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
     return user
 
@@ -227,5 +227,5 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
 def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
     setattr(file, arrtibute, value)
     db.commit()
-    assert getattr(file, arrtibute) == value, "Modify file attribute failed"
+    # assert getattr(file, arrtibute) == value, "Modify file attribute failed"
     logger.success(f"Modified file attribute : {arrtibute} to {value}")

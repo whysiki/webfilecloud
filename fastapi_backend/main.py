@@ -960,23 +960,27 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 
     index_m3u8_path = storage_.get_join_path(segment_index_path, index_m3u8_name)
 
-    try:
-        utility.generate_hls_playlist(
-            file.file_path,
-            output_dir=segment_index_path,
-            playlist_name=index_m3u8_name,
-            file_id=str(uuid4()),  # 随机生成一个uuid
-        )
+    if (
+        not storage_.is_file_exist(index_m3u8_path)
+        or storage_.get_file_size(index_m3u8_path) < 200
+    ):
 
-    except Exception as e:
+        try:
+            utility.generate_hls_playlist(
+                file.file_path,
+                output_dir=segment_index_path,
+                playlist_name=index_m3u8_name,
+                file_id=str(uuid4()),
+            )
 
-        logger.warning(f"{type(e)}{str(e)}")
+        except Exception as e:
 
-        raise HTTPException(
-            status_code=500, detail="Failed to generate HLS playlist and segments"
-        )
+            logger.warning(f"{type(e)}{str(e)}")
 
-    # return FileResponse(index_m3u8_path, media_type="application/vnd.apple.mpegurl")
+            raise HTTPException(
+                status_code=500, detail="Failed to generate HLS playlist and segments"
+            )
+
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(index_m3u8_path)),
         media_type="application/vnd.apple.mpegurl",
