@@ -72,6 +72,8 @@ MINIO_BUCKET=filecloud
   - 登录 `psql -U postgres -p 61111`  -p 61111 是端口号 -U postgres  用户名
   - 创建数据库 `CREATE DATABASE filecloud;`
 
+- ffmpeg 安装 配置环境变量 略
+
 - 数据库驱动
 
 - `pip install psycopg2` in windows
