@@ -202,7 +202,6 @@ def write_database_url_in_alembic_ini():
 
                 replace_content = f"sqlalchemy.url = {database_url}"
 
-                # Use the sub method of the pattern to replace the line
                 alembic_ini_content = pattern.sub(replace_content, alembic_ini_content)
 
                 if not replace_content in alembic_ini_content:
@@ -213,8 +212,6 @@ def write_database_url_in_alembic_ini():
 
                     return
 
-                # re.IGNORECASE：忽略大小写。
-                # re.MULTILINE：多行模式。
                 with open("alembic.ini", "w") as file:
                     file.write(alembic_ini_content)
 
