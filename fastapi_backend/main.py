@@ -71,8 +71,9 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
 async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     """
     Raises:
-
         HTTP_401_UNAUTHORIZED (status code 401): If the user login failed.
+
+        HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found
 
         HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
     """
@@ -175,6 +176,13 @@ async def read_users_me(
     access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
+    """
+    HTTP_401_UNAUTHORIZED
+
+    HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found
+
+    HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(
             status_code=Status.HTTP_401_UNAUTHORIZED,
@@ -1078,11 +1086,17 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
                 status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to generate HLS playlist and segments",
             )
-
-    return StreamingResponse(
-        io.BytesIO(storage_.get_file_bytestream(index_m3u8_path)),  # type: ignore
-        media_type="application/vnd.apple.mpegurl",
-    )
+    try:
+        return StreamingResponse(
+            io.BytesIO(storage_.get_file_bytestream(index_m3u8_path)),  # type: ignore
+            media_type="application/vnd.apple.mpegurl",
+        )
+    except Exception as e:
+        logger.warning(f"{type(e)}{str(e)}")
+        raise HTTPException(
+            status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e)}{str(e)} Failed to get HLS playlist",
+        )
 
 
 # get hls m3u8 segment file

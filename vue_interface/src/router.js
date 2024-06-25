@@ -7,6 +7,7 @@ import UserView from "./views/UserView.vue";
 import FileFolderView from "./views/FileFolderView.vue";
 import PreviewPage from "./views/PreviewPage.vue";
 // import path from "path-browserify";
+// import path from "path-browserify";
 
 const routes = [
   { path: "/", component: Home },
@@ -25,6 +26,14 @@ const routes = [
   {
     path: "/preview/:id/:type/:link",
     component: PreviewPage,
+  },
+  {
+    path: "/test_multiple_upload",
+    component: () => import("./views/TestMultipartUpload.vue"),
+  },
+  {
+    path: "/test_multiple_download",
+    component: () => import("./views/TestMultipartDownload.vue"),
   },
 ];
 

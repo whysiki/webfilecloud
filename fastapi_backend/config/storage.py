@@ -10,7 +10,7 @@ class StorageConfig(Config):
 
     __current_workspace_dir: Path = Path(__file__).parent.parent
 
-    STORE_TYPE: str = os.getenv("STORE_TYPE", "local").strip().lower()
+    STORE_TYPE: str = os.getenv("STORE_TYPE").strip().lower()
 
     assert STORE_TYPE in [
         "local",

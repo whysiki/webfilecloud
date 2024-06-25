@@ -25,9 +25,7 @@
       <button class="file-list-button collapseAll" @click="collapseAll">
         CollapseAll
       </button>
-      <button class="file-list-button expandAll" @click="expandAll">
-        ExpandAll
-      </button>
+      <button class="file-list-button expandAll" @click="expandAll">ExpandAll</button>
       <div class="file-list-dropdown">
         <button class="file-list-button showMode" @click="toggleDropdown">
           <i class="fas fa-bars"></i>ViewMode
@@ -128,9 +126,7 @@ export default {
       } catch (error) {
         if (alertPopup.value) {
           if (error.response) {
-            await alertPopup.value.showAlert(
-              `Error: ${error.response.data.detail}`
-            );
+            await alertPopup.value.showAlert(`Error: ${error.response.data.detail}`);
           } else if (error.request) {
             await alertPopup.value.showAlert("Error: No response from server");
           } else {
@@ -171,9 +167,7 @@ export default {
   computed: {
     firstFileOwner() {
       const cachedUsername = localStorage.getItem("username");
-      return this.files.length > 0
-        ? this.files[0].file_owner_name
-        : cachedUsername;
+      return this.files.length > 0 ? this.files[0].file_owner_name : cachedUsername;
     },
     fileAllCount() {
       return this.files.length;
@@ -253,13 +247,9 @@ export default {
         localStorage.setItem("userAvatar", this.userAvatar);
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(
-            `Error: ${error.response.data.detail}`
-          );
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert(
-            "Error: No response from server"
-          );
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }

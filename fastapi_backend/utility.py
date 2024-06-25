@@ -326,7 +326,11 @@ def generate_hls_playlist(
             logger.success(f"HLS playlist and segments generated at {output_dir}")
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to generate HLS playlist: {e}")
+            logger.error(f"Failed to generate HLS playlist: {str(e)}")
+
+        except Exception as e:
+
+            logger.error(f"Failed to generate HLS playlist: {type(e)} {str(e)}")
 
         finally:
             tmp_file.close()

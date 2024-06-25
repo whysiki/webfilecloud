@@ -21,6 +21,12 @@ from tqdm import tqdm
 from httpx import AsyncClient
 from urllib.parse import unquote
 import numpy as np
+from tools.testtools import (
+    generate_random_image,
+    generate_random_video,
+    get_new_path,
+    handle_error,
+)
 
 load_dotenv()
 
@@ -76,38 +82,9 @@ os.makedirs(testfile_folder, exist_ok=True)
 console = Console()
 
 
-def handle_error(func):
-    @functools.wraps(func)
-    async def wrapp(*args, **kwargs):
-        error = None
-        for i in range(3):
-            try:
-                return await func(*args, **kwargs)
-            except httpx.HTTPStatusError as e:
-                error = e
-                console.print(f"HTTP error occurred: {e}", style="red")
-            except httpx.RequestError as e:
-                error = e
-                console.print(f"Request error occurred: {e}", style="red")
-            except httpx.ReadTimeout as e:
-                error = e
-                console.print(f"Read timeout: {e}", style="red")
-            except Exception as e:
-                error = e
-                console.print(
-                    f"An unexpected error occurred: {str(e)} {type(e)}", style="red"
-                )
-
-            console.print(f"attempt time {i+1}/4", style="yellow")
-
-        raise error
-
-    return wrapp
-
-
 @handle_error
 async def register_user(client: AsyncClient, user_t: dict[str, str]):
-    print(" 注册用户......")
+    print(f" 注册用户 {user_t}......")
     url = f"{base_url}/users/register"
     headers = {"Content-Type": "application/json"}
     data = user_t
@@ -126,21 +103,26 @@ async def register_user(client: AsyncClient, user_t: dict[str, str]):
 
 
 @handle_error
-async def login_user(client: AsyncClient, user_t: dict[str, str]):
-    print("用户登录......")
+async def login_user(
+    client: AsyncClient, user_t: dict[str, str], expected_status_code=200
+):
     url = f"{base_url}/users/login"
     headers = {"Content-Type": "application/json"}
     data = user_t
     response = await client.post(url, headers=headers, json=data)
-    print(response.status_code)
-    print(response.json())
-    token = response.json()["access_token"]
-    print(f"token : {token}")
-    return token
+
+    assert response.status_code == expected_status_code, "error: login failed"
+    if response.status_code == 200:
+        token = response.json()["access_token"]
+        refresh_token = response.json()["refresh_token"]
+        return token
+
+    print(f"用户登录: {user_t} , code: {response.status_code}", response.json())
+    # print(response.json())
 
 
 @handle_error
-async def get_current_user(client, token, user_t):
+async def get_current_user(client, token, user_t, expected_status_code=200):
     print("获取当前用户信息......")
     url = f"{base_url}/users/me"
     headers = {"Authorization": f"Bearer {token}"}
@@ -148,6 +130,9 @@ async def get_current_user(client, token, user_t):
     response = await client.post(url, headers=headers, json=data)
     print(response.json())
     print(response.status_code)
+    assert (
+        response.status_code == expected_status_code
+    ), "error: get current user failed"
     return response.json()
 
 
@@ -202,6 +187,7 @@ async def download_file(client, token, test_file):
     headers = {"Authorization": f"Bearer {token}"}
     response = await client.get(url, headers=headers, params={"file_id": file_id})
     print(response.status_code)
+    assert response.status_code == 200, "error: download file failed"
     with open(file_name, "wb") as f:
         f.write(response.content)
 
@@ -246,6 +232,8 @@ async def delete_user_files(client, token):
     response = await client.delete(url, headers=headers)
     # print(response.status_code)
     response = await client.delete(url, headers=headers)
+    response = await client.delete(url, headers=headers)
+    response = await client.delete(url, headers=headers)
     print(response.status_code)
     # assert response.status_code == 200
     print(response.json())
@@ -287,6 +275,10 @@ async def upload_file_with_nodes(client, token, test_file, nodes):
             response.json()["file_nodes"] == [] and nodes == [""]
         ), "error: upload_file_with_nodes failed"
 
+    else:
+
+        assert response.status_code != 200, "error: upload_file_with_nodes failed"
+
     return response
 
 
@@ -301,7 +293,7 @@ async def modyfy_file_nodes(client, token, file_id, nodes):
     print(response.json())
     if response.status_code == 200:
         print("修改文件节点", nodes, "resullt:", response.json()["file_nodes"])
-    # assert response.json()["file_nodes"] == nodes, "modify nodes failed"
+        assert response.json()["file_nodes"] == nodes, "error: modify file nodes failed"
 
 
 # @handle_error
@@ -502,69 +494,26 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     files = {"file": open(test_file, "rb")}
     response = await client.post(url, headers=headers, files=files)
 
-    print("File size:", os.path.getsize(test_file))
+    print(
+        f"test_file:{test_file}.  File size:",
+        os.path.getsize(test_file) / (1024 * 1024),
+        "MB",
+    )
 
     print(response.status_code)
     if os.path.getsize(test_file) <= config.UserConfig.PROFILE_IMAGE_MAX_FILE_SIZE:
         assert response.status_code == 200
     else:
-        print("File too large, expected 500 error", response.status_code)
-        assert response.status_code != 200
+        # {'detail': 'profile image File size exceeds maximum limit'}
+        print("File too large, expected 400 error", response.status_code)
+        assert response.status_code == 400
+        assert (
+            response.json()["detail"] == "profile image File size exceeds maximum limit"
+        )
 
     print(response.json())
 
     return response
-
-
-def generate_random_image(width, height):
-    # 创建一个新的空白图片
-    image = Image.new("RGB", (width, height))
-    pixels = image.load()
-
-    for x in range(width):
-        for y in range(height):
-            # 生成随机颜色
-            r = random.randint(0, 255)
-            g = random.randint(0, 255)
-            b = random.randint(0, 255)
-            pixels[x, y] = (r, g, b)
-
-    return image
-
-
-def get_new_path(path: str) -> str:
-    name, extension = path.split(".")[-2], (
-        path.split(".")[-1] if len(path.split(".")) > 1 else [path, ""]
-    )
-
-    def get_path_r(pathr: str, intn: int = 1):
-        if os.path.exists(pathr):
-            return get_path_r(
-                f"{name}({intn}).{extension}" if extension else f"{name}({intn})",
-                intn + 1,
-            )
-        else:
-            return pathr
-
-    return get_path_r(path)
-
-
-def generate_random_frame(width, height):
-    # 生成随机颜色帧
-    frame = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
-    return frame
-
-
-def generate_random_video(width, height, num_frames, fps, output_path):
-    # 使用 VideoWriter 创建视频写入对象
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # 使用MP4V编解码器
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-    for _ in range(num_frames):
-        frame = generate_random_frame(width, height)
-        out.write(frame)
-
-    out.release()
 
 
 # 获取图片预览
@@ -678,7 +627,6 @@ async def test_gethlsvideostram(client: AsyncClient, token: str):
 async def main():
     async with httpx.AsyncClient(timeout=200) as client:
         user_t = dict(username=str(uuid4()), password=str(uuid4()))
-        # user_t = dict(username="1123434233", password="11111111111111111111")
         test_file = f"{testfile_folder}/{str(uuid4())}.txt"
         if not os.path.exists(test_file):
             os.makedirs(os.path.dirname(test_file), exist_ok=True)
@@ -686,11 +634,24 @@ async def main():
                 await f.write(f"{str(uuid4())}" * 10)
         await register_user(client, user_t)
         token = await login_user(client, user_t)
+        # HTTP_401_UNAUTHORIZED
+        for i in range(3):  #  登录错误测试
+            usererror = await login_user(
+                client, dict(username=str(uuid4()), password=str(uuid4())), 404
+            )
+            passworderror = await login_user(
+                client, dict(username=user_t["username"], password=str(uuid4())), 401
+            )
+
+            await get_current_user(
+                client, str(uuid4()), user_t, expected_status_code=401
+            )
         if True:  ###初步测试 init_test
             await get_current_user(client, token, user_t)
             await delete_user(client, token, user_t)
             await register_user(client, user_t)
             token = await login_user(client, user_t)
+
             await get_current_user(client, token, user_t)
             await download_file(client, token, test_file)
             files_id_name = await list_files(client, token)
@@ -699,11 +660,13 @@ async def main():
                 await file_info(client, token, file_id)
                 await delete_file(client, token, file_id)
                 print(f"Deleted file: {file_name}")
-            await list_files(client, token)
+            files_id_names = await list_files(client, token)
+            assert files_id_names == [], "error: delete files failed"
             await download_file(client, token, test_file)
             await delete_user_files(client, token)
-            files_id_name = await list_files(client, token)
-            print(files_id_name)
+            files_id_namess = await list_files(client, token)
+            # expect no files because all files were deleted
+            assert files_id_namess == [], "error: delete files failed"
             if os.path.exists(os.path.basename(test_file)):
                 os.remove(os.path.basename(test_file))
         if True:  ###多文件测试
@@ -759,17 +722,10 @@ async def main():
             await test_getuseravatar(client, token)
             await test_uploaduseravatar(client, token, "test/image.png")
             await test_getuseravatar(client, token)
-        # if True:  # 上传大图像 头像测试
-        #     bigimg = get_new_path(f"{testfile_folder}/bigimg.jpg")
-        #     if os.path.exists(bigimg):
-        #         os.remove(bigimg)
-        #     os.makedirs(os.path.dirname(bigimg), exist_ok=True)
-        #     image = generate_random_image(2000, 2000)
-        #     image.save(bigimg)
-        #     re = await test_uploaduseravatar(client, token, bigimg)
-        #     assert re.status_code == 500
-        #     # await test_getuseravatar(client, token)
-        #
+        if True:  # 上传大图像 头像测试
+            bigimg = "./test/bigimg.jpg"
+            re = await test_uploaduseravatar(client, token, bigimg)
+            assert re.status_code == 400
         if True:  # 预览和hls测试
             await register_user(client, user_t)
             token = await login_user(client, user_t)

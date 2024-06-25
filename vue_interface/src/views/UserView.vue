@@ -31,6 +31,20 @@
       <h2>SomeConfigs</h2>
       <ConfigComponent />
     </n-card>
+    <n-card>
+      <div style="display: flex; gap: 10px; justify-content: center; padding: 20px">
+        <router-link to="/test_multiple_download">
+          <a style="text-decoration: none">
+            <button class="test-view-button">test_multiple_download</button>
+          </a>
+        </router-link>
+        <router-link to="/test_multiple_upload">
+          <a style="text-decoration: none">
+            <button class="test-view-button">test_multiple_upload</button>
+          </a>
+        </router-link>
+      </div>
+    </n-card>
   </div>
   <AlertComponent ref="alertPopup" />
 </template>
@@ -157,4 +171,16 @@ export default {
 
 <style scoped>
 @import "./css/UserView.css";
+
+.test-view-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+.test-view-button:hover {
+  background-color: #0056b3;
+}
 </style>

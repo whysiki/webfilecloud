@@ -10,7 +10,7 @@
 - `models.py`为数据库模型定义
 - `schemas.py`为Pydantic模型定义
 - `crud.py`为数据库操作函数
-- `config.py`为配置文件
+- `/config`为配置文件
 - `utility.py`为工具函数
 - `dep.py`为依赖注入
 - `auth.py`为认证函数
@@ -18,8 +18,7 @@
 - `env.py` 生成`.env`文件
 - `start.py`自用部署脚本
 - `storage_.py` 为封装的文件存储函数
-- `test_multipart_download.html` 为测试分片多线程下载的html文件仅仅对于`STORE_TYPE=minio`有效
-- `test_multipart_upload.html` 为测试分片多线程上传的html文件仅仅对于`STORE_TYPE=minio`有效
+- `./tools` 为一些测试工具函数
 
 
 修改`.env`文件中的数据库连接信息为自己的数据库连接信息, 需要赋予数据库用户数据库的权限和public schema的权限

@@ -36,6 +36,9 @@ def handle_db_errors(func: Callable[..., Any]) -> Callable[..., Any]:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error occurred",
             )
+        except HTTPException as e:
+            logger.error(f"Error in {func.__name__}: {str(e)}")
+            raise e
         except Exception as e:
             logger.warning(f"Unexpected error in {func.__name__}: {str(e)}")
             raise HTTPException(
@@ -247,6 +250,7 @@ def is_not_valid_user(db: Session, userin: UserIn) -> bool:
     """
     Raises:
         - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+        - HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found.
     """
     user = get_user_by_username(db, userin.username)
     return not user or not verify_password(userin.password, user.password)
