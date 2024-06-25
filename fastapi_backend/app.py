@@ -11,6 +11,7 @@ minimum_size = Config.GZIP_MINIMUM_SIZE
 
 app = FastAPI(debug=True)
 
+# noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -19,4 +20,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# noinspection PyTypeChecker
 app.add_middleware(GZipMiddleware, minimum_size=minimum_size)

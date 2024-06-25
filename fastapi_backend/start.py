@@ -141,11 +141,11 @@ def start_server():
         )
 
 
-def wait_for_port(port, host="localhost", timeout=600):
+def wait_for_port(port, host="localhost", timeout=600):  # type: ignore
     start_time = time.perf_counter()
     while True:
         try:
-            with socket.create_connection((host, port), timeout=timeout):
+            with socket.create_connection((host, port), timeout=timeout):  # type: ignore
                 break
         except (OSError, ConnectionRefusedError):
             time.sleep(0.01)
@@ -179,9 +179,9 @@ def get_existing_venv():
     return None
 
 
-def activate_venv(venv_root):
+def activate_venv(venv_root):  # type: ignore
 
-    if not os.path.exists(venv_root):
+    if not os.path.exists(venv_root):  # type: ignore
         print(f"Virtual environment {venv_root} does not exist.")
         sys.exit(1)
 

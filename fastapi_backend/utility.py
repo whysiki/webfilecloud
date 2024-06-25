@@ -13,28 +13,20 @@ import tempfile
 import os
 import shutil
 from pathlib import Path
+from typing import Tuple, Any, Callable
 
 
 def get_new_path(path: str) -> str:
-    """
-    Generates a new file path by appending a number in parentheses if necessary.
+    def split_path(path: str) -> Tuple[str, str]:
+        parts = path.rsplit(".", 1)
+        return (parts[0], parts[1]) if len(parts) > 1 else (path, "")
 
-    Args:
-        path (str): Original file path.
+    name, extension = split_path(path)
 
-    Returns:
-        str: New file path.
-    """
-    name, extension = path.split(".")[-2], (
-        path.split(".")[-1] if len(path.split(".")) > 1 else [path, ""]
-    )
-
-    def get_path_r(pathr: str, intn: int = 1):
+    def get_path_r(pathr: str, intn: int = 1) -> str:
         if storage_.is_file_exist(pathr):
-            return get_path_r(
-                f"{name}({intn}).{extension}" if extension else f"{name}({intn})",
-                intn + 1,
-            )
+            new_path = f"{name}({intn}).{extension}" if extension else f"{name}({intn})"
+            return get_path_r(new_path, intn + 1)
         else:
             return pathr
 
@@ -42,15 +34,12 @@ def get_new_path(path: str) -> str:
 
 
 @lru_cache(maxsize=128)
-def get_file_extension(filepath):
+def get_file_extension(filepath: str):
     """
-    Get the file extension from the given file path.
-
-    Args:
-        filepath (str): File path.
-
     Returns:
         str: File extension. example: "jpg", "mp4", "pdf", "txt", etc.
+    Raises:
+        return "binary" if the file has no extension.
     """
     try:
         path_obj = Path(filepath)
@@ -64,7 +53,7 @@ def get_file_extension(filepath):
 
 
 @lru_cache(maxsize=128)
-def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
+def generate_thumbnail(file_path: str, size: Tuple[int, int] = (200, 200)) -> bytes:
     """
     Generates a thumbnail image from the given file path.
 
@@ -74,12 +63,15 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
 
     Returns:
         bytes: Thumbnail image bytes.
+
+    Rainse:
+        HTTP_500_INTERNAL_SERVER_ERROR
     """
     try:
-        image = Image.open(io.BytesIO(storage_.get_file_bytestream(file_path)))
-        image.thumbnail(size)
+        image = Image.open(io.BytesIO(storage_.get_file_bytestream(file_path)))  # type: ignore
+        image.thumbnail(size)  # type: ignore
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=image.format)
+        image.save(img_byte_arr, format=image.format)  # type: ignore
         img_byte_arr.seek(0)
         return img_byte_arr.getvalue()
     except Exception as e:
@@ -90,20 +82,22 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
                 LOAD_ERROR_IMG, LOAD_ERROR_IMG, delete_original=False
             )
             if storage_.is_file_exist(LOAD_ERROR_IMG):
-                image = Image.open(
-                    io.BytesIO(storage_.get_file_bytestream(LOAD_ERROR_IMG))
+                image = Image.open(  # type: ignore
+                    io.BytesIO(storage_.get_file_bytestream(LOAD_ERROR_IMG))  # type: ignore
                 )
                 img_byte_arr = io.BytesIO()
-                image.save(img_byte_arr, format=image.format)
+                image.save(img_byte_arr, format=image.format)  # type: ignore
                 img_byte_arr.seek(0)
                 return img_byte_arr.getvalue()
             else:
                 logger.warning(
                     "Failed to load the default error image ,will generate a white image"
                 )
-            white_image = Image.new("RGB", (size[0] / 2, size[1] / 2), (255, 255, 255))
+            white_image = Image.new(
+                "RGB", (int(size[0] / 2), int(size[1] / 2)), (255, 255, 255)
+            )
             img_byte_arr = io.BytesIO()
-            white_image.save(img_byte_arr, format="JPEG")
+            white_image.save(img_byte_arr, format="JPEG")  # type: ignore
             img_byte_arr.seek(0)
             return img_byte_arr.getvalue()
         except Exception as e:
@@ -115,7 +109,7 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
 
 
 @lru_cache(maxsize=128)
-def generate_preview_video(video_path, output_path):
+def generate_preview_video(video_path: str, output_path: str):
     """
     Generates a preview video from the given video file path.
 
@@ -125,6 +119,10 @@ def generate_preview_video(video_path, output_path):
 
     Returns:
         str: Output preview video file path.
+
+    Raises:
+
+        HTTP_500_INTERNAL_SERVER_ERROR. If an error occurs while generating the preview video.
     """
     try:
         assert storage_.is_file_exist(video_path), "The video path does not exist"
@@ -135,7 +133,7 @@ def generate_preview_video(video_path, output_path):
         ) as tmp_file:
             tmp_file_path = tmp_file.name
             logger.debug(f"Temporary file path: {tmp_file_path}")  # 🤣
-            tmp_file.write(storage_.get_file_bytestream(video_path))
+            tmp_file.write(storage_.get_file_bytestream(video_path))  # type: ignore
             duration_command = [
                 r"ffprobe",
                 "-v",
@@ -241,6 +239,9 @@ def generate_hls_playlist(
     output_dir (str): 输出目录，用于保存生成的播放列表和 TS 段
     playlist_name (str): 生成的播放列表文件名
     segment_time (int): 每个 TS 段的持续时间（秒），默认为 10 秒
+
+    raise:
+        HTTP_404_NOT_FOUND if the input file is not found.
     """
 
     if not storage_.is_file_exist(input_file):
@@ -251,12 +252,6 @@ def generate_hls_playlist(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Input file not found, Failed to generate HLS playlist",
         )
-
-    # if not storage_.is_file_exist(output_dir):
-
-    # logger.debug(
-    # f"Output directory to hold the generated playlist and TS segment {output_dir} not found! ,will create dir"
-    # )
 
     storage_.makedirs(output_dir, isfile=False)
 
@@ -272,7 +267,7 @@ def generate_hls_playlist(
         logger.debug(
             f"temporary file path: {tmp_file_path}, The path to the m3u8 list is displayed ： {output_path}"
         )
-        tmp_file.write(storage_.get_file_bytestream(input_file))
+        tmp_file.write(storage_.get_file_bytestream(input_file))  # type: ignore
 
         if storage_.get_file_size(input_file) != os.path.getsize(tmp_file_path):
             logger.error(
@@ -342,16 +337,19 @@ def generate_hls_playlist(
             shutil.rmtree(output_dir, ignore_errors=True)
 
 
+from typing import Dict
+
+
 def get_start_end_from_range_header(
     range_header: str,  # example: "bytes=0-1023"
     file_size: int,
-    headers: dict = None,  # range_header = request.headers.get("Range")
+    headers: Dict[str, str] = dict(),  # range_header = request.headers.get("Range")
 ) -> tuple[int, int]:
     """
     Calculates the start and end positions from the given range header.
 
     Args:
-        range_header (str): The range header string, e.g., "bytes=0-1023".
+        range_header (str): The range header string, e.g., "bytes=0-1023". priority over headers.
         file_size (int): The size of the file in bytes.
         headers (dict, optional): Additional headers. Defaults to None.
 
@@ -359,10 +357,13 @@ def get_start_end_from_range_header(
         tuple[int, int]: A tuple containing the start and end positions.
 
     Raises:
-        HTTPException: If the file is not found or the range header is invalid.
+
+        HTTP_400_BAD_REQUEST: If the file is not found or the range header is invalid.
+
+        HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE: If the requested range is not satisfiable.
     """
     if headers and headers.get("Range"):
-        range_header = headers.get("Range")
+        range_header = headers["Range"]
     if not file_size:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
@@ -394,11 +395,17 @@ def get_start_end_from_range_header(
     return start, end
 
 
-def require_double_confirmation(func):
-    confirmation_required = False
+def require_double_confirmation(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    require_double_confirmation: A decorator that requires the user to confirm the action twice.
+
+    Raises:
+        HTTP_400_BAD_REQUEST: If the action is not confirmed.
+    """
+    confirmation_required: bool = False
 
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Tuple[Any], **kwargs: dict[str, Any]):
         nonlocal confirmation_required
         if not confirmation_required:
             confirmation_required = True
@@ -406,7 +413,7 @@ def require_double_confirmation(func):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Please confirm the action again",
             )
-        result = await func(*args, **kwargs)
+        result: Any = await func(*args, **kwargs)
         confirmation_required = False
         return result
 

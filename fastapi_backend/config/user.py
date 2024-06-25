@@ -6,10 +6,12 @@ from pathlib import Path
 
 
 class UserConfig(Config):
-    __current_workspace_dir: Path = Config._Config__current_workspace_dir
+    __current_workspace_dir: Path = Path(__file__).parent.parent
     __DEFAULT_PROFILE_IMAGE: Path = (
         Path(__current_workspace_dir) / Path("res") / Path("whysiki.jpg")
     )
+
+    __DEFAULT_PROFILE_IMAGE.parent.mkdir(parents=True, exist_ok=True)
 
     assert os.path.exists(
         __DEFAULT_PROFILE_IMAGE

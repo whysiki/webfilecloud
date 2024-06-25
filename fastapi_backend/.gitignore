@@ -23,3 +23,8 @@
 /venv
 /config/__pycache__
 /.vscode
+/cache
+/script/deploy.bat
+/script/close_proxy_all.sh
+/script/migrate.bat
+/script/alembic.ini

@@ -9,7 +9,7 @@ from minio import Minio
 from minio.error import S3Error
 import io
 from functools import lru_cache
-from typing import Optional, Union, AsyncGenerator
+from typing import Optional, Union, AsyncGenerator, Any, Tuple
 
 
 class FileSystemHandler:
@@ -17,7 +17,9 @@ class FileSystemHandler:
     # 基本文件操作方法
 
     @lru_cache(maxsize=128)
-    def get_path_basename(self, path: str, *args: str, **kargs: str) -> str:
+    def get_path_basename(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> str:
         if path:
             return os.path.basename(path)
         else:
@@ -30,11 +32,17 @@ class FileSystemHandler:
         return joined_path.as_posix()
 
     @lru_cache(maxsize=128)
-    def get_path_dirname(self, path: Union[str, Path], *args: str, **kargs: str) -> str:
+    def get_path_dirname(
+        self, path: Union[str, Path], *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> str:
         return str(Path(path).parent)
 
     def makedirs(
-        self, path: Union[str, Path], isfile: bool = True, *args: str, **kargs: str
+        self,
+        path: Union[str, Path],
+        isfile: bool = True,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ):
         """
         will create a system path or directory if not exists.
@@ -46,7 +54,11 @@ class FileSystemHandler:
 
     @lru_cache(maxsize=128)
     def get_files_in_sys_dir_one_layer(
-        self, path: str, extension: Optional[str] = None, *args: str, **kargs: str
+        self,
+        path: str,
+        extension: Optional[str] = None,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ):
         """
         path is a system directory
@@ -78,35 +90,54 @@ class FileSystemHandler:
 
     # 以下方法由子类基础实现 , 函数签名保持一致 ，实现存储的抽象和解耦
 
-    def is_file_exist(self, path: str, *args, **kwargs) -> bool:
+    def is_file_exist(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> bool:
         raise NotImplementedError
 
-    def remove_file(self, path: str, *args, **kwargs) -> None:
-        raise NotImplementedError
-
-    def get_file_size(self, path: str, *args, **kwargs) -> int:
-        raise NotImplementedError
-
-    async def async_write_file_wb(
-        self, path: str, content: bytes, *args, **kwargs
+    def remove_file(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
     ) -> None:
         raise NotImplementedError
 
-    async def async_read_file_rb(self, path: str, *args, **kwargs) -> bytes:
+    @lru_cache(maxsize=128)
+    def get_file_size(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> int:
         raise NotImplementedError
 
-    def remove_path(self, path: str, *args, **kwargs) -> None:
+    async def async_write_file_wb(
+        self, path: str, content: bytes, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> None:
+        raise NotImplementedError
+
+    async def async_read_file_rb(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> bytes:
+        raise NotImplementedError
+
+    def remove_path(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> None:
         raise NotImplementedError
 
     def save_file_from_system_path(
-        self, path: str, save_path: str, delete_original: bool = True, *args, **kwargs
+        self,
+        path: str,
+        save_path: str,
+        delete_original: bool = True,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ) -> None:
         """
         path is a file pathstring. will create the path if not exists in storage layer.
         """
         raise NotImplementedError
 
-    def get_file_bytestream(self, path: str, *args, **kwargs) -> Optional[bytes]:
+    @lru_cache(maxsize=128)
+    def get_file_bytestream(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[bytes]:
         raise NotImplementedError
 
     async def file_iterator(
@@ -115,15 +146,18 @@ class FileSystemHandler:
         start: int,
         end: int,
         chunk_size: int = 1024 * 1024,
-        *args,
-        **kwargs,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ) -> AsyncGenerator[bytes, None]:
         """
         async generator to read file in chunks
         """
         raise NotImplementedError
 
-    def get_dir_files(self, path: str, *args, **kwargs):
+    @lru_cache(maxsize=128)
+    def get_dir_files(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[list[Optional[str]]]:
         """
 
         path is directory or dirprefix
@@ -135,8 +169,10 @@ class FileSystemHandler:
 
 
 class LocalFileSystemHandler(FileSystemHandler):
-
-    def get_dir_files(self, path, *args, **kwargs):
+    @lru_cache(maxsize=128)
+    def get_dir_files(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[list[Optional[str]]]:
         """
 
         path is system directory
@@ -155,18 +191,22 @@ class LocalFileSystemHandler(FileSystemHandler):
             if os.path.isfile(os.path.join(path, file))  # os.path.isfile
         ]
 
-    def is_file_exist(self, path, *args, **kwargs):
+    def is_file_exist(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         return os.path.exists(path) if path else False
 
-    def remove_file(self, path, *args, **kargs):
+    def remove_file(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         if path and path != "" and self.is_file_exist(path):
             os.remove(path)
 
     @lru_cache(maxsize=128)
-    def get_file_size(self, path, *args, **kwargs):
+    def get_file_size(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> int:
         return os.path.getsize(path)
 
-    async def async_write_file_wb(self, path, content: bytes, *args, **kwargs):
+    async def async_write_file_wb(
+        self, path: str, content: bytes, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ):
         """
         path is a system file path. will create the path if not exists
         """
@@ -180,16 +220,23 @@ class LocalFileSystemHandler(FileSystemHandler):
         async with aiofiles.open(path, "wb") as buffer:
             await buffer.write(content)
 
-    async def async_read_file_rb(self, path, *args, **kwargs):
+    async def async_read_file_rb(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ):
         async with aiofiles.open(path, "rb") as f:
             return await f.read()
 
-    def remove_path(self, path, *args, **kwargs):
+    def remove_path(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         if self.is_file_exist(path):
             shutil.rmtree(path)
 
     def save_file_from_system_path(
-        self, path, save_path, delete_original=True, *args, **kwargs
+        self,
+        path: str,
+        save_path: str,
+        delete_original: bool = True,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ):
         if os.path.exists(path) and path != save_path:
             shutil.copy(path, save_path)
@@ -199,14 +246,22 @@ class LocalFileSystemHandler(FileSystemHandler):
             logger.debug(f"save_file_from_system_path: {path} -> {save_path}")
 
     @lru_cache(maxsize=128)
-    def get_file_bytestream(self, path, *args, **kwargs):
+    def get_file_bytestream(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[bytes]:
         assert self.is_file_exist(path), f"File not found: {path}"
         with open(path, "rb") as f:
             return f.read()
 
-    async def file_iterator(
-        self, file_path, start, end, chunk_size=1024 * 1024, *args, **kwargs
-    ):
+    async def file_iterator(  # type: ignore
+        self,
+        file_path: str,
+        start: int,
+        end: int,
+        chunk_size: int = 1024 * 1024,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
+    ) -> AsyncGenerator[bytes, None]:
         async with aiofiles.open(file_path, mode="rb") as f:
             await f.seek(start)
             current_position = start
@@ -225,7 +280,10 @@ class MinioFileSystemHandler(FileSystemHandler):
         self.client: Minio = client
         self.bucket_name: str = bucket_name
 
-    def get_dir_files(self, path, *args, **kwargs):
+    @lru_cache(maxsize=128)
+    def get_dir_files(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[list[Optional[str]]]:
         try:
             objects = self.client.list_objects(
                 self.bucket_name, prefix=path, recursive=True
@@ -236,7 +294,7 @@ class MinioFileSystemHandler(FileSystemHandler):
         except Exception as e:
             logger.error(f"Failed to get dir files for {path}: {str(e)}")
 
-    def is_file_exist(self, path, *args, **kwargs):
+    def is_file_exist(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         try:
             self.client.stat_object(self.bucket_name, path)
             return True
@@ -246,22 +304,26 @@ class MinioFileSystemHandler(FileSystemHandler):
             logger.debug(f"Failed to check file existence for {path}: {str(e)}")
             return False
 
-    def remove_file(self, path, *args, **kargs):
+    def remove_file(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         try:
             self.client.remove_object(self.bucket_name, path)
         except S3Error as e:
             logger.error(f"Failed to remove file {path}: {str(e)}")
 
     @lru_cache(maxsize=128)
-    def get_file_size(self, path, *args, **kwargs):
+    def get_file_size(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> int:
         try:
             stat = self.client.stat_object(self.bucket_name, path)
-            return stat.size
+            return stat.size if stat.size else 0
         except S3Error as e:
             logger.error(f"Failed to get file size for {path}: {str(e)}")
             return 0
 
-    async def async_write_file_wb(self, path, content: bytes, *args, **kwargs):
+    async def async_write_file_wb(
+        self, path: str, content: bytes, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ):
         """
         path is a pathstring. will create the path if not exists
         """
@@ -273,7 +335,9 @@ class MinioFileSystemHandler(FileSystemHandler):
             ),
         )
 
-    async def async_read_file_rb(self, path, *args, **kwargs):
+    async def async_read_file_rb(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ):
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None, lambda: self.client.get_object(self.bucket_name, path)
@@ -284,19 +348,27 @@ class MinioFileSystemHandler(FileSystemHandler):
         finally:
             response.close()
 
-    def remove_path(self, path, *args, **kwargs):
+    def remove_path(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
         # MinIO 不支持递归删除🥲
         try:
             objects_to_delete = self.client.list_objects(
                 self.bucket_name, prefix=path, recursive=True
             )
             for obj in objects_to_delete:
-                self.client.remove_object(self.bucket_name, obj.object_name)
+                if obj.object_name:
+                    self.client.remove_object(self.bucket_name, obj.object_name)
+                else:
+                    logger.warning(f"Invalid object name: {obj.object_name}")
         except S3Error as e:
             logger.error(f"Failed to remove path {path}: {str(e)}")
 
     def save_file_from_system_path(
-        self, path, save_path, delete_original=True, *args, **kwargs
+        self,
+        path: str,
+        save_path: str,
+        delete_original: bool = True,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
     ):
         try:
             assert os.path.exists(path), f"Path not found: {path}"
@@ -319,7 +391,9 @@ class MinioFileSystemHandler(FileSystemHandler):
             )
 
     @lru_cache(maxsize=128)
-    def get_file_bytestream(self, path, *args, **kwargs):
+    def get_file_bytestream(
+        self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
+    ) -> Optional[bytes]:
         try:
             response = self.client.get_object(self.bucket_name, path)
             try:
@@ -335,9 +409,15 @@ class MinioFileSystemHandler(FileSystemHandler):
             )
             raise FileNotFoundError(f"File not found: {path}")
 
-    async def file_iterator(
-        self, file_path, start, end, chunk_size=1024 * 1024, *args, **kwargs
-    ):
+    async def file_iterator(  # type: ignore
+        self,
+        file_path: str,
+        start: int,
+        end: int,
+        chunk_size: int = 1024 * 1024,
+        *args: Tuple[Any],
+        **kwargs: dict[str, Any],
+    ) -> AsyncGenerator[bytes, None]:
         object_name = file_path
         current_position = start
         while current_position <= end:
@@ -373,7 +453,7 @@ class MinioFileSystemHandler(FileSystemHandler):
 class FileHandlerFactory:
 
     @staticmethod
-    def create_handler(*args, **kwargs):
+    def create_handler(*args: Tuple[Any], **kwargs: dict[str, Any]):
         if config.StorageConfig.STORE_TYPE == "local":
             return LocalFileSystemHandler()
         elif config.StorageConfig.STORE_TYPE == "minio":

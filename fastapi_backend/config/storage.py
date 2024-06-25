@@ -8,7 +8,7 @@ from pathlib import Path
 
 class StorageConfig(Config):
 
-    __current_workspace_dir: Path = Config._Config__current_workspace_dir
+    __current_workspace_dir: Path = Path(__file__).parent.parent
 
     STORE_TYPE: str = os.getenv("STORE_TYPE", "local").strip().lower()
 

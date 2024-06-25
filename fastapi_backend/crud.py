@@ -11,12 +11,23 @@ from functools import wraps
 from storage_ import handler as storage_
 from functools import lru_cache
 from config.status import StatusConfig as status
+from typing import Callable, Any, Tuple, List
 
 
-def handle_db_errors(func):
-    @lru_cache(maxsize=256)
+def handle_db_errors(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator function to handle database errors uniformly across database operations.
+
+    Raises:
+
+        - HTTP_500_INTERNAL_SERVER_ERROR SQLAlchemyError: Catch all SQLAlchemy errors and return a 500 Internal Server Error.
+
+        - HTTP_500_INTERNAL_SERVER_ERROR Exception: Catch all other exceptions and return a 500 Internal Server Error.
+    """
+
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    @lru_cache(maxsize=256)
+    def wrapper(*args: Tuple[Any], **kwargs: dict[str, Any]) -> Any:
         try:
             return func(*args, **kwargs)
         except SQLAlchemyError as e:
@@ -37,8 +48,21 @@ def handle_db_errors(func):
 
 # 获取文件列表
 @handle_db_errors
-def get_file_id_list(db: Session, user: User) -> list:
-    db_user = db.query(User).get(user.id)
+def get_file_id_list(db: Session, user: User) -> List[str]:
+    """
+    Raises:
+
+        - HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found.
+
+        - HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
+    db_user = db.query(User).filter(User.id == user.id).first()
+    if db_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user.id} not found",
+        )
+
     file_id_list = [file.id for file in db_user.files]
     return file_id_list
 
@@ -46,6 +70,13 @@ def get_file_id_list(db: Session, user: User) -> list:
 # 获取文件对象通过文件ID
 @handle_db_errors
 def get_file_by_id(db: Session, file_id: str) -> File:
+    """
+    Raises:
+
+        - HTTP_404_NOT_FOUND:
+
+        - HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
     f = db.query(File).filter(File.id == file_id).first()
     if not f:
         raise HTTPException(
@@ -57,6 +88,13 @@ def get_file_by_id(db: Session, file_id: str) -> File:
 # 获取文件对象通过文件名
 @handle_db_errors
 def get_file_by_filename(db: Session, filename: str) -> File:
+    """
+    Raises:
+
+        - HTTP_404_NOT_FOUND:
+
+        - HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
     f = db.query(File).filter(File.filename == filename).first()
     if not f:
         raise HTTPException(
@@ -68,7 +106,14 @@ def get_file_by_filename(db: Session, filename: str) -> File:
 # 添加用户到数据库
 @handle_db_errors
 def add_user(db: Session, user: User) -> User:
-    user.register_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """
+    add user to the database
+
+    Raises:
+
+        - HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
+    user.register_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # type: ignore
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -78,8 +123,15 @@ def add_user(db: Session, user: User) -> User:
 
 @handle_db_errors
 def delete_file_from_db(db: Session, file: File) -> None:
+    """
+    delete file from the database
 
-    if file.file_owner_name:
+    Raises:
+
+        HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
+
+    if bool(file.file_owner_name):
         username = file.file_owner_name
         user = get_user_by_username(db, username)
         if file in user.files:
@@ -95,12 +147,12 @@ def delete_file_from_db(db: Session, file: File) -> None:
             db.delete(file)  # 删除文件在File表中的记录
             # 一个文件路径可能对应多个文件id
             # 只有当前文件链接到文件路径才删除（即文件路径对应的文件id只有当前要删除的文件）
-            if (storage_.is_file_exist(file.file_path)) and (
+            if (storage_.is_file_exist(file.file_path)) and (  # type: ignore
                 # only current file link to the file path
                 len(db.query(File).filter(File.file_path == file.file_path).all())
                 == 1
             ):
-                storage_.remove_file(file.file_path)  # Now delete the file
+                storage_.remove_file(file.file_path)  # type: ignore # Now delete the file
                 logger.warning(f"Deleted a file: {file.filename}")
             else:
                 logger.error("File not found in the store")
@@ -115,16 +167,20 @@ def delete_file_from_db(db: Session, file: File) -> None:
 # 从数据库删除用户, 同时删除用户下面所有文件
 @handle_db_errors
 def delete_user_from_db(db: Session, user: User) -> None:
+    """
+    Raises:
+        HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
 
     user_files = db.query(File).filter(File.file_owner_name == user.username).all()
 
     # delete files from the store
     for file in user_files:
         if (
-            storage_.is_file_exist(file.file_path)
+            storage_.is_file_exist(file.file_path)  # type: ignore
             # and len(db.query(File).filter(File.file_path == file.file_path ).all()) == 1
         ):
-            storage_.remove_file(file.file_path)
+            storage_.remove_file(file.file_path)  # type: ignore
             logger.warning(f"Deleted a file: {file.filename}")
         else:
             # print(storage_.is_file_exist(file.file_path))
@@ -144,6 +200,12 @@ def delete_user_from_db(db: Session, user: User) -> None:
 # 获取用户通过用户名
 @handle_db_errors
 def get_user_by_username(db: Session, username: str) -> User:
+    """
+    Raises:
+        - HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found.
+
+        - HTTP_500_INTERNAL_SERVER_ERROR: If any other error occurs, raises HTTP 500 Internal Server Error.
+    """
     u = db.query(User).filter(User.username == username).first()
     if not u:
         raise HTTPException(
@@ -155,6 +217,12 @@ def get_user_by_username(db: Session, username: str) -> User:
 # 通过ID获取用户
 @handle_db_errors
 def get_user_by_id(db: Session, id: str) -> User:
+    """
+    Raises:
+        - HTTP_404_NOT_FOUND if the user is not found.
+
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     u = db.query(User).filter(User.id == id).first()
     if not u:
         raise HTTPException(
@@ -166,18 +234,30 @@ def get_user_by_id(db: Session, id: str) -> User:
 # 检查用户名是否存在
 @handle_db_errors
 def is_user_exist(db: Session, username: str) -> bool:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     return db.query(User).filter(User.username == username).first() is not None
 
 
 # 检查用户是否合法, 用户名和密码是否匹配
 @handle_db_errors
 def is_not_valid_user(db: Session, userin: UserIn) -> bool:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     user = get_user_by_username(db, userin.username)
     return not user or not verify_password(userin.password, user.password)
 
 
 @handle_db_errors
 def add_file_id_to_user(db: Session, user: User, file_id: str) -> None:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     file = get_file_by_id(db, file_id)
     user.files.append(file)
     db.add(file)
@@ -187,17 +267,29 @@ def add_file_id_to_user(db: Session, user: User, file_id: str) -> None:
 
 @handle_db_errors
 def is_file_in_user_files(db: Session, user: User, file: File) -> bool:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     return file in user.files
 
 
 @handle_db_errors
 def is_fileid_in_user_files(db: Session, user: User, file_id: str) -> bool:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     file = get_file_by_id(db, file_id)
     return file in user.files
 
 
 @handle_db_errors
 def is_user_files_empty(db: Session, user: User) -> bool:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     f = (
         db.query(association_table)
         .filter(association_table.c.user_id == user.id)
@@ -210,6 +302,10 @@ def is_user_files_empty(db: Session, user: User) -> bool:
 
 @handle_db_errors
 def add_file_to_user(db: Session, file: File, user: User) -> User:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     user.files.append(file)
     db.add(file)
     db.commit()
@@ -219,6 +315,10 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
 
 @handle_db_errors
 def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
+    """
+    Raises:
+        - HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     setattr(file, arrtibute, value)
     db.commit()
     logger.success(f"Modified file attribute : {arrtibute} to {value}")

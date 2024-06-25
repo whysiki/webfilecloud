@@ -30,7 +30,7 @@ root_user = os.getenv("ROOT_USER")
 root_password = os.getenv("ROOT_PASSWORD")
 
 if not startport:
-    startport = input("Please input the start port: ")
+    startport = Prompt.ask("Please input the start port: ", default="8000")
 
 if not root_user:
     root_user = input("Please input the root user: ")
@@ -48,9 +48,9 @@ while True:
         "How many times do you want to run the test? ", default="1"
     )
 
-    if isinstance(test_multiple_time, str) and test_multiple_time.isdigit():
+    if isinstance(test_multiple_time, str) and test_multiple_time.isdigit():  # type: ignore
         test_multiple_time = int(test_multiple_time)
-        if not isinstance(test_multiple_time, int) and test_multiple_time < 1:
+        if not isinstance(test_multiple_time, int) and test_multiple_time < 1:  # type: ignore
             print("Please input a number greater than 0.")
             continue
 

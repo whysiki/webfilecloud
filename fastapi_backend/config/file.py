@@ -7,7 +7,7 @@ from pathlib import Path
 
 class FileConfig(Config):
 
-    __current_workspace_dir: Path = Config._Config__current_workspace_dir
+    __current_workspace_dir: Path = Path(__file__).parent.parent
 
     __LOAD_ERROR_IMG: Path = (
         Path(__file__).parent.parent / Path("res") / Path("whysiki_load_error.jpg")
