@@ -83,7 +83,7 @@ export default {
           }
           this.informationP = `Uploaded chunk: ${order}`;
           const chunkProgress = (1 / chunks) * 100;
-          this.progress += chunkProgress; // Accumulate progress here
+          this.progress += chunkProgress;
         } catch (error) {
           this.informationError = `Failed to upload chunk ${order + 1}`;
           throw error;
@@ -152,7 +152,6 @@ export default {
 </script>
 
 <style scoped>
-/* Apply styles to the second template */
 div {
   width: 80%;
   margin: 20px auto;

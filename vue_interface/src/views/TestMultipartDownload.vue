@@ -158,7 +158,6 @@ export default {
 </script>
 
 <style scoped>
-/* Apply styles to the first template */
 .container {
   width: 80%;
   margin: 20px auto;
