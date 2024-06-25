@@ -69,6 +69,13 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
 # login user and return access_token and refresh_token
 @app.post("/users/login", response_model=schemas.Token)
 async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db)):
+    """
+    Raises:
+
+        HTTP_401_UNAUTHORIZED (status code 401): If the user login failed.
+
+        HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
+    """
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(
             status_code=Status.HTTP_401_UNAUTHORIZED,
@@ -87,6 +94,10 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
 # update access_token with refresh_token
 @app.post("/users/refresh", response_model=schemas.Token)
 async def refresh_token(access_token: str = Depends(get_access_token)):
+    """
+    Raises:
+        HTTP_401_UNAUTHORIZED
+    """
     username: str = get_current_username(access_token)
     # by leveraging the refresh token, the user can get a new access token
     access_token = create_access_token(data={"sub": username})
