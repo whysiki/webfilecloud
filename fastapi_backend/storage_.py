@@ -36,6 +36,9 @@ class FileSystemHandler:
     def makedirs(
         self, path: Union[str, Path], isfile: bool = True, *args: str, **kargs: str
     ):
+        """
+        will create a system path or directory if not exists.
+        """
         path = Path(path)
         if not os.path.exists(path):
             pathd = path.parent if isfile else path
@@ -98,6 +101,9 @@ class FileSystemHandler:
     def save_file_from_system_path(
         self, path: str, save_path: str, delete_original: bool = True, *args, **kwargs
     ) -> None:
+        """
+        path is a file pathstring. will create the path if not exists in storage layer.
+        """
         raise NotImplementedError
 
     def get_file_bytestream(self, path: str, *args, **kwargs) -> Optional[bytes]:
@@ -131,6 +137,13 @@ class FileSystemHandler:
 class LocalFileSystemHandler(FileSystemHandler):
 
     def get_dir_files(self, path, *args, **kwargs):
+        """
+
+        path is system directory
+
+        will return all files in the directory, not just a filebasename.
+
+        """
 
         assert os.path.exists(path), f"Path not found: {path}"
 
@@ -154,6 +167,10 @@ class LocalFileSystemHandler(FileSystemHandler):
         return os.path.getsize(path)
 
     async def async_write_file_wb(self, path, content: bytes, *args, **kwargs):
+        """
+        path is a system file path. will create the path if not exists
+        """
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         if (
             self.is_file_exist(path)
             and self.get_file_size(path) == len(content)
@@ -245,6 +262,9 @@ class MinioFileSystemHandler(FileSystemHandler):
             return 0
 
     async def async_write_file_wb(self, path, content: bytes, *args, **kwargs):
+        """
+        path is a pathstring. will create the path if not exists
+        """
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
             None,
@@ -354,11 +374,11 @@ class FileHandlerFactory:
 
     @staticmethod
     def create_handler(*args, **kwargs):
-        if config.Config.STORE_TYPE == "local":
+        if config.StorageConfig.STORE_TYPE == "local":
             return LocalFileSystemHandler()
-        elif config.Config.STORE_TYPE == "minio":
-            client: Minio = config.Config.MinioClient
-            bucket_name: str = config.Config.MINIO_BUCKET
+        elif config.StorageConfig.STORE_TYPE == "minio":
+            client: Minio = config.StorageConfig.MinioClient
+            bucket_name: str = config.StorageConfig.MINIO_BUCKET
             found = client.bucket_exists(bucket_name)
             if not found:
                 client.make_bucket(bucket_name)

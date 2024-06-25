@@ -19,4 +19,7 @@
 /.env
 /static
 /test_preview.py
-/cache
+/.idea
+/venv
+/config/__pycache__
+/.vscode

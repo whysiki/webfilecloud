@@ -10,20 +10,27 @@ from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
 from storage_ import handler as storage_
 from functools import lru_cache
+from config.status import StatusConfig as status
 
 
 def handle_db_errors(func):
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=256)
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except SQLAlchemyError as e:
             logger.error(f"Database error in {func.__name__}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Database error occurred")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error occurred",
+            )
         except Exception as e:
             logger.warning(f"Unexpected error in {func.__name__}: {str(e)}")
-            raise HTTPException(status_code=404, detail=f"{str(e)}")  # ,type；{type(e)}
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"{type(e)}:{str(e)}",
+            )
 
     return wrapper
 
@@ -41,7 +48,9 @@ def get_file_id_list(db: Session, user: User) -> list:
 def get_file_by_id(db: Session, file_id: str) -> File:
     f = db.query(File).filter(File.id == file_id).first()
     if not f:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     return f
 
 
@@ -50,7 +59,9 @@ def get_file_by_id(db: Session, file_id: str) -> File:
 def get_file_by_filename(db: Session, filename: str) -> File:
     f = db.query(File).filter(File.filename == filename).first()
     if not f:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     return f
 
 
@@ -61,9 +72,6 @@ def add_user(db: Session, user: User) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
-    # assert (
-    #     db.query(User).filter(User.username == user.username).first()
-    # ), "Add user failed"
     logger.success(f"Added an user : {user.username}")
     return user
 
@@ -130,18 +138,6 @@ def delete_user_from_db(db: Session, user: User) -> None:
     ).delete()  # 删除File表中用户的所有文件记录
     db.delete(user)
     db.commit()
-    # assert (
-    #     not db.query(User).filter(User.username == user.username).first()
-    # ), "User in User table"
-    # assert (
-    #     not db.query(association_table)
-    #     .filter(association_table.c.user_id == user.id)
-    #     .first()
-    # ), "User in association table"
-    # assert (
-    #     not db.query(File).filter(File.file_owner_name == user.username).first()
-    # ), "User in File table"
-
     logger.warning(f"Deleted an user : {user.username}")
 
 
@@ -150,7 +146,9 @@ def delete_user_from_db(db: Session, user: User) -> None:
 def get_user_by_username(db: Session, username: str) -> User:
     u = db.query(User).filter(User.username == username).first()
     if not u:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return u
 
 
@@ -159,7 +157,9 @@ def get_user_by_username(db: Session, username: str) -> User:
 def get_user_by_id(db: Session, id: str) -> User:
     u = db.query(User).filter(User.id == id).first()
     if not u:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return u
 
 
@@ -180,11 +180,8 @@ def is_not_valid_user(db: Session, userin: UserIn) -> bool:
 def add_file_id_to_user(db: Session, user: User, file_id: str) -> None:
     file = get_file_by_id(db, file_id)
     user.files.append(file)
-    # 加到文件表
     db.add(file)
     db.commit()
-    # assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
-    # assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
 
 
@@ -214,11 +211,8 @@ def is_user_files_empty(db: Session, user: User) -> bool:
 @handle_db_errors
 def add_file_to_user(db: Session, file: File, user: User) -> User:
     user.files.append(file)
-    # 加到文件表
     db.add(file)
     db.commit()
-    # assert db.query(File).filter(File.id == file.id).first(), "File not in File table"
-    # assert file in user.files, "Add file to user failed"
     logger.success(f"Added a file to user : {user.username}")
     return user
 
@@ -227,5 +221,4 @@ def add_file_to_user(db: Session, file: File, user: User) -> User:
 def modify_file_attributes(db: Session, file: File, arrtibute: str, value: str) -> None:
     setattr(file, arrtibute, value)
     db.commit()
-    # assert getattr(file, arrtibute) == value, "Modify file attribute failed"
     logger.success(f"Modified file attribute : {arrtibute} to {value}")

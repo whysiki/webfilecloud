@@ -1,13 +1,14 @@
 # import os
 from functools import lru_cache
 import subprocess
-import config
+import config  # custom configuration class, which contains configuration items
+from config.status import StatusConfig as status  # custom status code class
 from loguru import logger
 from fastapi import HTTPException
 import io
 from PIL import Image
 from functools import wraps
-from storage_ import handler as storage_  # 存储层的一些自定义封装函数 
+from storage_ import handler as storage_  # 存储层的一些自定义封装函数
 import tempfile
 import os
 import shutil
@@ -84,7 +85,7 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
     except Exception as e:
         logger.warning(f"Error generating thumbnail: {str(e)} {type(e)}")
         try:
-            LOAD_ERROR_IMG = config.File.LOAD_ERROR_IMG
+            LOAD_ERROR_IMG = config.FileConfig.LOAD_ERROR_IMG
             storage_.save_file_from_system_path(
                 LOAD_ERROR_IMG, LOAD_ERROR_IMG, delete_original=False
             )
@@ -96,6 +97,10 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
                 image.save(img_byte_arr, format=image.format)
                 img_byte_arr.seek(0)
                 return img_byte_arr.getvalue()
+            else:
+                logger.warning(
+                    "Failed to load the default error image ,will generate a white image"
+                )
             white_image = Image.new("RGB", (size[0] / 2, size[1] / 2), (255, 255, 255))
             img_byte_arr = io.BytesIO()
             white_image.save(img_byte_arr, format="JPEG")
@@ -103,7 +108,10 @@ def generate_thumbnail(file_path: str, size: tuple = (200, 200)) -> bytes:
             return img_byte_arr.getvalue()
         except Exception as e:
             logger.error(f"Error generating default thumbnail: {str(e)} {type(e)}")
-            raise HTTPException(status_code=500, detail="Error generating thumbnail")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error generating thumbnail",
+            )
 
 
 @lru_cache(maxsize=128)
@@ -122,7 +130,7 @@ def generate_preview_video(video_path, output_path):
         assert storage_.is_file_exist(video_path), "The video path does not exist"
         with tempfile.NamedTemporaryFile(
             suffix=f".{get_file_extension(video_path)}",
-            dir=config.File.PREVIEW_FILES_PATH,
+            dir=config.FileConfig.PREVIEW_FILES_PATH,
             delete=False,
         ) as tmp_file:
             tmp_file_path = tmp_file.name
@@ -195,7 +203,7 @@ def generate_preview_video(video_path, output_path):
 
         assert storage_.is_file_exist(output_path), "failed to save preview video"
 
-        if config.Config.STORE_TYPE == "minio":
+        if config.StorageConfig.STORE_TYPE == "minio":
 
             if os.path.exists(output_path):
 
@@ -207,10 +215,16 @@ def generate_preview_video(video_path, output_path):
         logger.error(f"ffmpeg command failed with exit status {e.returncode}")
         logger.error(f"ffmpeg output: {e.output}")
         logger.error(f"ffmpeg error: {e.stderr}")
-        raise HTTPException(status_code=500, detail="Error generating video preview")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating video preview",
+        )
     except Exception as e:
         logger.error(f"Error generating video preview: {str(e)},type:{type(e)}")
-        raise HTTPException(status_code=500, detail="Error generating video preview")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error generating video preview",
+        )
 
 
 @lru_cache(maxsize=128)
@@ -234,29 +248,29 @@ def generate_hls_playlist(
         logger.error(f"Enter the video file path {input_file} not found!")
 
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Input file not found, Failed to generate HLS playlist",
         )
 
-    if not storage_.is_file_exist(output_dir):
+    # if not storage_.is_file_exist(output_dir):
 
-        logger.debug(
-            f"Output directory to hold the generated playlist and TS segment {output_dir} not found! ,will create dir"
-        )
+    # logger.debug(
+    # f"Output directory to hold the generated playlist and TS segment {output_dir} not found! ,will create dir"
+    # )
 
-        storage_.makedirs(output_dir, isfile=False)
+    storage_.makedirs(output_dir, isfile=False)
 
     output_path = storage_.get_join_path(output_dir, playlist_name)
 
     with tempfile.NamedTemporaryFile(
         suffix=f".{get_file_extension(input_file)}",
         delete=False,
-        dir=config.File.M3U8_INDEX_PATH,
+        dir=config.FileConfig.M3U8_INDEX_PATH,
     ) as tmp_file:
 
         tmp_file_path = tmp_file.name
         logger.debug(
-            f"emporary file path: {tmp_file_path}, The path to the m3u8 list is displayed ： {output_path}"
+            f"temporary file path: {tmp_file_path}, The path to the m3u8 list is displayed ： {output_path}"
         )
         tmp_file.write(storage_.get_file_bytestream(input_file))
 
@@ -290,8 +304,8 @@ def generate_hls_playlist(
             subprocess.run(
                 ffmpeg_command,
                 check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.DEVNULL,
             )
 
             ts_files = storage_.get_files_in_sys_dir_one_layer(
@@ -323,7 +337,7 @@ def generate_hls_playlist(
             tmp_file.close()
     if os.path.exists(tmp_file_path):
         os.remove(tmp_file_path)
-    if config.Config.STORE_TYPE == "minio":
+    if config.StorageConfig.STORE_TYPE == "minio":
         if output_dir and os.path.exists(output_dir):
             shutil.rmtree(output_dir, ignore_errors=True)
 
@@ -350,24 +364,32 @@ def get_start_end_from_range_header(
     if headers and headers.get("Range"):
         range_header = headers.get("Range")
     if not file_size:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     if range_header:
         try:
             start, end = range_header.replace("bytes=", "").split("-")
             start = int(start)
             end = int(end) if end else file_size - 1
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid Range header")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Range header"
+            )
         except Exception as e:
             raise HTTPException(
-                status_code=400, detail=f"Invalid Range header:{str(e)}"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid Range header:{str(e)}",
             )
     else:
         start = 0
         end = file_size - 1
 
     if start >= file_size or end >= file_size:
-        raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
+        raise HTTPException(
+            status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+            detail="Requested Range Not Satisfiable",
+        )
 
     return start, end
 
@@ -381,7 +403,8 @@ def require_double_confirmation(func):
         if not confirmation_required:
             confirmation_required = True
             raise HTTPException(
-                status_code=400, detail="Please confirm the action again"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please confirm the action again",
             )
         result = await func(*args, **kwargs)
         confirmation_required = False

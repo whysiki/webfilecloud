@@ -20,6 +20,7 @@ from urllib.parse import quote
 import mimetypes
 from auth import pwd_context, create_access_token, get_current_username  # auth
 import config  # costom configuration
+from config.status import StatusConfig as status  # custom status codes
 from dep import get_db, get_access_token  # inject dependency
 from app import app  # fast app instance
 import utility  # costom utility functions
@@ -35,7 +36,9 @@ from storage_ import (
 @app.post("/users/register", response_model=schemas.UserOut)
 async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if crud.is_user_exist(db, user_in.username):
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
+        )
     hashed_password = pwd_context.hash(user_in.password)
     user = models.User(
         id=str(uuid4()), username=user_in.username, password=hashed_password
@@ -55,7 +58,10 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
 @app.post("/users/login", response_model=schemas.Token)
 async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     if crud.is_not_valid_user(db, user_in):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
     access_token = create_access_token(data={"sub": user_in.username})
     refresh_token = create_access_token(
         data={"sub": user_in.username},
@@ -79,7 +85,9 @@ async def refresh_token(access_token: str = Depends(get_access_token)):
     test_username = get_current_username(access_token)
     test_username_refresh = get_current_username(refresh_token)
     if not (test_username == username == test_username_refresh):
-        raise HTTPException(status_code=401, detail="refresh token failed")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token failed"
+        )
     logger.debug(f"refresh token :{refresh_token}")
     return schemas.Token(
         access_token=access_token, token_type="bearer", refresh_token=refresh_token
@@ -97,7 +105,10 @@ async def delete_user(
     current_username: str = get_current_username(access_token)
     user = crud.get_user_by_id(db, id)
     if not (str(user.username) == str(current_username)):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
     crud.delete_user_from_db(db, user)
     if str(user.profile_image):
         storage_.remove_file(user.profile_image)
@@ -118,13 +129,19 @@ async def get_user_id(
 ):
 
     if crud.is_not_valid_user(db, user_in):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
 
     username: str = get_current_username(access_token)
 
     if username != user_in.username:
 
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
 
     user = crud.get_user_by_username(db, username)
 
@@ -139,7 +156,10 @@ async def read_users_me(
     db: Session = Depends(get_db),
 ):
     if crud.is_not_valid_user(db, user_in):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
 
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username=username)
@@ -164,7 +184,10 @@ async def delete_user_files(
     for file in user.files:
         crud.delete_file_from_db(db, file)
     if not crud.is_user_files_empty(db, user):
-        raise HTTPException(status_code=500, detail="Delete files failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Delete files failed",
+        )
     return schemas.UserOut(
         # id=user.id,
         username=user.username,
@@ -198,7 +221,10 @@ async def upload_file(
             # otherwise, raise an exception
             filem = crud.get_file_by_id(db, file_id=file_id)
             if storage_.is_file_exist(filem.file_path):
-                raise HTTPException(status_code=400, detail="File already exists")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File already exists",
+                )
 
     if file_nodes:
 
@@ -206,7 +232,9 @@ async def upload_file(
 
         if len(numpy.array(file_nodes).shape) != 1:
             logger.error(f"invalid upload nodes: {file_nodes   }")
-            raise HTTPException(status_code=400, detail="invalid nodes")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="invalid nodes"
+            )
         for node in file_nodes:
             if not node.strip():
                 logger.warning(
@@ -259,7 +287,7 @@ async def upload_file(
 
     file_path = prepare_file_path
 
-    storage_.makedirs(file_path)
+    # storage_.makedirs(file_path)
 
     await storage_.async_write_file_wb(file_path, file_content)
 
@@ -286,7 +314,10 @@ async def upload_file(
     db.refresh(new_file)
 
     if not new_file == crud.get_file_by_id(db, file_id=new_file.id):
-        raise HTTPException(status_code=500, detail="Upload file failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Upload file failed",
+        )
 
     return schemas.FileOut(
         id=new_file.id,
@@ -317,17 +348,22 @@ async def read_file(
 
     if file.file_owner_name != user.username:
 
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_fileid_in_user_files(db, user, file.id):
 
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     if not storage_.is_file_exist(file.file_path):
 
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     logger.debug(f"Download file: {file.file_path}")
 
@@ -352,15 +388,20 @@ async def read_file_stream(
     file = crud.get_file_by_id(db, file_id=file_id)
 
     if file.file_owner_name != user.username:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_fileid_in_user_files(db, user, file.id):
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     if not storage_.is_file_exist(file.file_path):
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     file_size = storage_.get_file_size(file.file_path)
     range_header = request.headers.get("Range")
@@ -368,7 +409,9 @@ async def read_file_stream(
 
     return StreamingResponse(
         storage_.file_iterator(file.file_path, start, end),
-        status_code=206 if range_header else 200,
+        status_code=(
+            status.HTTP_206_PARTIAL_CONTENT if range_header else status.HTTP_200_OK
+        ),
         headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
@@ -421,17 +464,22 @@ async def delete_file(
 
     if file.file_owner_name != user.username:
 
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_file_in_user_files(db, user, file):
 
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     if not storage_.is_file_exist(file.file_path):
 
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     crud.delete_file_from_db(db, file)
 
@@ -454,20 +502,22 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
         user_in.username != config.Config.ROOT_USER
         or user_in.password != config.Config.ROOT_PASSWORD
     ):
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
     db.query(models.association_table).delete()
     db.query(models.User).delete()
     db.query(models.File).delete()
     db.commit()
     storage_.remove_path(config.Config.UPLOAD_PATH)
     storage_.remove_path(config.Config.STATIC_PATH)
-    storage_.remove_path(config.File.M3U8_INDEX_PATH)
-    storage_.remove_path(config.File.PREVIEW_FILES_PATH)
-    if config.Config.STORE_TYPE == "minio":
-        if storage_.is_file_exist(config.User.DEFAULT_PROFILE_IMAGE):
-            storage_.remove_file(config.User.DEFAULT_PROFILE_IMAGE)
-        if storage_.is_file_exist(config.File.LOAD_ERROR_IMG):
-            storage_.remove_file(config.File.LOAD_ERROR_IMG)
+    storage_.remove_path(config.FileConfig.M3U8_INDEX_PATH)
+    storage_.remove_path(config.FileConfig.PREVIEW_FILES_PATH)
+    storage_.remove_path(config.StorageConfig.TEMP_UPLOAD_DIR)
+    if storage_.is_file_exist(config.UserConfig.DEFAULT_PROFILE_IMAGE):
+        storage_.remove_file(config.UserConfig.DEFAULT_PROFILE_IMAGE)
+    if storage_.is_file_exist(config.FileConfig.LOAD_ERROR_IMG):
+        storage_.remove_file(config.FileConfig.LOAD_ERROR_IMG)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),
@@ -484,14 +534,18 @@ async def modify_file_name(
     db: Session = Depends(get_db),
 ):
     if not new_file_name:
-        raise HTTPException(status_code=405, detail="Invalid file name")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file name"
+        )
 
     username = get_current_username(access_token)
     logger.debug(f"new file name: {new_file_name}")
     logger.debug(f"file_id: {file_id}")
     file = crud.get_file_by_id(db, file_id)
     if file.file_owner_name != username:
-        raise HTTPException(status_code=401, detail="Access denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied"
+        )
     else:
         file.filename = new_file_name
     db.commit()
@@ -499,7 +553,8 @@ async def modify_file_name(
     if file.filename != new_file_name:
 
         raise HTTPException(
-            status_code=403, detail="Modify file name failes, Server error"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Modify file name failes, Server error",
         )
 
     return schemas.FileOut(
@@ -530,18 +585,23 @@ async def file_info(
 
     if file.file_owner_name != user.username:
 
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_file_in_user_files(db, user, file):
 
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     # if not storage_.is_file_exist(file.file_path):
     if not storage_.is_file_exist(file.file_path):
 
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     return schemas.FileOut(
         id=file.id,
@@ -565,7 +625,9 @@ async def modify_file_nodes(
     db: Session = Depends(get_db),
 ):
     if not file_nodes:
-        raise HTTPException(status_code=405, detail="Invalid nodes")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid nodes"
+        )
     else:
         # logger.debug(f"{file_nodes}")
 
@@ -573,7 +635,9 @@ async def modify_file_nodes(
 
     if len(numpy.array(file_nodes_array).shape) != 1:
         logger.error("invalid upload nodes")
-        raise HTTPException(status_code=400, detail="invalid nodes")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="invalid nodes"
+        )
     for node in file_nodes_array:
         if not node.strip():
             logger.warning(
@@ -589,7 +653,9 @@ async def modify_file_nodes(
     if file.file_owner_name != username:
         # print()
         logger.debug({logger.debug(file.file_owner_name)} / {username})
-        raise HTTPException(status_code=401, detail="Access denied")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied"
+        )
     else:
         # if file.file_nodes == file_nodes_array:
         file.file_nodes = file_nodes_array
@@ -598,7 +664,9 @@ async def modify_file_nodes(
 
     if file.file_nodes != file_nodes_array:
 
-        raise HTTPException(status_code=403, detail="Modify nodes failes")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Modify nodes failes"
+        )
 
     else:
 
@@ -625,13 +693,19 @@ async def download_file(
     user = crud.get_user_by_id(db, user_id)
     file = crud.get_file_by_id(db, file_id)
     if not file:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     if file.file_owner_name != user.username or file.filename != file_name:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not storage_.is_file_exist(file.file_path):
 
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     file_size = storage_.get_file_size(file.file_path)
 
@@ -657,13 +731,19 @@ async def download_file(
     user = crud.get_user_by_id(db, user_id)
     file = crud.get_file_by_id(db, file_id)
     if not file:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     if file.file_owner_name != user.username or file.filename != file_name:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     # if not storage_.is_file_exist(file.file_path):
     if not storage_.is_file_exist(file.file_path):
-        raise HTTPException(status_code=404, detail="File path not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File path not found"
+        )
 
     # file_size = storage_.get_file_size(file.file_path)
     file_size = storage_.get_file_size(file.file_path)
@@ -673,7 +753,9 @@ async def download_file(
 
     return StreamingResponse(
         storage_.file_iterator(file.file_path, start, end),
-        status_code=206 if range_header else 200,
+        status_code=(
+            status.HTTP_206_PARTIAL_CONTENT if range_header else status.HTTP_200_OK
+        ),
         headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
@@ -692,7 +774,7 @@ async def list_node_files(
     if not file_nodes or len(numpy.array(json.loads(file_nodes)).shape) != 1:
         logger.error("invalid upload nodes, please input a string array, default: []")
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid upload nodes, please input a string array, default: []",
         )
 
@@ -728,7 +810,9 @@ async def get_profile_image(
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
-        user.profile_image = config.User.DEFAULT_PROFILE_IMAGE  # this ia a system path
+        user.profile_image = (
+            config.UserConfig.DEFAULT_PROFILE_IMAGE
+        )  # this ia a system path
         storage_.save_file_from_system_path(
             user.profile_image, user.profile_image, delete_original=False
         )  # save the default profile image to the storage layer
@@ -736,16 +820,17 @@ async def get_profile_image(
             logger.warning("default profile_image")
         else:
             logger.error(
-                "Profile image not found, Server error, no default profile image"
+                f"Profile image {user.profile_image} not found, Server error, no default profile image"
             )
             raise HTTPException(
-                status_code=404,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail="Profile image not found, Server error, no default profile image",
             )
 
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
         raise HTTPException(
-            status_code=404, detail="Profile image not found, Server error"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile image not found, Server error",
         )
 
     return StreamingResponse(
@@ -768,7 +853,9 @@ async def upload_profile_image(
     username: str = get_current_username(access_token)
     user = crud.get_user_by_username(db, username)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     # save profile image
     file_path = utility.get_new_path(
@@ -776,7 +863,7 @@ async def upload_profile_image(
             config.Config.STATIC_PATH, username, "profile", file.filename
         )
     )
-    storage_.makedirs(file_path, isfile=True)
+    # storage_.makedirs(file_path, isfile=True)
 
     total_size = 0
 
@@ -791,7 +878,7 @@ async def upload_profile_image(
 
         total_size += len(chunk)
 
-        if total_size > config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
+        if total_size > config.UserConfig.PROFILE_IMAGE_MAX_FILE_SIZE:
 
             if storage_.is_file_exist(file_path):
                 storage_.remove_file(file_path)
@@ -799,7 +886,7 @@ async def upload_profile_image(
             logger.warning("profile image File size exceeds maximum limit")
 
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="profile image File size exceeds maximum limit",
             )
 
@@ -813,7 +900,8 @@ async def upload_profile_image(
 
     if not user.profile_image or not storage_.is_file_exist(user.profile_image):
         raise HTTPException(
-            status_code=500, detail="Profile image upload failed, Server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Profile image upload failed, Server error",
         )
 
     return schemas.UserOut(
@@ -837,15 +925,18 @@ async def preview_file(
     file = crud.get_file_by_id(db, file_id=file_id)
 
     if file.file_owner_name != user.username:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_fileid_in_user_files(db, user, file.id):
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     file.file_preview_path = storage_.get_join_path(
-        config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.{file.file_type}"
+        config.FileConfig.PREVIEW_FILES_PATH, f"{file.id}_preview.{file.file_type}"
     )
 
     if (
@@ -894,11 +985,14 @@ async def preview_video_file(
     file = crud.get_file_by_id(db, file_id=file_id)
 
     if file.file_owner_name != user.username:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     if not crud.is_fileid_in_user_files(db, user, file.id):
         raise HTTPException(
-            status_code=404, detail="File not found in user's file list"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in user's file list",
         )
 
     if (
@@ -910,9 +1004,9 @@ async def preview_video_file(
         logger.debug(f"generate preview video :{file.filename}")
 
         file.file_preview_path = storage_.get_join_path(
-            config.File.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
+            config.FileConfig.PREVIEW_FILES_PATH, f"{file.id}_preview.mp4"
         )
-        storage_.makedirs(file.file_preview_path, is_file=True)
+        # storage_.makedirs(file.file_preview_path, is_file=True)
         utility.generate_preview_video(file.file_path, file.file_preview_path)
 
         db.commit()
@@ -935,7 +1029,8 @@ async def preview_video_file(
         )
     else:
         raise HTTPException(
-            status_code=500, detail="Error: Preview file not found or empty"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error: Preview file not found or empty",
         )
 
 
@@ -945,7 +1040,9 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 
     file = crud.get_file_by_id(db, file_id)
 
-    segment_index_path = storage_.get_join_path(config.File.M3U8_INDEX_PATH, file.id)
+    segment_index_path = storage_.get_join_path(
+        config.FileConfig.M3U8_INDEX_PATH, file.id
+    )
 
     index_m3u8_name = "index.m3u8"
 
@@ -969,7 +1066,8 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
             logger.warning(f"{type(e)}{str(e)}")
 
             raise HTTPException(
-                status_code=500, detail="Failed to generate HLS playlist and segments"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate HLS playlist and segments",
             )
 
     return StreamingResponse(
@@ -982,10 +1080,13 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
 @app.get("/file/segments/{file_id}/{segment_name}")
 async def get_segment(request: Request, file_id: str, segment_name: str):
     segment_path = storage_.get_join_path(
-        f"{storage_.get_join_path(config.File.M3U8_INDEX_PATH, file_id)}", segment_name
+        f"{storage_.get_join_path(config.FileConfig.M3U8_INDEX_PATH, file_id)}",
+        segment_name,
     )
     if not storage_.is_file_exist(segment_path):
-        raise HTTPException(status_code=404, detail="Segment not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
+        )
 
     file_size = storage_.get_file_size(segment_path)
 
@@ -995,7 +1096,9 @@ async def get_segment(request: Request, file_id: str, segment_name: str):
 
     return StreamingResponse(
         storage_.file_iterator(segment_path, start, end),
-        status_code=206 if range_header else 200,
+        status_code=(
+            status.HTTP_206_PARTIAL_CONTENT if range_header else status.HTTP_200_OK
+        ),
         headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
@@ -1005,14 +1108,14 @@ async def get_segment(request: Request, file_id: str, segment_name: str):
 
 
 # minio file storage specific code
-if config.Config.STORE_TYPE == "minio":
+if config.StorageConfig.STORE_TYPE == "minio":
 
     # 临时文件夹
-    TEMP_UPLOAD_DIR = config.Config.TEMP_UPLOAD_DIR
+    TEMP_UPLOAD_DIR = config.StorageConfig.TEMP_UPLOAD_DIR
 
     def get_minio_client():
 
-        return config.Config.MinioClient
+        return config.StorageConfig.MinioClient
 
     async def minio_file_iterator(
         client: Minio,
@@ -1075,7 +1178,9 @@ if config.Config.STORE_TYPE == "minio":
 
         if not file_size:
 
-            raise HTTPException(status_code=404, detail="No file data.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No file data."
+            )
 
         if request.method == "HEAD":
             headers = {
@@ -1096,7 +1201,9 @@ if config.Config.STORE_TYPE == "minio":
                 start=start,
                 end=end,
             ),
-            status_code=206 if range_header else 200,
+            status_code=(
+                status.HTTP_206_PARTIAL_CONTENT if range_header else status.HTTP_200_OK
+            ),
             headers={
                 "Content-Length": str(end - start + 1),
                 "Content-Range": f"bytes {start}-{end}/{file_size}",
@@ -1113,7 +1220,7 @@ if config.Config.STORE_TYPE == "minio":
             logger.info(file_id, order)
             # 创建临时文件目录
             temp_upload_dir = storage_.get_join_path(TEMP_UPLOAD_DIR, file_id)
-            storage_.makedirs(temp_upload_dir, exist_ok=True)
+            # storage_.makedirs(temp_upload_dir, exist_ok=True)
 
             temp_file_path = storage_.get_join_path(temp_upload_dir, order)
 
@@ -1121,7 +1228,7 @@ if config.Config.STORE_TYPE == "minio":
 
             if not storage_.is_file_exist(temp_file_path):
                 raise HTTPException(
-                    status_code=500,
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Error occurred during upload: File not found",
                 )
 
@@ -1132,7 +1239,7 @@ if config.Config.STORE_TYPE == "minio":
 
         except Exception as e:
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error occurred during upload: {type(e)}, {str(e)}",
             )
 
@@ -1170,13 +1277,13 @@ if config.Config.STORE_TYPE == "minio":
             if order_int_last > 0 and order_int - order_int_last != 1:
                 logger.error(f"invalid part file: {order_int_last+1}")
                 raise HTTPException(
-                    status_code=404,
+                    status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"missing part file: {part}",
                 )
             if order_int < 0:
                 logger.error(f"invalid part file: {part}")
                 raise HTTPException(
-                    status_code=404,
+                    status_code=status.HTTP_404_NOT_FOUND,
                     detail="invalid part file",
                 )
             order_int_last = order_int
@@ -1185,7 +1292,7 @@ if config.Config.STORE_TYPE == "minio":
 
         if parts.__len__() == 0:
             raise HTTPException(
-                status_code=404,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail="No file to merge, please upload file first",
             )
 
@@ -1204,7 +1311,7 @@ if config.Config.STORE_TYPE == "minio":
             if not storage_.is_file_exist(part_path):
                 logger.error(f"missing part file, merge failed: {part_path}")
                 raise HTTPException(
-                    status_code=404,
+                    status_code=status.HTTP_404_NOT_FOUND,
                     detail="missing part file, merge failed",
                 )
             part_number = i + 1
@@ -1244,7 +1351,7 @@ if config.Config.STORE_TYPE == "minio":
         except Exception as e:
             logger.error(f"merge failed: {type(e)}{str(e)}")
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"merge failed: {type(e)}{str(e)}",
             )
 

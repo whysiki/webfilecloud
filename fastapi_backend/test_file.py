@@ -106,18 +106,27 @@ def handle_error(func):
 
 
 @handle_error
-async def register_user(client, user_t):
-    print("注册用户......")
+async def register_user(client: AsyncClient, user_t: dict[str, str]):
+    print(" 注册用户......")
     url = f"{base_url}/users/register"
     headers = {"Content-Type": "application/json"}
     data = user_t
     response = await client.post(url, headers=headers, json=data)
-    print(response.status_code)
-    print(response.json())
+
+    responsejson = response.json()
+
+    status_code = response.status_code
+
+    if status_code == 200:
+        assert responsejson["username"] == user_t["username"], "register failed"
+    elif status_code == 400:
+        assert responsejson["detail"] == "User already exists", "register failed"
+    else:
+        assert False, "unexpected register failed"
 
 
 @handle_error
-async def login_user(client, user_t):
+async def login_user(client: AsyncClient, user_t: dict[str, str]):
     print("用户登录......")
     url = f"{base_url}/users/login"
     headers = {"Content-Type": "application/json"}
@@ -496,7 +505,7 @@ async def test_uploaduseravatar(client: AsyncClient, token: str, test_file: str)
     print("File size:", os.path.getsize(test_file))
 
     print(response.status_code)
-    if os.path.getsize(test_file) <= config.User.PROFILE_IMAGE_MAX_FILE_SIZE:
+    if os.path.getsize(test_file) <= config.UserConfig.PROFILE_IMAGE_MAX_FILE_SIZE:
         assert response.status_code == 200
     else:
         print("File too large, expected 500 error", response.status_code)

@@ -4,9 +4,10 @@ from argon2 import PasswordHasher
 import jwt
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import HTTPException, status
-from config import Config  # 导入配置文件
+from fastapi import HTTPException
 from typing import Optional
+from config.status import StatusConfig as status  # custom status codes
+from config import Config  # 导入配置文件
 
 # 使用 argon2-cffi 创建一个密码哈希器
 pwd_context = PasswordHasher()
