@@ -49,9 +49,9 @@ def create_access_token(
     """
     to_encode = data.copy()
     expire = (
-        datetime.now(datetime.UTC) + expires_delta  # type: ignore
+        datetime.utcnow() + expires_delta  # type: ignore
         if expires_delta
-        else datetime.now(datetime.UTC) + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)  # type: ignore
+        else datetime.utcnow() + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)  # type: ignore 这里虽然弃用了但是还是要用😅
     )
     to_encode.update({"exp": expire})  # type: ignore
     encoded_jwt = jwt.encode(to_encode, Config.SECRET_KEY, algorithm=Config.ALGORITHM)
@@ -79,7 +79,7 @@ def get_current_username(token: str) -> str:
     try:
         payload = jwt.decode(token, Config.SECRET_KEY, algorithms=[Config.ALGORITHM])
         username: str = payload.get("sub")
-        now = datetime.now(datetime.UTC)  # type: ignore
+        now = datetime.utcnow()  # type: ignore
         if now > datetime.fromtimestamp(payload.get("exp")):
             raise credentials_exception
         if not username:
