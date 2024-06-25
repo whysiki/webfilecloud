@@ -26,7 +26,7 @@
 ```shell
 # .env
 
-# 上传文件存储路径
+# 上传文件存储路径  相对于项目根目录 会自动创建文件夹
 UPLOAD_PATH=uploads 
 # 用于生成token的密钥
 SECRET_KEY=b1f974fc-c181-4d1e-99ce-37d3c7c43551 
@@ -62,25 +62,24 @@ MINIO_BUCKET=filecloud
 
 ### 依赖安装
 
-- 基础依赖
-
-`pip install -r requirements.txt`
-
+- python 安装 （建议使用python3.10+）虚拟环境启动 略
+- 基础依赖 `pip install -r requirements.txt`
 - 数据库安装和配置 
   - 下载 配置环境变量 略
   - 登录 `psql -U postgres -p 61111`  -p 61111 是端口号 -U postgres  用户名
   - 创建数据库 `CREATE DATABASE filecloud;`
-
 - ffmpeg 安装 配置环境变量 略
 - minio 安装 配置环境变量 略
 
 - 数据库驱动
+  - `pip install psycopg2` in windows
+  - `sudo apt install python3-psycopg2`, `sudo apt install libpq-dev` in ubuntu
 
-- `pip install psycopg2` in windows
-- `sudo apt install python3-psycopg2`, `sudo apt install libpq-dev` in ubuntu
-
+- 运行`env.py` 生成`.env`文件
 
 ### 调试启动
+
+`cd`到`fastapi_backend`目录下，运行以下命令启动ASGI应用，
 
 示例：
 `python3 -m uvicorn main:app --reload`
