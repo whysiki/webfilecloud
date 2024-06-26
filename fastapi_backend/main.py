@@ -7,8 +7,6 @@ from fastapi import File, UploadFile
 from datetime import datetime, timedelta
 from minio import Minio
 from minio.error import S3Error
-
-# from typing import Optional
 import hashlib
 from fastapi.responses import StreamingResponse, Response
 from loguru import logger

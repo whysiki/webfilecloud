@@ -44,3 +44,7 @@ testTransPortImprove/question.md
 /filecloud
 /minio_storage
 /minio_storage/minio.exe
+fastapi_backend/tools/__pycache__/__init__.cpython-312.pyc
+fastapi_backend/tools/__pycache__/testtools.cpython-312.pyc
+/fastapi_backend/tools/__pycache__
+/fastapi_backend/config/__pycache__

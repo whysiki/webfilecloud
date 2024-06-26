@@ -5,7 +5,7 @@
 
 数据库使用PostgreSQL 对象存储采用 minio ,支持存储在本地或者minio服务器
 
-- `app.py`为ASGI应用实例，里面可以配置中间件、路由等
+- `app.py`为ASGI应用实例，里面可以配置中间件等
 - `main.py`为API路由定义
 - `models.py`为数据库模型定义
 - `schemas.py`为Pydantic模型定义
@@ -14,7 +14,7 @@
 - `utility.py`为工具函数
 - `dep.py`为依赖注入
 - `auth.py`为认证函数
-- `test_files.py`为测试文件 可以看一些接口调用的示例
+- `test_files.py`为测试文件
 - `env.py` 生成`.env`文件
 - `start.py`自用部署脚本
 - `storage_.py` 为封装的文件存储函数
