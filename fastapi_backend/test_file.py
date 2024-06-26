@@ -76,7 +76,7 @@ while True:
 
 
 base_url = f"http://localhost:{startport}"
-testfile_folder = "../testfile_folder"
+testfile_folder = "testfile_folder"
 os.makedirs(testfile_folder, exist_ok=True)
 
 console = Console()
@@ -301,6 +301,8 @@ async def Breakpoint_resume_download_test(client, token):
 
     # 测试文件生成
     test_upload_file = get_new_path(f"{testfile_folder}/testbinary.b")
+
+    os.makedirs(testfile_folder, exist_ok=True)
 
     if os.path.exists(test_upload_file):
 
