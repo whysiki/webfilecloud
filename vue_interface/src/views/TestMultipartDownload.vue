@@ -36,12 +36,21 @@
         :key="index"
       >
         <p>File Id: {{ historyUploadedObject.file_id }}</p>
-        <p>Bucket Name: {{ historyUploadedObject.bucketName }}</p>
+        <p>Bucket Name: {{ historyUploadedObject.bucket_name }}</p>
         <p>Object Name: {{ historyUploadedObject.filename }}</p>
         <p>API Address: {{ historyUploadedObject.apiAddress }}</p>
         <p>Thread Count: {{ historyUploadedObject.threadCount }}</p>
         <p>Time: {{ historyUploadedObject.time }}</p>
         <p>Upload Time: {{ historyUploadedObject.uploadtime }} seconds</p>
+        <!-- mutipartUploadedFiles.push({
+          file_id: fileId,
+          filename: file.name,
+          bucket_name: this.bucketName,
+          apiAddress: apiInput,
+          threadCount: chunks,
+          uploadtime: uploadTimeInSeconds,
+          time: new Date().toLocaleString(),
+        }); -->
       </div>
     </div>
   </div>
