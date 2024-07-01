@@ -1,5 +1,4 @@
 # encoding: utf-8
-
 from argon2 import PasswordHasher
 import jwt
 from datetime import datetime, timedelta
@@ -11,7 +10,6 @@ from config import Config  # 导入配置文件
 
 # 使用 argon2-cffi 创建一个密码哈希器
 pwd_context = PasswordHasher()
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 

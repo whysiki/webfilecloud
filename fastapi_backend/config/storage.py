@@ -6,6 +6,11 @@ from .base import Config
 from pathlib import Path
 
 
+STORE_TYPE_LOCAL: str = "local"
+
+STORE_TYPE_MINIO: str = "minio"
+
+
 class StorageConfig(Config):
 
     __current_workspace_dir: Path = Path(__file__).parent.parent
@@ -13,11 +18,11 @@ class StorageConfig(Config):
     STORE_TYPE: str = os.getenv("STORE_TYPE").strip().lower()
 
     assert STORE_TYPE in [
-        "local",
-        "minio",
+        STORE_TYPE_LOCAL,
+        STORE_TYPE_MINIO,
     ], "STORE_TYPE is invalid, please check your .env file. accepted values are 'local' or 'minio'."
 
-    if STORE_TYPE == "minio":
+    if STORE_TYPE == STORE_TYPE_MINIO:
 
         MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "")
         MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "")

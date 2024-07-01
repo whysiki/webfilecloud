@@ -20,7 +20,7 @@ import mimetypes
 from auth import pwd_context, create_access_token, get_current_username  # auth
 import config  # custom configuration
 from config.status import StatusConfig as Status  # custom status codes
-from dep import get_db, get_access_token  # inject dependency
+from dep import get_db, get_access_token, get_minio_client  # inject dependency
 from app import app  # fast app instance
 import utility  # custom utility functions
 import models  # model definition
@@ -28,8 +28,9 @@ import schemas  # pydantic schemas
 import crud  # database operations
 from storage_ import (
     handler as storage_,
-)  # separate storage functions 别问我为什么这么导入🥲
+)  # separate storage functions Don't ask me why I imported it🥲
 from typing import List, Any, Optional, Tuple
+from config.storage import STORE_TYPE_LOCAL, STORE_TYPE_MINIO
 
 
 # register user
@@ -250,35 +251,7 @@ async def upload_file(
                     detail="File already exists",
                 )
 
-    file_nodes_list: List[str]
-
-    if file_nodes:
-
-        file_nodes_list = json.loads(file_nodes)
-
-        if len(numpy.array(file_nodes_list).shape) != 1:
-            logger.error(f"invalid upload nodes: {file_nodes_list}")
-            raise HTTPException(
-                status_code=Status.HTTP_400_BAD_REQUEST, detail="invalid nodes"
-            )
-        if file_nodes_list:
-            for node in file_nodes_list:
-                if not node.strip():
-                    logger.warning(
-                        "The head of File nodes is empty, please input a valid node name. default: []"
-                    )
-                    file_nodes_list = []
-                    break
-        else:
-            logger.warning(
-                "The head of File nodes is empty, please input a valid node name. default: []"
-            )
-            file_nodes_list = []
-    else:
-        logger.warning(
-            "The head of File nodes is empty, please input a valid node name. default: []"
-        )
-        file_nodes_list = []
+    file_nodes_list: list[str] = utility.get_file_nodes(file_nodes)
 
     file_content: bytes = await file.read()
     # the file content hash + the user name hash + the file node hash 🤣
@@ -540,10 +513,11 @@ async def reset_db(user_in: schemas.UserIn, db: Session = Depends(get_db)):
     storage_.remove_path(config.FileConfig.PREVIEW_FILES_PATH)
     if hasattr(config.StorageConfig, "TEMP_UPLOAD_DIR"):
         storage_.remove_path(config.StorageConfig.TEMP_UPLOAD_DIR)
-    # if storage_.is_file_exist(config.UserConfig.DEFAULT_PROFILE_IMAGE):
-    # storage_.remove_file(config.UserConfig.DEFAULT_PROFILE_IMAGE)
-    # if storage_.is_file_exist(config.FileConfig.LOAD_ERROR_IMG):
-    # storage_.remove_file(config.FileConfig.LOAD_ERROR_IMG)
+    if config.StorageConfig.STORE_TYPE != STORE_TYPE_LOCAL:
+        if storage_.is_file_exist(config.UserConfig.DEFAULT_PROFILE_IMAGE):
+            storage_.remove_file(config.UserConfig.DEFAULT_PROFILE_IMAGE)
+        if storage_.is_file_exist(config.FileConfig.LOAD_ERROR_IMG):
+            storage_.remove_file(config.FileConfig.LOAD_ERROR_IMG)
     return schemas.DbOut(
         message="Database reset successfully and all files deleted.",
         user_count=db.query(models.User).count(),
@@ -1129,256 +1103,266 @@ async def get_segment(request: Request, file_id: str, segment_name: str):
 
 
 # minio file storage specific code
-if config.StorageConfig.STORE_TYPE == "minio":
+# file_id is not object_name
+# upload file segments to minio
+@app.post("/upload/")
+@utility.store_type_specific(STORE_TYPE_MINIO)
+async def minio_upload_file(
+    file_id: str,
+    order: str,
+    upload_file: UploadFile = File(...),
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db),
+):
+    try:
 
-    # 临时文件夹
-    TEMP_UPLOAD_DIR = config.StorageConfig.TEMP_UPLOAD_DIR
+        username: str = get_current_username(access_token)
+        user = crud.get_user_by_username(db, username=username)
 
-    def get_minio_client():
-
-        return config.StorageConfig.MinioClient
-
-    async def minio_file_iterator(
-        client: Minio,
-        bucket_name: str,
-        object_name: str,
-        start: int,
-        end: int,
-        chunk_size: int = 1024 * 1024,
-    ):
-        current_position = start
-        while current_position <= end:
-            remaining_bytes = end - current_position + 1
-            read_size = min(chunk_size, remaining_bytes)
-            range_header = (
-                f"bytes={current_position}-{current_position + read_size - 1}"
-            )
-
-            print(range_header)
-
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                lambda: client.get_object(
-                    bucket_name, object_name, request_headers={"Range": range_header}
-                ),
-            )
-
-            try:
-                with response as stream:
-                    while True:
-                        chunk = stream.read(chunk_size)
-                        if not chunk:
-                            break
-                        current_position += len(chunk)
-                        yield chunk
-            finally:
-                response.close()
-
-    def minio_get_file_size(
-        client: Minio,
-        bucket_name: str,
-        object_name: str,
-        *args: Tuple[Any],
-        **kwargs: dict[str, Any],
-    ) -> int:
-        try:
-            stat = client.stat_object(bucket_name, object_name)
-            return stat.size if stat.size else 0
-        except S3Error as err:
-            print(f"Error getting size for {object_name}: {err}")
-            return 0
-
-    @app.get("/file/download/{bucket_name}/{object_name}")
-    @app.head("/file/download/{bucket_name}/{object_name}")
-    async def minio_download_file(
-        request: Request,
-        object_name: str,
-        bucket_name: str,
-        client: Minio = Depends(get_minio_client),
-    ):
-        file_size = minio_get_file_size(
-            client=client, bucket_name=bucket_name, object_name=object_name
+        # 创建临时文件目录
+        temp_upload_dir = storage_.get_join_path(
+            config.StorageConfig.TEMP_UPLOAD_DIR, file_id
         )
 
-        if not file_size:
-            raise HTTPException(
-                status_code=Status.HTTP_404_NOT_FOUND, detail="No file data."
-            )
+        temp_file_path = storage_.get_join_path(temp_upload_dir, order)
 
-        if request.method == "HEAD":
-            headers = {
-                "Content-Length": str(file_size),
-                "Accept-Ranges": "bytes",
-            }
-            return Response(headers=headers)
+        await storage_.async_write_file_wb(temp_file_path, await upload_file.read())
 
-        range_header = request.headers.get("Range", "")
-
-        start, end = utility.get_start_end_from_range_header(range_header, file_size)
-
-        return StreamingResponse(
-            minio_file_iterator(
-                client=client,
-                bucket_name=bucket_name,
-                object_name=object_name,
-                start=start,
-                end=end,
-            ),
-            status_code=(
-                Status.HTTP_206_PARTIAL_CONTENT if range_header else Status.HTTP_200_OK
-            ),
-            headers={
-                "Content-Length": str(end - start + 1),
-                "Content-Range": f"bytes {start}-{end}/{file_size}",
-                "Accept-Ranges": "bytes",
-            },
-        )
-
-    # file_id is not object_name
-    @app.post("/upload/")
-    async def minio_upload_file(
-        file_id: str, order: str, upload_file: UploadFile = File(...)
-    ):
-        try:
-            logger.info(file_id, order)
-            # 创建临时文件目录
-            temp_upload_dir = storage_.get_join_path(TEMP_UPLOAD_DIR, file_id)
-            # storage_.makedirs(temp_upload_dir, exist_ok=True)
-
-            temp_file_path = storage_.get_join_path(temp_upload_dir, order)
-
-            await storage_.async_write_file_wb(temp_file_path, await upload_file.read())
-
-            if not storage_.is_file_exist(temp_file_path):
-                raise HTTPException(
-                    status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error occurred during upload: File not found",
-                )
-
-            logger.success(f"successfully upload chunck : {file_id} : {order}")
-
-            # 返回临时文件目录和文件名以备后续合并
-            return {"temp_upload_dir": temp_upload_dir, "filename": order, "code": 200}
-
-        except Exception as e:
+        if not storage_.is_file_exist(temp_file_path):
             raise HTTPException(
                 status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error occurred during upload: {type(e)}, {str(e)}",
+                detail="Error occurred during upload: File not found",
             )
 
-    @app.post("/merge/")
-    async def minio_merge_files(
-        bucket_name: str,
-        filename: str,  # is object_name
-        file_id: str,
-        client: Minio = Depends(get_minio_client),
-    ):
-
-        logger.debug(
-            f"mergefilename: {filename}, mergefile_id: {file_id}, mergebucket_name: {bucket_name}"
+        logger.info(
+            f"user: {user.username} uploaded a segment file: {file_id} , {order}"
         )
-        found = client.bucket_exists(bucket_name)
-        if not found:
-            client.make_bucket(bucket_name)
-            logger.debug(f"Created bucket:{bucket_name}")
-        else:
-            logger.debug(f"Bucket {bucket_name} already exists")
 
-        temp_upload_dir = storage_.get_join_path(TEMP_UPLOAD_DIR, file_id)
+        logger.success(f"successfully upload chunck : {file_id} : {order}")
 
-        __set_parts = sorted(  # type: ignore
-            set(storage_.get_dir_files(temp_upload_dir)),  # type: ignore
-            key=lambda x: int(storage_.get_path_basename(x)),
+        # 返回临时文件目录和文件名以备后续合并
+        return {"temp_upload_dir": temp_upload_dir, "filename": order, "code": 200}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error occurred during upload: {type(e)}, {str(e)}",
         )
-        # 找到所有分片文件
-        parts: tuple[str] = tuple(__set_parts if __set_parts else [])  # type: ignore
 
-        if len(parts) == 0:  # type: ignore
+
+@app.get("/file/download/{bucket_name}/{object_name}")
+@app.head("/file/download/{bucket_name}/{object_name}")
+@utility.store_type_specific(STORE_TYPE_MINIO)
+async def minio_download_file(
+    request: Request,
+    object_name: str,
+    bucket_name: str,
+    client: Minio = Depends(get_minio_client),
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db),
+):
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+
+    file_size = utility.minio_get_file_size(
+        client=client, bucket_name=bucket_name, object_name=object_name
+    )
+
+    if not file_size:
+        raise HTTPException(
+            status_code=Status.HTTP_404_NOT_FOUND, detail="No file data."
+        )
+
+    if request.method == "HEAD":
+        headers = {
+            "Content-Length": str(file_size),
+            "Accept-Ranges": "bytes",
+        }
+        return Response(headers=headers)
+
+    range_header = request.headers.get("Range", "")
+
+    start, end = utility.get_start_end_from_range_header(range_header, file_size)
+
+    logger.info(
+        f"user: {user.username} downloading a file: {object_name} from bucket: {bucket_name}"
+    )
+
+    return StreamingResponse(
+        utility.minio_file_iterator(
+            client=client,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            start=start,
+            end=end,
+        ),
+        status_code=(
+            Status.HTTP_206_PARTIAL_CONTENT if range_header else Status.HTTP_200_OK
+        ),
+        headers={
+            "Content-Length": str(end - start + 1),
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+        },
+    )
+
+
+@app.post("/merge/")
+@utility.store_type_specific(STORE_TYPE_MINIO)
+async def minio_merge_files(
+    bucket_name: str,
+    filename: str,  # is object_name
+    file_id: str,  # is file_id in File table in database
+    file_nodes: Optional[str] = None,  # is file_nodes in File table in database
+    client: Minio = Depends(get_minio_client),
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db),
+):
+
+    username: str = get_current_username(access_token)
+    user = crud.get_user_by_username(db, username)
+
+    logger.debug(
+        f"mergefilename: {filename}, mergefile_id: {file_id}, mergebucket_name: {bucket_name}"
+    )
+    found = client.bucket_exists(bucket_name)
+    if not found:
+        client.make_bucket(bucket_name)
+        logger.debug(f"Created bucket:{bucket_name}")
+    else:
+        logger.debug(f"Bucket {bucket_name} already exists")
+
+    temp_upload_dir = storage_.get_join_path(
+        config.StorageConfig.TEMP_UPLOAD_DIR, file_id
+    )
+
+    __set_parts = sorted(  # type: ignore
+        set(storage_.get_dir_files(temp_upload_dir)),  # type: ignore
+        key=lambda x: int(storage_.get_path_basename(x)),
+    )
+    # 找到所有分片文件
+    parts: tuple[str] = tuple(__set_parts if __set_parts else [])  # type: ignore
+
+    if len(parts) == 0:  # type: ignore
+        raise HTTPException(
+            status_code=Status.HTTP_404_NOT_FOUND,
+            detail="No file to merge, please upload file first",
+        )
+
+    order_int_last = -1
+    for part in parts:
+        order = storage_.get_path_basename(part)
+        print(order, part)
+        order_int = int(order)
+        if order_int_last > 0 and order_int - order_int_last != 1:
+            logger.error(f"invalid part file: {order_int_last + 1}")
             raise HTTPException(
                 status_code=Status.HTTP_404_NOT_FOUND,
-                detail="No file to merge, please upload file first",
+                detail=f"missing part file: {part}",
             )
+        if order_int < 0:
+            logger.error(f"invalid part file: {part}")
+            raise HTTPException(
+                status_code=Status.HTTP_404_NOT_FOUND,
+                detail="invalid part file",
+            )
+        order_int_last = order_int
 
-        order_int_last = -1
-        for part in parts:
-            order = storage_.get_path_basename(part)
-            print(order, part)
-            order_int = int(order)
-            if order_int_last > 0 and order_int - order_int_last != 1:
-                logger.error(f"invalid part file: {order_int_last + 1}")
-                raise HTTPException(
-                    status_code=Status.HTTP_404_NOT_FOUND,
-                    detail=f"missing part file: {part}",
-                )
-            if order_int < 0:
-                logger.error(f"invalid part file: {part}")
-                raise HTTPException(
-                    status_code=Status.HTTP_404_NOT_FOUND,
-                    detail="invalid part file",
-                )
-            order_int_last = order_int
+    # logger.debug(f"merge file: {file_id}")
 
-        # logger.debug(f"merge file: {file_id}")
+    headers: dict[str, str] = {"Content-Type": "application/octet-stream"}
 
-        headers: dict[str, str] = {"Content-Type": "application/octet-stream"}
+    # 创建 MinIO 的分片上传会话
+    upload_id = client._create_multipart_upload(  # type: ignore
+        bucket_name=bucket_name,
+        object_name=filename,
+        headers=headers,  # type: ignore
+    )
 
-        # 创建 MinIO 的分片上传会话
-        upload_id = client._create_multipart_upload(  # type: ignore
+    # 逐个上传分片
+    for i, part in enumerate(parts):
+        part_path: str = part  # type: ignore
+        if not storage_.is_file_exist(part_path):
+            logger.error(f"missing part file, merge failed: {part_path}")
+            raise HTTPException(
+                status_code=Status.HTTP_404_NOT_FOUND,
+                detail="missing part file, merge failed",
+            )
+        part_number = i + 1
+        data = await storage_.async_read_file_rb(part_path)
+        client._upload_part(  # type: ignore
             bucket_name=bucket_name,
             object_name=filename,
-            headers=headers,  # type: ignore
+            part_number=part_number,  # 分片编号从 1 开始
+            upload_id=upload_id,
+            data=data,
+            headers=None,
         )
+        print(f"Merged part {part_path}")
 
-        # 逐个上传分片
-        for i, part in enumerate(parts):
-            part_path: str = part  # type: ignore
-            if not storage_.is_file_exist(part_path):
-                logger.error(f"missing part file, merge failed: {part_path}")
-                raise HTTPException(
-                    status_code=Status.HTTP_404_NOT_FOUND,
-                    detail="missing part file, merge failed",
-                )
-            part_number = i + 1
-            data = await storage_.async_read_file_rb(part_path)
-            client._upload_part(  # type: ignore
-                bucket_name=bucket_name,
-                object_name=filename,
-                part_number=part_number,  # 分片编号从 1 开始
-                upload_id=upload_id,
-                data=data,
-                headers=None,
-            )
-            print(f"Merged part {part_path}")
+    list_parts = client._list_parts(  # type: ignore
+        bucket_name=bucket_name,
+        object_name=filename,
+        upload_id=upload_id,
+    ).parts
 
-        list_parts = client._list_parts(  # type: ignore
+    for p in list_parts:
+        print(p.size, p.part_number)
+
+    total_size = sum(p.size for p in list_parts)
+
+    try:
+
+        client._complete_multipart_upload(  # # type: ignore
             bucket_name=bucket_name,
             object_name=filename,
             upload_id=upload_id,
-        ).parts
+            parts=list_parts,
+        )
 
-        for p in list_parts:
-            print(p.size, p.part_number)
+        new_file = models.File(
+            id=file_id,
+            filename=storage_.get_path_basename(filename),
+            file_path=filename,
+            file_size=total_size,
+            file_owner_name=username,
+            file_create_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            file_type=filename.split(".")[-1] if "." in filename else "binary",
+            file_nodes=utility.get_file_nodes(file_nodes),
+        )
 
-        try:
+        crud.add_file_to_user(db, new_file, user)
+        db.add(new_file)
+        db.commit()
+        db.refresh(new_file)
 
-            client._complete_multipart_upload(  # # type: ignore
-                bucket_name=bucket_name,
-                object_name=filename,
-                upload_id=upload_id,
-                parts=list_parts,
-            )
-
-            # 删除临时分片文件目录
-
-            return {"message": "File uploaded successfully", "code": 200}
-        except Exception as e:
-            logger.error(f"merge failed: {type(e)}{str(e)}")
+        if not new_file == crud.get_file_by_id(db, file_id=new_file.id):
             raise HTTPException(
                 status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"merge failed: {type(e)}{str(e)}",
+                detail="Upload file failed",
             )
 
-        finally:
+        logger.success(f"merge successful: {new_file.filename}")
 
-            storage_.remove_path(temp_upload_dir)
+        return schemas.FileOut(
+            id=new_file.id,
+            filename=new_file.filename,
+            file_size=new_file.file_size,
+            message="Upload file successful",
+            file_create_time=new_file.file_create_time,
+            file_type=new_file.file_type,
+            file_owner_name=new_file.file_owner_name,
+            file_nodes=new_file.file_nodes,
+            file_download_link=f"/file/download/{user.id}/{new_file.id}/{new_file.filename}",
+        )
+
+    except Exception as e:
+        logger.error(f"merge failed: {type(e)}{str(e)}")
+        raise HTTPException(
+            status_code=Status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"merge failed: {type(e)}{str(e)}",
+        )
+
+    finally:
+        # delete temp upload dir
+        storage_.remove_path(temp_upload_dir)

@@ -14,6 +14,16 @@ import os
 import shutil
 from pathlib import Path
 from typing import Tuple, Any, Callable
+from config.storage import (
+    STORE_TYPE_LOCAL,
+    # STORE_TYPE_MINIO,
+)  # custom storage type constant
+from minio import Minio, S3Error
+import asyncio
+import json
+from config.status import StatusConfig as Status
+from typing import List
+import numpy
 
 
 def get_new_path(path: str) -> str:
@@ -201,7 +211,7 @@ def generate_preview_video(video_path: str, output_path: str):
 
         assert storage_.is_file_exist(output_path), "failed to save preview video"
 
-        if config.StorageConfig.STORE_TYPE == "minio":
+        if config.StorageConfig.STORE_TYPE != STORE_TYPE_LOCAL:
 
             if os.path.exists(output_path):
 
@@ -422,3 +432,113 @@ def require_double_confirmation(func: Callable[..., Any]) -> Callable[..., Any]:
         return result
 
     return wrapper
+
+
+def store_type_specific(store_type: str):
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+
+        async def wrapper(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
+
+            if config.StorageConfig.STORE_TYPE == store_type:
+                return await func(*args, **kwargs)
+            else:
+                logger.error(
+                    f"Unsupported storage type on this endpoint, expected {store_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unsupported storage type on this endpoint, expected {store_type}",
+                )
+
+        return wrapper
+
+    return decorator
+
+
+### minio
+async def minio_file_iterator(
+    client: Minio,
+    bucket_name: str,
+    object_name: str,
+    start: int,
+    end: int,
+    chunk_size: int = 1024 * 1024,
+):
+    current_position = start
+    while current_position <= end:
+        remaining_bytes = end - current_position + 1
+        read_size = min(chunk_size, remaining_bytes)
+        range_header = f"bytes={current_position}-{current_position + read_size - 1}"
+
+        print(range_header)
+
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: client.get_object(
+                bucket_name, object_name, request_headers={"Range": range_header}
+            ),
+        )
+
+        try:
+            with response as stream:
+                while True:
+                    chunk = stream.read(chunk_size)
+                    if not chunk:
+                        break
+                    current_position += len(chunk)
+                    yield chunk
+        finally:
+            response.close()
+
+
+### minio
+def minio_get_file_size(
+    client: Minio,
+    bucket_name: str,
+    object_name: str,
+    *args: Tuple[Any],
+    **kwargs: dict[str, Any],
+) -> int:
+    try:
+        stat = client.stat_object(bucket_name, object_name)
+        return stat.size if stat.size else 0
+    except S3Error as err:
+        logger.error(f"Error getting size for {object_name}: {err}")
+        return 0
+
+
+def get_file_nodes(file_nodes: str | None) -> None:
+
+    file_nodes_list: List[str] = []
+
+    if file_nodes:
+
+        file_nodes_list = json.loads(file_nodes)
+
+        if len(numpy.array(file_nodes_list).shape) != 1:
+            logger.error(f"invalid upload nodes: {file_nodes_list}")
+            raise HTTPException(
+                status_code=Status.HTTP_400_BAD_REQUEST, detail="invalid nodes"
+            )
+        if file_nodes_list:
+            for node in file_nodes_list:
+                if not node.strip():
+                    logger.warning(
+                        "The head of File nodes is empty, please input a valid node name. default: []"
+                    )
+                    file_nodes_list = []
+                    break
+        else:
+            logger.warning(
+                "The head of File nodes is empty, please input a valid node name. default: []"
+            )
+            file_nodes_list = []
+    else:
+        logger.warning(
+            "The head of File nodes is empty, please input a valid node name. default: []"
+        )
+        file_nodes_list = []
+
+    return file_nodes_list

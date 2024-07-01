@@ -41,6 +41,7 @@ class File(Base):
     file_type = Column(String, default="binary")
     file_nodes = Column(ARRAY(String), default=[])
     file_preview_path = Column(String, default="")
+    # store_type = Column(String, default="local")
 
 
 # Create database engine

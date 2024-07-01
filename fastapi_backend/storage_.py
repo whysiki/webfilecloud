@@ -10,11 +10,12 @@ from minio.error import S3Error
 import io
 from functools import lru_cache
 from typing import Optional, Union, AsyncGenerator, Any, Tuple
+from config.storage import STORE_TYPE_LOCAL, STORE_TYPE_MINIO
 
 
 class FileSystemHandler:
 
-    # 基本文件操作方法
+    # basic file operations
 
     @lru_cache(maxsize=128)
     def get_path_basename(
@@ -67,6 +68,8 @@ class FileSystemHandler:
 
         if extension is not None, return all files with the extension in the directory.will contain relative file path.contain dir/filebasename.\
         
+        so why I write this function? 🥲
+
         """
         assert os.path.exists(path), f"Path not found: {path}"
 
@@ -88,7 +91,8 @@ class FileSystemHandler:
         else:
             return os.listdir(path)
 
-    # 以下方法由子类基础实现 , 函数签名保持一致 ，实现存储的抽象和解耦
+    # The following methods are implemented by the subclass base,
+    # keeping the function signatures consistent and achieving the abstraction and decoupling of the storage
 
     def is_file_exist(
         self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
@@ -349,7 +353,7 @@ class MinioFileSystemHandler(FileSystemHandler):
             response.close()
 
     def remove_path(self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]):
-        # MinIO 不支持递归删除🥲
+        # MinIO does not support recursive deletion🥲
         try:
             objects_to_delete = self.client.list_objects(
                 self.bucket_name, prefix=path, recursive=True
@@ -454,9 +458,9 @@ class FileHandlerFactory:
 
     @staticmethod
     def create_handler(*args: Tuple[Any], **kwargs: dict[str, Any]):
-        if config.StorageConfig.STORE_TYPE == "local":
+        if config.StorageConfig.STORE_TYPE == STORE_TYPE_LOCAL:
             return LocalFileSystemHandler()
-        elif config.StorageConfig.STORE_TYPE == "minio":
+        elif config.StorageConfig.STORE_TYPE == STORE_TYPE_MINIO:
             client: Minio = config.StorageConfig.MinioClient
             bucket_name: str = config.StorageConfig.MINIO_BUCKET
             found = client.bucket_exists(bucket_name)

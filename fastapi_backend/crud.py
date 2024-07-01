@@ -204,6 +204,11 @@ def delete_user_from_db(db: Session, user: User) -> None:
 @handle_db_errors
 def get_user_by_username(db: Session, username: str) -> User:
     """
+
+    will automatically authenticate the user if the user is found.
+
+    if not found, will raise HTTP 404 Not Found.
+
     Raises:
         - HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found.
 
