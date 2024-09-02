@@ -1,0 +1,90 @@
+.alert-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.alert {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  width: 300px;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  animation: fadeIn 0.2s;
+}
+
+.alert p {
+  margin-bottom: 20px;
+}
+
+.button-container-alert {
+  width: 100%;
+  display: flex;
+  justify-content: space-evenly;
+  /* justify-content: center; */
+  align-items: center;
+}
+
+.alert-button {
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.handleOk {
+  background-color: #28a745;
+  color: white;
+}
+
+.handleOk:hover {
+  background-color: #218838;
+}
+
+.handleCancel {
+  background-color: #dc3545;
+  color: white;
+}
+
+.handleCancel:hover {
+  background-color: #c82333;
+}
+
+.handleHome {
+  background-color: #007bff;
+  color: white;
+}
+
+.handleHome:hover {
+  background-color: #0056b3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .alert-button.handleHome {
+    display: none;
+  }
+}

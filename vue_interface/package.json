@@ -1,0 +1,85 @@
+{
+  "name": "my-cloud-disk",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@fortawesome/fontawesome-free": "^6.5.2",
+    "argon2": "^0.40.3",
+    "axios": "^1.7.2",
+    "core-js": "^3.8.3",
+    "crypto-browserify": "^3.12.0",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.4.5",
+    "echarts": "^5.5.0",
+    "element-plus": "^2.7.5",
+    "highlight.js": "^11.9.0",
+    "hls.js": "^1.5.11",
+    "localforage": "^1.10.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.0.1",
+    "markdown-it-toc-done-right": "^4.2.0",
+    "mitt": "^3.0.1",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "plyr": "^3.7.8",
+    "prettier": "^3.3.2",
+    "prismjs": "^1.29.0",
+    "shaka-player": "^4.9.6",
+    "streamsaver": "^2.0.6",
+    "tippy.js": "^6.3.7",
+    "util": "^0.12.5",
+    "v-tooltip": "^2.1.3",
+    "v-viewer": "^3.0.13",
+    "video.js": "^7.21.6",
+    "vue": "^3.4.29",
+    "vue-easy-lightbox": "^1.19.0",
+    "vue-echarts": "^6.7.3",
+    "vue-image-lightbox": "^7.2.0",
+    "vue-longpress": "^1.0.2",
+    "vue-pdf": "^4.3.0",
+    "vue-router": "^4.3.3",
+    "vue-video-player": "^6.0.0",
+    "vuex": "^4.0.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "naive-ui": "^2.38.2",
+    "vfonts": "^0.0.3",
+    "vite-plugin-vue-markdown": "^0.23.8"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}

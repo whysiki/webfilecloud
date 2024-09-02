@@ -1,0 +1,149 @@
+.background-box {
+  width: 100%;
+  /* margin: 10px auto; */
+  padding: 20px;
+  margin-bottom: 40px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding-bottom: 60px;
+  align-items: center;
+  text-align: center;
+}
+
+.n-card {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.427);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  /* margin: 10px 0; */
+  margin-bottom: 10px;
+}
+.n-button {
+  background-color: #3498db;
+  color: white;
+  border-radius: 10px;
+}
+
+.n-button:hover {
+  background-color: #16723c;
+}
+.n-avatar {
+  border: 2px solid #1a7be3;
+}
+
+.settings-container {
+  width: 100%;
+  margin: 20px auto;
+  padding: 20px;
+  /* background-color: rgba(255, 255, 255, 0.5); */
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.setting-switch {
+  margin-left: auto;
+}
+
+.setting-button {
+  /* display: block; */
+  margin-bottom: 10px;
+  width: 150px;
+  height: 40px;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: #3498db;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setting-button:hover {
+  background-color: #16723c;
+}
+
+.text-green {
+  color: green;
+}
+
+.text-red {
+  color: red;
+}
+
+.user-info-container {
+  align-items: center;
+}
+
+.user-info-container n-avatar {
+  margin-bottom: 10px;
+}
+
+.user-info-container h2 {
+  margin: 10px 0;
+  font-size: 24px;
+  color: #333;
+  font-weight: bold;
+}
+
+.user-info-container n-button {
+  margin-top: 10px;
+}
+h2,
+#background-username {
+  color: #1a7be3;
+}
+.user-avatar {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 10px;
+}
+
+.home {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.home-icon {
+  font-size: 50px;
+  color: #007bff;
+}
+
+.home-icon:hover {
+  color: #0056b3;
+}
+
+.return-button {
+  z-index: 9999;
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  width: 40px;
+  /* display: flex; */
+  text-align: center;
+  justify-content: center;
+  /* margin: 10px; */
+  /* font-size: 20px; */
+  /* padding: 10px; */
+}

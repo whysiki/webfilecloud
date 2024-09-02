@@ -1,0 +1,115 @@
+/* 顶部栏样式 */
+.top-bar {
+  /* position: fixed; */
+  /* top: 0; */
+  width: 100%;
+  /* margin: auto; 添加这一行 */
+  /* padding: ; */
+  display: flex;
+  /* justify-content: space-between; */
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.7);
+  /* left: 50%; */
+  /* transform: translateX(-50%); */
+}
+
+/* 对所有子元素添加间距 */
+.top-bar > * {
+  margin: 0 15px; /* 0上下间距，10左右间距 */
+}
+
+/* 返回首页样式 */
+.return-home {
+  font-size: 34px;
+}
+.return-home i {
+  cursor: pointer;
+  color: #3498db;
+}
+.return-home i:hover {
+  color: #16723c;
+}
+
+/* 顶部栏其他按钮样式 */
+.top-bar-icon-button {
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  cursor: pointer;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.top-bar-icon-button i {
+  font-size: 20px;
+}
+
+.top-bar-icon-button:hover {
+  background-color: #16723c;
+}
+
+.deleteAll,
+.deleteUser {
+  background-color: #e74c3c;
+}
+
+/*  */
+/*  */
+/*  */
+
+/* 上传文件的表单 */
+.form-uploadFile {
+  width: 90%;
+
+  margin: 0 auto;
+  margin-top: 20px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+}
+
+.form-uploadFile-group {
+  margin-bottom: 15px;
+}
+
+.form-uploadFile-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+.form-uploadFile-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.form-uploadFile-button:hover {
+  background-color: #0056b3;
+}
+
+.form-uploadFile-progress-bar {
+  margin-top: 3px;
+  width: 100%;
+  height: 20px;
+  color: #0056b3;
+  transition: width 1s ease-in-out;
+  border-style: solid;
+  background-color: #4caf50;
+  border-radius: 10px;
+}

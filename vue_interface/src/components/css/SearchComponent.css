@@ -1,0 +1,42 @@
+/* 搜索框样式 */
+.file-search {
+  width: 90%;
+  margin: 45px auto 0;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 搜索输入框样式 */
+.file-search .search-input {
+  width: 100%;
+  /* margin: 45px 0; */
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+  /* 外框线颜色 */
+  border: 2px solid #1a7be3;
+}
+
+/* 搜索结果样式 */
+.file-search .search-results {
+  margin-top: 20px;
+}
+
+/* 搜索结果项样式 */
+.file-search .search-result-item {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(176, 43, 43, 0.1);
+}
+
+/* 无结果样式 */
+.file-search .no-results {
+  margin-top: 20px;
+  text-align: center;
+  color: #e74c3c;
+}
