@@ -1,0 +1,5 @@
+/testfile_folder
+**/*.pyc
+/.idea
+/.venv
+/.vs

@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from fastapi import File, UploadFile
 from datetime import datetime, timedelta
 from minio import Minio
-from minio.error import S3Error
+
+# from minio.error import S3Error
 import hashlib
 from fastapi.responses import StreamingResponse, Response
 from loguru import logger
@@ -29,23 +30,13 @@ import crud  # database operations
 from storage_ import (
     handler as storage_,
 )  # separate storage functions Don't ask me why I imported it🥲
-from typing import List, Any, Optional, Tuple
+from typing import List, Optional
 from config.storage import STORE_TYPE_LOCAL, STORE_TYPE_MINIO
 
 
 # register user
 @app.post("/users/register", response_model=schemas.UserOut)
 async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
-    """
-    Success: 200 OK
-
-    Raises:
-
-        HTTP_400_BAD_REQUEST (status code 400): If the user already exists.
-
-        HTTP_500_INTERNAL_SERVER_ERROR (status code 500): If the user creation failed.
-
-    """
     if crud.is_user_exist(db, user_in.username):
         raise HTTPException(
             status_code=Status.HTTP_400_BAD_REQUEST, detail="User already exists"
@@ -68,14 +59,6 @@ async def register_user(user_in: schemas.UserIn, db: Session = Depends(get_db)):
 # login user and return access_token and refresh_token
 @app.post("/users/login", response_model=schemas.Token)
 async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db)):
-    """
-    Raises:
-        HTTP_401_UNAUTHORIZED (status code 401): If the user login failed.
-
-        HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found
-
-        HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
-    """
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(
             status_code=Status.HTTP_401_UNAUTHORIZED,
@@ -94,10 +77,6 @@ async def login_user_token(user_in: schemas.UserIn, db: Session = Depends(get_db
 # update access_token with refresh_token
 @app.post("/users/refresh", response_model=schemas.Token)
 async def refresh_token(access_token: str = Depends(get_access_token)):
-    """
-    Raises:
-        HTTP_401_UNAUTHORIZED
-    """
     username: str = get_current_username(access_token)
     # by leveraging the refresh token, the user can get a new access token
     access_token = create_access_token(data={"sub": username})
@@ -175,13 +154,6 @@ async def read_users_me(
     access_token: str = Depends(get_access_token),
     db: Session = Depends(get_db),
 ):
-    """
-    HTTP_401_UNAUTHORIZED
-
-    HTTP_404_NOT_FOUND: If the user is not found, raises HTTP 404 Not Found
-
-    HTTP_500_INTERNAL_SERVER_ERROR if any other error occurs.
-    """
     if crud.is_not_valid_user(db, user_in):
         raise HTTPException(
             status_code=Status.HTTP_401_UNAUTHORIZED,
@@ -372,7 +344,8 @@ async def read_file(
 
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(file.file_path)),  # type: ignore
-        media_type="application/octet-stream",
+        # media_type="application/octet-stream",
+        media_type=utility.get_media_type_from_file_path(file.file_path),
         headers={"Content-Disposition": f"attachment; filename={quote(file.filename)}"},
     )
 
@@ -706,7 +679,8 @@ async def download_file_directdownload(
 
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(file.file_path)),  # type: ignore
-        media_type="application/octet-stream",
+        # media_type="application/octet-stream",
+        media_type=utility.get_media_type_from_file_path(file.file_path),
         headers={
             "Content-Disposition": f"attachment; filename={quote(file.filename)}",
             "Content-Length": str(file_size) + "bytes",
@@ -829,7 +803,8 @@ async def get_profile_image(
 
     return StreamingResponse(
         io.BytesIO(storage_.get_file_bytestream(user.profile_image)),  # type: ignore
-        media_type="application/octet-stream",
+        # media_type="application/octet-stream",
+        media_type=utility.get_media_type_from_file_path(user.profile_image),
         headers={
             "Content-Disposition": f"attachment; filename={quote(storage_.get_path_basename(user.profile_image))}"
         },

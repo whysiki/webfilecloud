@@ -63,6 +63,32 @@ def get_file_extension(filepath: str):
 
 
 @lru_cache(maxsize=128)
+def get_media_type_from_file_path(file_path: str) -> str:
+    MIME_TYPES = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".ogg": "video/ogg",
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".pdf": "application/pdf",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xls": "application/vnd.ms-excel",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".zip": "application/zip",
+        ".gz": "application/gzip",
+    }
+    extension: str = "." + get_file_extension(file_path)
+    return MIME_TYPES.get(extension, "application/octet-stream")
+
+
+@lru_cache(maxsize=128)
 def generate_thumbnail(file_path: str, size: Tuple[int, int] = (200, 200)) -> bytes:
     """
     Generates a thumbnail image from the given file path.
