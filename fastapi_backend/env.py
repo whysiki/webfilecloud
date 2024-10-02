@@ -183,7 +183,7 @@ def write_database_url_in_alembic_ini():
         # 读取 .env 文件
         load_dotenv()
         tag = Prompt.ask(
-            "Do you want to write the database url in alembic.ini? (y/n): ", default="y"
+            "Do you want to write the database url in alembic.ini? (y/n): ", default="n"
         )
         if tag.lower() == "y":
             database_url = os.getenv("DATABASE_URL")

@@ -20,6 +20,17 @@
         class="login-form__input"
       />
     </div>
+    <div class="login-form__group login-form__group--checkbox">
+      <input
+        type="checkbox"
+        v-model="rememberMe"
+        id="rememberMe"
+        class="login-form__checkbox"
+      />
+      <label for="rememberMe" class="login-form__label login-form__label--checkbox"
+        >Remember Me</label
+      >
+    </div>
     <div class="login-form__button-group">
       <button
         type="button"
@@ -49,8 +60,19 @@ export default {
     return {
       username: "",
       password: "",
+      rememberMe: false,
       isLogin: true,
     };
+  },
+  mounted() {
+    // Load stored credentials if available
+    const storedUsername = localStorage.getItem("rememberedUsername");
+    const storedPassword = localStorage.getItem("rememberedPassword");
+    if (storedUsername && storedPassword) {
+      this.username = storedUsername;
+      this.password = storedPassword;
+      this.rememberMe = true;
+    }
   },
   methods: {
     async login() {
@@ -64,16 +86,22 @@ export default {
         localStorage.setItem("currentNodes", "[]");
         store.commit("setUserName", this.username);
         localStorage.setItem("refresh_token", response.data.refresh_token);
+
+        // Store credentials if "Remember Me" is checked
+        if (this.rememberMe) {
+          localStorage.setItem("rememberedUsername", this.username);
+          localStorage.setItem("rememberedPassword", this.password);
+        } else {
+          localStorage.removeItem("rememberedUsername");
+          localStorage.removeItem("rememberedPassword");
+        }
+
         this.$router.push("/filelist");
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(
-            `Error: ${error.response.data.detail}`
-          );
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert(
-            "Error: No response from server"
-          );
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }
@@ -90,13 +118,9 @@ export default {
         );
       } catch (error) {
         if (error.response) {
-          await this.$refs.alertPopup.showAlert(
-            `Error: ${error.response.data.detail}`
-          );
+          await this.$refs.alertPopup.showAlert(`Error: ${error.response.data.detail}`);
         } else if (error.request) {
-          await this.$refs.alertPopup.showAlert(
-            "Error: No response from server"
-          );
+          await this.$refs.alertPopup.showAlert("Error: No response from server");
         } else {
           await this.$refs.alertPopup.showAlert("Error", error.message);
         }

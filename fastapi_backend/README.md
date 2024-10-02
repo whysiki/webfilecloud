@@ -65,11 +65,14 @@ MINIO_BUCKET=filecloud
 - python 安装 （建议使用python3.10+）虚拟环境启动 略
 - 基础依赖 `pip install -r requirements.txt`
 - 数据库安装和配置 
-  - 下载 配置环境变量 略
+  - 下载 配置环境变量
   - 登录 `psql -U postgres -p 61111`  -p 61111 是端口号 -U postgres  用户名
   - 创建数据库 `CREATE DATABASE filecloud;`
 - ffmpeg 安装 配置环境变量 略
+  - ubuntu `sudo apt install ffmpeg`
 - minio 安装 配置环境变量 略
+- opencv 依赖 ubuntu
+  - sudo apt-get install -y python3-opencv libopencv-dev
 
 - 数据库驱动
   - `pip install psycopg2` in windows
