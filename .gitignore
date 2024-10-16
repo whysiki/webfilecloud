@@ -1,3 +1,4 @@
 /minio_storage
 /vue_interface/node_modules
 /vue_interface/dist
+/fastapi_backend/.env
