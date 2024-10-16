@@ -17,11 +17,8 @@ from typing import Callable, Any, Tuple, List
 def handle_db_errors(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator function to handle database errors uniformly across database operations.
-
     Raises:
-
-        - HTTP_500_INTERNAL_SERVER_ERROR SQLAlchemyError: Catch all SQLAlchemy errors and return a 500 Internal Server Error.
-
+        - HTTP_500_INTERNAL_SERVER_ERROR SQLAlchemyError: Catch all SQLAlchemy errors and return a 500 Internal Server Error
         - HTTP_500_INTERNAL_SERVER_ERROR Exception: Catch all other exceptions and return a 500 Internal Server Error.
     """
 

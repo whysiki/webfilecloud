@@ -1,6 +1,5 @@
 <template>
   <div class="video-container">
-    <!-- <video ref="videoElement" class="video-player" controls autoplay></video> -->
     <video ref="videoElement" class="video-player" controls></video>
   </div>
 </template>
@@ -24,26 +23,37 @@ export default {
       required: true,
     },
   },
+  data() {
+    return {
+      hls: null,
+    };
+  },
   mounted() {
     this.playVideo();
+  },
+  beforeUnmount() {
+    if (this.hls) {
+      this.hls.destroy();
+    }
   },
   methods: {
     playVideo() {
       const video = this.$refs.videoElement;
       if (Hls.isSupported()) {
-        const hls = new Hls({
+        this.hls = new Hls({
+          maxBufferLength: 60, // Increase buffer length to 60 seconds
+          maxMaxBufferLength: 120, // Maximum buffer length to 120 seconds
           xhrSetup: (xhr, url) => {
             if (url.endsWith(".ts")) {
               const segmentName = url.split("/").pop();
               const newUrl = `${this.domainNamePrefix}/file/segments/${this.fileId}/${segmentName}`;
-              // console.log("newUrl", newUrl);
               xhr.open("GET", newUrl, true);
             }
           },
         });
-        hls.loadSource(this.src);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        this.hls.loadSource(this.src);
+        this.hls.attachMedia(video);
+        this.hls.on(Hls.Events.MANIFEST_PARSED, function () {
           video.play();
         });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
