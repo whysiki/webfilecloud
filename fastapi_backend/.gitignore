@@ -3,3 +3,6 @@
 /.idea
 /.venv
 /.vs
+**/*.ts
+**/*.mp4
+**/*.log

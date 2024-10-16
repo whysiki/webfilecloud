@@ -49,7 +49,10 @@ def create_access_token(
     expire = (
         datetime.utcnow() + expires_delta  # type: ignore
         if expires_delta
-        else datetime.utcnow() + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)  # type: ignore 这里虽然弃用了但是还是要用😅
+        else datetime.utcnow()
+        + timedelta(
+            minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES
+        )  ## type: ignore 这里虽然弃用了但是还是要用😅
     )
     to_encode.update({"exp": expire})  # type: ignore
     encoded_jwt = jwt.encode(to_encode, Config.SECRET_KEY, algorithm=Config.ALGORITHM)

@@ -50,6 +50,8 @@ class Config:
     # GZIP response minimum size
     GZIP_MINIMUM_SIZE: int = 500
 
+    VERIFY_TOKEN_IN_PREVIEW_VIDEO: bool = False
+
     # Validate environment variables
     assert UPLOAD_PATH, "UPLOAD_PATH is missing, please check your .env file."
     assert SECRET_KEY, "SECRET_KEY is missing, please check your .env file."

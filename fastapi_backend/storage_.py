@@ -16,7 +16,6 @@ from config.storage import STORE_TYPE_LOCAL, STORE_TYPE_MINIO
 class FileSystemHandler:
 
     # basic file operations
-
     @lru_cache(maxsize=128)
     def get_path_basename(
         self, path: str, *args: Tuple[Any], **kwargs: dict[str, Any]
@@ -49,8 +48,9 @@ class FileSystemHandler:
         will create a system path or directory if not exists.
         """
         path = Path(path)
-        if not os.path.exists(path):
-            pathd = path.parent if isfile else path
+        # if not os.path.exists(path):
+        if not path.exists():
+            pathd = path.parent if isfile else path  # insure this is a directory
             pathd.mkdir(parents=True, exist_ok=True)
 
     @lru_cache(maxsize=128)
@@ -64,10 +64,10 @@ class FileSystemHandler:
         """
         path is a system directory
 
-        if extension is None, return all files in the directory, just as os.listdir.only contain basename.
+        if extension is None, return all files in the directory, just as os.listdir.only contain basename, with extension.
 
-        if extension is not None, return all files with the extension in the directory.will contain relative file path.contain dir/filebasename.\
-        
+        if extension is not None, return all files with the extension in the directory.will contain relative file path.contain dir/filebasename, with extension (full path).
+
         so why I write this function? 🥲
 
         """
@@ -181,7 +181,7 @@ class LocalFileSystemHandler(FileSystemHandler):
 
         path is system directory
 
-        will return all files in the directory, not just a filebasename.
+        will return all files in the directory, not just a filebasename, is a full path, with extension.
 
         """
 

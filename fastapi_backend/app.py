@@ -9,7 +9,8 @@ origins = Config.CORS_ORIGINS
 
 minimum_size = Config.GZIP_MINIMUM_SIZE
 
-app = FastAPI(debug=True)
+# app = FastAPI(debug=True)
+app = FastAPI()
 
 # noinspection PyTypeChecker
 app.add_middleware(

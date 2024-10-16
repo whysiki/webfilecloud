@@ -1,6 +1,7 @@
 <template>
   <div class="video-container">
-    <video ref="videoElement" class="video-player" controls autoplay></video>
+    <!-- <video ref="videoElement" class="video-player" controls autoplay></video> -->
+    <video ref="videoElement" class="video-player" controls></video>
   </div>
 </template>
 
@@ -11,7 +12,6 @@ export default {
   name: "HlsPlayer",
   props: {
     src: {
-      //("/file/video/{file_id}/index.m3u8")
       type: String,
       required: true,
     },
@@ -36,7 +36,7 @@ export default {
             if (url.endsWith(".ts")) {
               const segmentName = url.split("/").pop();
               const newUrl = `${this.domainNamePrefix}/file/segments/${this.fileId}/${segmentName}`;
-              console.log("newUrl", newUrl);
+              // console.log("newUrl", newUrl);
               xhr.open("GET", newUrl, true);
             }
           },
@@ -59,18 +59,30 @@ export default {
 
 <style scoped>
 .video-container {
-  width: 100%;
-  height: 100vh;
+  display: flex;
   align-items: center;
   justify-content: center;
-  /* 垂直居中 */
-  display: flex;
+  width: 100%;
+  height: 100vh;
   background-color: #000;
-  /* display: flex; */
 }
+
 .video-player {
-  /* margin-top: 50%; */
   width: 100%;
   height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+@media (max-width: 768px) {
+  .video-container {
+    height: 50vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-container {
+    height: 30vh;
+  }
 }
 </style>

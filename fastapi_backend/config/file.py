@@ -29,3 +29,5 @@ class FileConfig(Config):
     M3U8_INDEX_PATH: str = __M3U8_INDEX_PATH.relative_to(
         __current_workspace_dir
     ).as_posix()
+
+    HLS_SEGMENT_TIME: int = 5

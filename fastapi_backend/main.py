@@ -33,6 +33,9 @@ from storage_ import (
 from typing import List, Optional
 from config.storage import STORE_TYPE_LOCAL, STORE_TYPE_MINIO
 
+# save log to file along with date and time
+logger.add("logs/{time:YYYY-MM-DD}.log", rotation="1 day", level="INFO")
+
 
 # register user
 @app.post("/users/register", response_model=schemas.UserOut)
@@ -346,6 +349,7 @@ async def read_file(
         io.BytesIO(storage_.get_file_bytestream(file.file_path)),  # type: ignore
         # media_type="application/octet-stream",
         media_type=utility.get_media_type_from_file_path(file.file_path),
+        status_code=Status.HTTP_200_OK,
         headers={"Content-Disposition": f"attachment; filename={quote(file.filename)}"},
     )
 
@@ -725,6 +729,7 @@ async def download_file_stream(
         status_code=(
             Status.HTTP_206_PARTIAL_CONTENT if range_header else Status.HTTP_200_OK
         ),
+        media_type=utility.get_media_type_from_file_path(file.file_path),
         headers={
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{file_size}",
@@ -1023,6 +1028,7 @@ async def get_hls_m3u8_list(file_id: str, db: Session = Depends(get_db)):
                 output_dir=segment_index_path,
                 playlist_name=index_m3u8_name,
                 file_id=str(uuid4()),
+                segment_time=config.FileConfig.HLS_SEGMENT_TIME,
             )
 
         except Exception as e:
